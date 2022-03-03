@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 
-def getDf(path = '../resources/augmentation'):
+def getDf(path = '../../data/augmentation'):
   all_folder = os.listdir(path)
   df = pd.DataFrame(columns=['number_img', 'disease', 'disease_family', 'healthy', 'specie'], index=all_folder)
 
