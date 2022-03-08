@@ -1,0 +1,5 @@
+{
+  "python.analysis.extraPaths": [
+    "./analysis/directory_data_repartitions"
+  ]
+}
