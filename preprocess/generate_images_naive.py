@@ -58,6 +58,16 @@ def delete_bg(specie_directory, img_number, type_img):
     edges = pcv.canny_edge_detect(np.array(im_s_1))
     normalized_img = cv2.normalize(edges, edges, 0, 255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
     return Image.fromarray(edges), cv2.resize(normalized_img, (204, 204))
+  elif type_img == 'color+canny':
+    array_img = np.array(im_s_1)
+    color_normalized_img = cv2.normalize(array_img, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+
+    edges = pcv.canny_edge_detect(np.array(im_s_1))
+    canny_normalized_img = cv2.normalize(edges, edges, 0, 255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+    canny_normalized_img = cv2.resize(canny_normalized_img, (204, 204))
+    color_normalized_img = cv2.resize(color_normalized_img, (204, 204))
+    # final_img = np.append(color_normalized_img, canny_normalized_img)
+    return color_normalized_img, canny_normalized_img
   else:
     array_img = np.array(im_s_1)
     if type_img == 'color':
@@ -91,11 +101,13 @@ if __name__ == '__main__':
   data_used =  data_used if data_used <= 1000 else -1
 
 
-  type_img_code = input(f'Choose your result type image: \n0 for canny_edge\n1 for gray_scale (default)\n2 for rgb\n> ')
+  type_img_code = input(f'Choose your result type image: \n0 for canny_edge\n1 for gray_scale (default)\n2 for rgb\n3 for color + canny> ')
   if type_img_code == '0':
     type_img = 'canny'
   elif type_img_code == '2':
     type_img = 'color'
+  elif type_img_code == '3':
+    type_img = 'color+canny'
   else:
     type_img = 'gray'
   
@@ -117,7 +129,8 @@ if __name__ == '__main__':
 
   data = dict()
   data['label'] = []
-  data['img_data'] = []
+  data['img_data_colored'] = []
+  data['img_data_canny'] = []
 
   print('\n')
   print("=====================================================")
@@ -136,18 +149,19 @@ if __name__ == '__main__':
     for index in range(1, number_img):
       if int(number_img / 2) == index:
         print("[+] 50%")
-      new_img, normalized_img = delete_bg(specie_directory, index, type_img)
+      color_normalized_img, canny_normalized_img = delete_bg(specie_directory, index, type_img)
       file_path = f"{choose_final_path}/{specie}/{index}.jpg"
       if generate_pickle.lower() == 'y':
         data['label'].append(specie)
-        data['img_data'].append(normalized_img)
+        data['img_data_colored'].append(color_normalized_img)
+        data['img_data_canny'].append(canny_normalized_img)
 
-      with safe_open_w(file_path) as f:
-        new_img.save(f)
+      # with safe_open_w(file_path) as f:
+      #   new_img.save(f)
     print(f"[+] End with {specie}\n\n")
   
   if generate_pickle.lower() == 'y':
-    print(f"data['img_data'].shape, {np.array(data['img_data']).shape}")
+    print(f"data['img_data'].shape, {np.array(data['img_data_colored']).shape}")
     print(f"[+] Generate pickle")
     prefix_data = 'all' if data_used == -1 else str(data_used)
     path_pickle = f"{choose_final_path}/export/data_{prefix_data}_{type_img}.pkl"
