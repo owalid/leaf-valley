@@ -121,7 +121,7 @@ def get_textural_features(img):
     # - pi / 2 => 90 & -90
     # - 0 => 0 & 180
     
-    glcm = feature.greycomatrix(img, [1, 2, 3], angles=[0, np.pi/4, np.pi/2], symmetric=True, normed=True)
+    glcm = feature.graycomatrix(img, [1, 2, 3], angles=[0, np.pi/4, np.pi/2], symmetric=True, normed=True)
     dissimilarity = feature.graycoprops(glcm, 'dissimilarity')
     correlation = feature.graycoprops(glcm, 'correlation')
     homogeneity = feature.graycoprops(glcm, 'homogeneity')
