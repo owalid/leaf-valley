@@ -7,7 +7,7 @@ from plantcv import plantcv as pcv
 from PIL import Image, ImageEnhance
 import pandas as pd
 import sys
-sys.path.append("/Users/agritech/vic-2_i/analysis/directory_data_repartitions")
+sys.path.append("../analysis/directory_data_repartitions")
 from utils import getDf
 import joblib
 from multiprocessing.pool import ThreadPool
@@ -314,7 +314,8 @@ if __name__ == '__main__':
     
   generate_pickle = input(f'Want to generate pickle (default Y) ? Y/n\n> ')
   generate_pickle = 'y' if generate_pickle == '' else generate_pickle.lower()
-
+  answers_type_features = []
+  
   if generate_pickle == 'y':
     type_features = [
         inquirer.Checkbox(
@@ -348,7 +349,8 @@ if __name__ == '__main__':
   print(f"[+] size output images: {size_img}")
   print(f"[+] type image: {type_img}")
   print(f"[+] path: {choose_final_path}")
-  print(f"[+] answers_type_features: {answers_type_features}")
+  if len(answers_type_features) > 0:
+    print(f"[+] answers_type_features: {answers_type_features}")
   print("=====================================================")
   for specie_directory in indexes_species:
     current_df = df_filtred.loc[specie_directory]
