@@ -114,13 +114,20 @@ def canny_process(img):
 
 def get_textural_features(img):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    glcm = feature.graycomatrix(img, [1], [0], symmetric=True, normed=True)
-    dissimilarity = feature.graycoprops(glcm, 'dissimilarity')[0, 0]
-    correlation = feature.graycoprops(glcm, 'correlation')[0, 0]
-    homogeneity = feature.graycoprops(glcm, 'homogeneity')[0, 0]
-    energy = feature.graycoprops(glcm, 'energy')[0, 0]
-    ASM = feature.graycoprops(glcm, 'ASM')[0, 0]
-    contrast = feature.graycoprops(glcm, 'contrast')[0, 0]
+
+    # distance: 1, 2, 3
+    # angles: 
+    # - pi / 4 => 45 & -45 & 135 & -135
+    # - pi / 2 => 90 & -90
+    # - 0 => 0 & 180
+    
+    glcm = feature.greycomatrix(img, [1, 2, 3], angles=[0, np.pi/4, np.pi/2], symmetric=True, normed=True)
+    dissimilarity = feature.graycoprops(glcm, 'dissimilarity')
+    correlation = feature.graycoprops(glcm, 'correlation')
+    homogeneity = feature.graycoprops(glcm, 'homogeneity')
+    energy = feature.graycoprops(glcm, 'energy')
+    ASM = feature.graycoprops(glcm, 'ASM')
+    contrast = feature.graycoprops(glcm, 'contrast')
     ff = np.array([dissimilarity, correlation, homogeneity, energy, ASM, contrast])
     return ff
 
@@ -255,7 +262,9 @@ def generate_img_without_bg(specie_directory, img_number, type_img, specie, heal
     if type_img == 'color':
       normalized_img = cv2.normalize(array_img, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
     else: # GRAY
-      normalized_img = cv2.normalize(array_img, array_img, 0, 255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+      normalized_img = cv2.cvtColor(array_img, cv2.COLOR_BGR2GRAY)
+      normalized_img = cv2.normalize(normalized_img, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+      # normalized_img = cv2.normalize(array_img, array_img, 0, 255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
 
     return im_s_1, cv2.resize(normalized_img, size_img), cv2.resize(array_img, size_img)
 
@@ -326,7 +335,8 @@ if __name__ == '__main__':
 
   data = dict()
   data['label'] = []
-  data['img_data'] = []
+  data['rgb_img'] = []
+  data['gray_img'] = []
   data['gabor_img'] = []
   data['canny_img'] = []
   data['textural_feature'] = []
@@ -366,11 +376,11 @@ if __name__ == '__main__':
         data['label'].append(label)
 
         if 'rgb' in answers_type_features or len(answers_type_features) == 0:
-          data['img_data'].append(np_clean_img)
+          data['rgb_img'].append(np_clean_img)
         if 'gabor' in answers_type_features:
           data['gabor_img'].append(gabor_process(np_clean_img))
         if 'gray':
-          data['img_data'].append(np_clean_img)
+          data['gray_img'].append(np_clean_img)
         if 'canny' in answers_type_features:
           data['canny_img'].append(canny_process(np_clean_img))
         if 'textural_feature' in answers_type_features:
@@ -381,7 +391,7 @@ if __name__ == '__main__':
     print(f"[+] End with {label}\n\n")
   
   if generate_pickle.lower() == 'y':
-    print(f"data['img_data'].shape, {np.array(data['img_data']).shape}")
+    print(f"data['img_data'].shape, {np.array(data['rgb_img']).shape}")
     print(f"[+] Generate pickle")
     prefix_data = 'all' if int(data_used_raw) == -1 else str(data_used_raw)
     path_pickle = f"{choose_final_path}/export/data_{type_output.lower()}_{prefix_data}_{type_img}.pkl"
