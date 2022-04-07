@@ -12,8 +12,12 @@ from utils import getDf
 import joblib
 from multiprocessing.pool import ThreadPool
 from skimage import feature
-from pprint import pprint
+from skimage.morphology import closing
+from skimage.feature import local_binary_pattern
+from skimage.measure import label, regionprops, regionprops_table
+from skimage.filters import threshold_otsu
 import inquirer
+import mahotas
 
 pcv.params.debug = ''
 debug = ''
@@ -52,6 +56,7 @@ def get_df_filtered(df, type_output):
 
     df_others_specie = df.loc[~df['specie'].isin(list(df_filtred.specie.values))]
     return pd.concat([df_others_specie, df_filtred])
+
 
 def remove_noise(gray, num):
   Y, X = gray.shape
@@ -111,6 +116,69 @@ def gabor_process(img):
 
 def canny_process(img):
   return pcv.canny_edge_detect(img, sigma=1.5)
+
+
+def get_lbp_histogram(img):
+  radius = 4
+  n_points = 4 * radius
+  image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+  lbp = local_binary_pattern(image, n_points, radius, method='uniform')
+  
+  n_bins = int(lbp.max() + 1)
+  (hist, _) = np.histogram(lbp.ravel(),
+    bins=n_bins,
+    range=(0, n_bins))
+  
+  # normalize the histogram
+  hist = hist.astype("float")
+  hist /= (hist.sum() + 1e-7)
+  
+  return hist
+
+
+def get_hue_moment(image):
+  '''
+  Calculate the Hu Moments of an image.
+  '''
+  
+  # hu_moments = cv2.HuMoments(cv2.moments(image)).flatten()
+  # return hu_moments
+  image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+  feature = cv2.HuMoments(cv2.moments(image)).flatten()
+  return feature
+
+
+def get_haralick(image):
+  '''
+  Calculate the Haralick texture features of an image.
+  '''
+  
+  gray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
+  haralic = mahotas.features.haralick(gray).mean(axis=0)
+  return haralic
+
+def get_histogram_hsv(image, mask=None):
+  '''
+  Get the histogram of the hsv channels of an image.
+  '''
+  
+  image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+  hist  = cv2.calcHist([image],[0,1,2],None,[8,8,8], [0, 256, 0, 256, 0, 256])
+  cv2.normalize(hist,hist)
+  
+  return hist.flatten()
+  
+def get_histogram_lab(image, mask=None):
+  '''
+  Get the histogram of the lab channels of an image.
+  '''
+  
+  image = cv2.cvtColor(image, cv2.COLOR_RGB2LAB)
+  hist  = cv2.calcHist([image],[0,1,2],None,[8,8,8], [0, 256, 0, 256, 0, 256])
+  cv2.normalize(hist,hist)
+  
+  return hist.flatten()
+  
 
 def get_textural_features(img):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -259,12 +327,11 @@ def generate_img_without_bg(specie_directory, img_number, type_img, specie, heal
     return Image.fromarray(edges), cv2.resize(normalized_img, size_img), edges
   else: # COLOR OR GRAY
     array_img = np.array(im_s_1)
-    if type_img == 'color':
-      normalized_img = cv2.normalize(array_img, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
-    else: # GRAY
-      normalized_img = cv2.cvtColor(array_img, cv2.COLOR_BGR2GRAY)
-      normalized_img = cv2.normalize(normalized_img, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
-      # normalized_img = cv2.normalize(array_img, array_img, 0, 255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+    normalized_img = cv2.normalize(array_img, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+    
+    if type_img == 'gray':
+      gray_img = cv2.cvtColor(array_img, cv2.COLOR_BGR2GRAY)
+      im_s_1 = Image.fromarray(gray_img)
 
     return im_s_1, cv2.resize(normalized_img, size_img), cv2.resize(array_img, size_img)
 
@@ -295,9 +362,6 @@ if __name__ == '__main__':
   data_used_raw = int(input('Choose number of images per class maximum 1000 (default maximum per class)\n> '))
   data_used = getDataUsed(data_used_raw, df_filtred, type_output)
 
-
-
-  
   type_img_code = input(f'Choose your result type image: \n0) for canny_edge\n1) for gray_scale (default)\n2) for rgb\n> ')
   if type_img_code == '0':
     type_img = 'canny'
@@ -306,8 +370,6 @@ if __name__ == '__main__':
   else:
     type_img = 'gray'
   
-
-
   default_path_result = f"../data/preprocess/{type_output}/{res_augmented}/{type_img}"
   choose_final_path = input(f'Choose your final path \n(default is: {default_path_result}/<specie>/<number>.jpg)\n> ')
   choose_final_path = default_path_result if choose_final_path == '' else choose_final_path
@@ -321,26 +383,28 @@ if __name__ == '__main__':
         inquirer.Checkbox(
             "type",
             message="Choose your features in pickles:",
-            choices=["rgb", "gray", "canny", "gabor", "textural_feature"],
+            choices=["rgb", "gray", "canny", "gabor", "textural_feature", "lpb_histogram", 'hue_moment', 'haralick', 'histogram_hsv', 'histogram_lab'],
         ),
     ]
-
     answers_type_features = inquirer.prompt(type_features)
     answers_type_features = answers_type_features['type']
     
-
   size_img = input(f'Size of output images (default 204px) ?\n> ')
   size_img = DEFAULT_FINAL_IMG_SIZE if size_img == '' or not size_img.isnumeric() else (int(size_img), int(size_img))
-
-
 
   data = dict()
   data['label'] = []
   data['rgb_img'] = []
   data['gray_img'] = []
   data['gabor_img'] = []
+  data['lpb_histogram'] = []
   data['canny_img'] = []
   data['textural_feature'] = []
+  data['hue_moment'] = []
+  data['haralick'] = []
+  data['histogram_hsv'] = []
+  data['histogram_lab'] = []
+
 
   print('\n')
   print("=====================================================")
@@ -366,6 +430,8 @@ if __name__ == '__main__':
 
     if type_output == HEALTHY_NOT_HEALTHY:
       label = 'healthy' if healthy else 'not_healthy'
+    elif type_output == NOT_HEALTHY:
+      label = disease
     else:
       label = specie
 
@@ -382,11 +448,23 @@ if __name__ == '__main__':
         if 'gabor' in answers_type_features:
           data['gabor_img'].append(gabor_process(np_clean_img))
         if 'gray':
-          data['gray_img'].append(np_clean_img)
+          gray_img = cv2.cvtColor(np_clean_img, cv2.COLOR_BGR2GRAY)
+          data['gray_img'].append(gray_img)
         if 'canny' in answers_type_features:
           data['canny_img'].append(canny_process(np_clean_img))
         if 'textural_feature' in answers_type_features:
           data['textural_feature'].append(get_textural_features(raw_np_img))
+        if 'lpb_histogram' in answers_type_features:
+          data['lpb_histogram'].append(get_lbp_histogram(raw_np_img))
+        if 'hue_moment' in answers_type_features:
+          data['hue_moment'].append(get_hue_moment(raw_np_img))
+        if 'haralick' in answers_type_features:
+          data['haralick'].append(get_haralick(raw_np_img))
+        if 'histogram_hsv' in answers_type_features:
+          data['histogram_hsv'].append(get_histogram_hsv(raw_np_img))
+        if 'histogram_lab' in answers_type_features:
+          data['histogram_lab'].append(get_histogram_lab(raw_np_img))
+          
 
       with safe_open_w(file_path) as f:
         clean_pill_img.save(f)
