@@ -129,8 +129,43 @@ def thresh_morpho(img):
     imgthresh = cv.threshold(imggray, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU) 
     return imgthresh[1]
 
+# This function is designed to produce a set of GaborFilters 
+# an even distribution of theta values equally distributed amongst pi rad / 180 degree
+def create_gaborfilter():   
+    filters = []
+    num_filters = 16
+    ksize = 9  # The local area to evaluate
+    sigma = 3.0  # Larger Values produce more edges
+    lambd = 10.0
+    gamma = 0.5
+    psi = 0  # Offset value - lower generates cleaner results
+    for theta in np.arange(0, np.pi, np.pi / num_filters):  # Theta is the orientation for edge detection
+        kern = cv.getGaborKernel((ksize, ksize), sigma, theta, lambd, gamma, psi, ktype=cv.CV_64F)
+        kern /= 1.0 * kern.sum()  # Brightness normalization
+        filters.append(kern)
+    return filters
+
+# This general function is designed to apply Gabor Kernel filters to our image
+def apply_gaborfilter(img, filters=create_gaborfilter()):
+     
+    # First create a numpy array the same size as our input image
+    newimage = np.zeros_like(img)
+     
+    # Starting with a blank image, we loop through the images and apply our Gabor Filter
+    # On each iteration, we take the highest value (super impose), until we have the max value across all filters
+    # The final image is returned
+    depth = -1 # remain depth same as original image
+     
+    for kern in filters:  # Loop through the kernels in our GaborFilter
+        image_filter = cv.filter2D(img, depth, kern)  #Apply filter to image
+         
+        # Using Numpy.maximum to compare our filter and cumulative image, taking the higher value (max)
+        np.maximum(newimage, image_filter, newimage)
+    return newimage
+
 def remove_bg(img):
     img = clash(img, type='LAB', cliplimit=22.0, tilegridsize=(12,12))
+    img = apply_gaborfilter(img)
         
     blur    = np.array(cv.GaussianBlur(np.array(img), (7,7), cv.BORDER_DEFAULT), dtype='uint8')
     blur    = np.array(cv.medianBlur(np.array(blur), 7), dtype='uint8')
