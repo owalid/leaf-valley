@@ -1,6 +1,0 @@
-{
-  "python.analysis.extraPaths": [
-    "./analysis/directory_data_repartitions"
-  ],
-  "jupyter.jupyterServerType": "local"
-}
