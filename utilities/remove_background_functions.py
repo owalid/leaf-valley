@@ -27,9 +27,9 @@ color_dict_HSV = {
                 'lightpurple': [[155,128,255], [128,38,25]],
                 }
 
-def replace_text(text, lst):
+def replace_text(text, lst, rep=' '):
       for l in lst:
-            text = text.replace(l, ' ')
+            text = text.replace(l, rep)
       return text
 
 def bgrtorgb(img):
@@ -71,7 +71,7 @@ def houghLines(img_in):
 
     a,b,c = lines.shape
     for i in range(a):
-        cv.line(img_in, (lines[i][0][0], lines[i][0][1]), (lines[i][0][2], lines[i][0][3]), (0, 0, 255), 3, cv2.LINE_AA)
+        cv.line(img_in, (lines[i][0][0], lines[i][0][1]), (lines[i][0][2], lines[i][0][3]), (0, 0, 255), 3, cv.LINE_AA)
     
     return img_in
 
