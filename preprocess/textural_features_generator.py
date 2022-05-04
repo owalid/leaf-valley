@@ -11,6 +11,7 @@ import concurrent.futures
 from itertools import repeat
 import textural_features as tf
 
+
 def process_img(path_name, path_img):
     df = pd.DataFrame()
     return tf.textural_features_generator(df, path_name, path_img)  
