@@ -64,7 +64,7 @@ def get_df_filtered(df, type_output):
         return pd.concat([df_others_specie, df_filtred])
 
 
-def generate_img_without_bg(specie_directory, img_number, type_img, specie, healthy, size_img, cropped_img=False):
+def generate_img_without_bg(specie_directory, img_number, type_img, size_img, cropped_img=False):
     path_img = f"../data/augmentation/{specie_directory}/image ({img_number}).JPG"
     bgr_img, _, _ = pcv.readimage(path_img, mode='bgr')
 
@@ -158,7 +158,7 @@ if __name__ == '__main__':
             if int(number_img / 2) == index:
                 local_print("[+] 50%")
             pill_masked_img, normalized_masked_img, masked_img, raw_img, mask = generate_img_without_bg(
-                specie_directory, index, type_img, specie, healthy, size_img)
+                specie_directory, index, type_img, size_img)
             file_path = f"{dest_path}/{label}/{specie}-{disease}-{index}.jpg"
             specie_index = f"{specie}_{disease}_{index}"
             data = dict()
