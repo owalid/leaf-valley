@@ -2,7 +2,6 @@
   CLI used to preprocess the data and get features and classes.
 '''
 
-import inquirer
 import os
 import cv2 as cv
 import joblib
@@ -191,7 +190,7 @@ if __name__ == '__main__':
             if 'histogram_lab' in answers_type_features:
                 data['histogram_lab'] = get_lab_histogram(normalized_masked_img)
             if 'pyfeats' in answers_type_features:
-                data.update(get_pyfeats_features(specie_index, raw_img, mask))
+                data.update(get_pyfeats_features(raw_img, mask))
                     
             series.append(pd.Series(data))
             with safe_open_w(file_path) as f:
