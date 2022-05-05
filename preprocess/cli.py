@@ -2,7 +2,6 @@
   CLI used to preprocess the data and get features and classes.
 '''
 
-import inquirer
 import os
 import cv2 as cv
 import joblib
