@@ -10,6 +10,8 @@ import numpy as np
 from plantcv import plantcv as pcv
 from PIL import Image, ImageEnhance
 import pandas as pd
+import argparse as ap
+from argparse import RawTextHelpFormatter
 import sys
 sys.path.append("../utilities")
 from utils import crop_resize_image, safe_open_w, get_df, get_canny_img, get_gabor_img
@@ -19,6 +21,7 @@ from remove_background_functions import remove_bg
 pcv.params.debug = ''
 debug = ''
 
+VERBOSE = False
 DEFAULT_FINAL_IMG_SIZE = (256, 256)
 
 HEALTHY_NOT_HEALTHY = 'HEALTHY_NOT_HEALTHY'
@@ -26,7 +29,9 @@ ONLY_HEALTHY = 'ONLY_HEALTHY'
 NOT_HEALTHY = 'NOT_HEALTHY'
 ALL = 'ALL'
 
-
+def local_print(msg):
+    if VERBOSE:
+        print(msg)
 def get_data_used(data_used, df, type_output):
 
     if type_output == HEALTHY_NOT_HEALTHY:
@@ -91,80 +96,44 @@ def generate_img_without_bg(specie_directory, img_number, type_img, specie, heal
 
 # MAIN
 if __name__ == '__main__':
-    res_augmented = input(
-        'use not augmented or augmented ?\n0) for not augmented (default)\n1) for augmented\n> ')
-
-    if res_augmented == '1':
-        res_augmented = 'augmented'
-        df = get_df('../data/augmentation')
-    else:
-        res_augmented = 'no_augmented'
-        df = get_df('../data/no_augmentation')
-
-    type_output = input(
-        'Type of outputs \n0) healthy_not_healthy (default)\n1) only healthy\n2) only disases\n> ')
-    if type_output == '' or not type_output.isnumeric() or int(type_output) == 0:
-        type_output = HEALTHY_NOT_HEALTHY
-    elif int(type_output) == 1:
-        type_output = ONLY_HEALTHY
-    else:
-        type_output = NOT_HEALTHY
-
+    parser = ap.ArgumentParser(formatter_class=RawTextHelpFormatter)
+    parser.add_argument("-a", "--augmented", required=False, action='store_true', default=False, help='Use directory augmented')
+    parser.add_argument("-src", "--src-directory", required=False, type=str, default='', help='Directory source who can find images. default (../data/{augmented})')
+    parser.add_argument("-c", "--classification", required=False, type=str, default="HEALTHY_NOT_HEALTHY", help='Classification type: HEALTHY_NOT_HEALTHY(default), ONLY_HEALTHY, NOT_HEALTHY, ALL')
+    parser.add_argument("-n", "--number-img", required=False, type=int, default=1000, help='Number of images to use per class to select maximum of all classes use -1. (default 1000)')
+    parser.add_argument("-tp", "--type-preprocess", required=False, type=str, default="ml", help='Type of preprocess. ml or dp. (default: ml)')
+    parser.add_argument("-rt", "--result-type", required=False, type=str, default="GRAY", help='Type of result image for DP: GRAY, GABOR, CANNY, COLOR. (default: GRAY)')
+    parser.add_argument("-dst", "--destination", required=False, type=str, default='', help='Path to save the data. (default: ../data/preprocess)')
+    parser.add_argument("-f", "--features", required=True, type=str, help='Features to extract (separate by ,)\nList of features:\nFor DP: rgb, gray, canny, gabor\nFor ML: graycoprops, lpb_histogram, hue_moment, haralick, histogram_hsv, histogram_lab, pyfeats')
+    parser.add_argument("-s", "--size", required=False, type=int, default=256, help='Size of images. (default 256x256)')
+    parser.add_argument("-v", "--verbose", required=False, action='store_true', default=False, help='Verbose')
+    args = parser.parse_args()
+    print(args)
+    
+    res_augmented = 'augmentation' if args.augmented else 'no_augmentation'
+    df_src_path = args.src_directory if args.src_directory != '' else f"../data/{res_augmented}"
+    df = get_df(df_src_path)
+    type_output = args.classification
     df_filtred = get_df_filtered(df, type_output)
     indexes_species = df_filtred.index
-
-    data_used_raw = int(input(
-        'Choose number of images per class maximum 1000 (default maximum per class)\n> '))
-    data_used = get_data_used(data_used_raw, df_filtred, type_output)
-
-    type_img_code = input(
-        f'Choose your result type image: \n0) for canny_edge\n1) for gray_scale (default)\n2) for rgb\n> ')
-    if type_img_code == '0':
-        type_img = 'canny'
-    elif type_img_code == '2':
-        type_img = 'color'
-    else:
-        type_img = 'gray'
-
-    default_path_result = f"../data/preprocess/{type_output}/{res_augmented}/{type_img}"
-    choose_final_path = input(
-        f'Choose your final path \n(default is: {default_path_result}/<specie>/<number>.jpg)\n> ')
-    choose_final_path = default_path_result if choose_final_path == '' else choose_final_path
-
-    generate_pickle = input(f'Want to generate pickle (default Y) ? Y/n\n> ')
-    generate_pickle = 'y' if generate_pickle == '' else generate_pickle.lower()
-    answers_type_features = []
-
-    if generate_pickle == 'y':
-        type_features = [
-            inquirer.Checkbox(
-                "type",
-                message="Choose your features in pickles:",
-                choices=["rgb", "gray", "canny", "gabor", "graycoprops", "lpb_histogram",
-                         'hue_moment', 'haralick', 'histogram_hsv', 'histogram_lab', 'pyfeats'],
-            ),
-        ]
-        answers_type_features = inquirer.prompt(type_features)
-        answers_type_features = answers_type_features['type']
-
-    size_img = input(f'Size of output images (default 256px) ?\n> ')
-    size_img = DEFAULT_FINAL_IMG_SIZE if size_img == '' or not size_img.isnumeric(
-    ) else (int(size_img), int(size_img))
-
-    data = dict()
-    data = {x: [] for x in answers_type_features}
-    data['label'] = []
-    # print(df_features)
-    print('\n')
-    print("=====================================================")
-    print(f"[+] type dataset: {res_augmented}")
-    print(f"[+] type output: {type_output}")
-    print(f"[+] size output images: {size_img}")
-    print(f"[+] type image: {type_img}")
-    print(f"[+] path: {choose_final_path}")
+    data_used = args.number_img
+    type_img = args.result_type
+    
+    dest_path = args.destination if args.destination != '' else f'../data/preprocess/{type_output}/{res_augmented}'
+    answers_type_features = args.features.split(',')
+    size_img = (args.size, args.size) if args.size > 0 else DEFAULT_FINAL_IMG_SIZE
+    VERBOSE = args.verbose
+    series = []
+    local_print('\n')
+    local_print("=====================================================")
+    local_print(f"[+] type dataset: {res_augmented}")
+    local_print(f"[+] type output: {type_output}")
+    local_print(f"[+] size output images: {size_img}")
+    local_print(f"[+] type image: {type_img}")
+    local_print(f"[+] path: {dest_path}")
     if len(answers_type_features) > 0:
-        print(f"[+] answers_type_features: {answers_type_features}")
-    print("=====================================================")
+        local_print(f"[+] answers_type_features: {answers_type_features}")
+    local_print("=====================================================")
     for specie_directory in indexes_species:
         current_df = df_filtred.loc[specie_directory]
         healthy = current_df.healthy
@@ -175,9 +144,9 @@ if __name__ == '__main__':
             data_used, dict) else data_used['healthy' if healthy else 'not_healthy']
         number_img = current_df.number_img if current_data_used == - \
             1 or current_df.number_img < current_data_used else current_data_used
-        print(f"[+] index {specie_directory}")
-        print(f"[+] Start generate specie: {specie}")
-        print(f"[+] Number of images: {number_img}")
+        local_print(f"[+] index {specie_directory}")
+        local_print(f"[+] Start generate specie: {specie}")
+        local_print(f"[+] Number of images: {number_img}")
 
         if type_output == HEALTHY_NOT_HEALTHY:
             label = 'healthy' if healthy else 'not_healthy'
@@ -187,56 +156,53 @@ if __name__ == '__main__':
             label = specie
         for index in range(1, number_img):
             if int(number_img / 2) == index:
-                print("[+] 50%")
+                local_print("[+] 50%")
             pill_masked_img, normalized_masked_img, masked_img, raw_img, mask = generate_img_without_bg(
                 specie_directory, index, type_img, specie, healthy, size_img)
-            file_path = f"{choose_final_path}/{label}/{specie}-{disease}-{index}.jpg"
+            file_path = f"{dest_path}/{label}/{specie}-{disease}-{index}.jpg"
             specie_index = f"{specie}_{disease}_{index}"
-            # df_features.loc[specie_index] = {}
-            # df_features[specie_index] = {}
-            data['label'].append(specie_index)
+            data = dict()
+            data['label'] = specie_index
+            data['class'] = label
             
-            data
-            if generate_pickle.lower() == 'y':
-                if 'rgb' in answers_type_features or len(answers_type_features) == 0:
-                    data['rgb_img'].append(normalized_masked_img)
-                if 'gabor' in answers_type_features:
-                    data['gabor_img'].append(get_gabor_img(normalized_masked_img))
-                if 'gray' in answers_type_features:
-                    gray_img = cv.cvtColor(normalized_masked_img, cv.COLOR_BGR2GRAY)
-                    data['gray_img'].append(gray_img)
-                if 'canny' in answers_type_features:
-                    data['canny_img'].append(get_canny_img(normalized_masked_img))
-
-                if 'graycoprops' in answers_type_features:
-                    print("get_graycoprops", list(get_graycoprops(masked_img)))
-                    data['graycoprops'].append(list(get_graycoprops(masked_img)))
-                if 'lpb_histogram' in answers_type_features:
-                    data['lpb_histogram'].append(get_lbp_histogram(normalized_masked_img))
-                if 'hue_moment' in answers_type_features:
-                    data['hue_moment'].append(get_hue_moment(normalized_masked_img))
-                if 'haralick' in answers_type_features:
-                    data['haralick'].append(get_haralick(normalized_masked_img))
-                if 'histogram_hsv' in answers_type_features:
-                    data['histogram_hsv'].append(get_hsv_histogram(normalized_masked_img))
-                if 'histogram_lab' in answers_type_features:
-                    data['histogram_lab'].append(get_lab_histogram(normalized_masked_img))
-                if 'pyfeats' in answers_type_features:
-                    tmpDf = pd.DataFrame({})
-                    get_pyfeats_features(tmpDf, specie_index, raw_img, mask)
-                    # data['pyfeats'].append(get_pyfeats_features(raw_img, mask))
-            # df_features.concat([df_features, temporary_df])
-            # df_features.update(temporary_df)
+                
+            # FEATURES DEEP LEARNING
+            if 'rgb' in answers_type_features or len(answers_type_features) == 0:
+                data['rgb_img'].append(normalized_masked_img)
+            if 'gabor' in answers_type_features:
+                data['gabor_img'].append(get_gabor_img(normalized_masked_img))
+            if 'gray' in answers_type_features:
+                gray_img = cv.cvtColor(normalized_masked_img, cv.COLOR_BGR2GRAY)
+                data['gray_img'].append(gray_img)
+            if 'canny' in answers_type_features:
+                data['canny_img'].append(get_canny_img(normalized_masked_img))
+                
+            # FEATURES MACHINE LEARNING
+            if 'graycoprops' in answers_type_features:
+                data['graycoprops'] = get_graycoprops(masked_img)
+            if 'lpb_histogram' in answers_type_features:
+                data['lpb_histogram'] = get_lbp_histogram(normalized_masked_img)
+            if 'hue_moment' in answers_type_features:
+                data['hue_moment'] = get_hue_moment(normalized_masked_img)
+            if 'haralick' in answers_type_features:
+                data['haralick'] = get_haralick(normalized_masked_img)
+            if 'histogram_hsv' in answers_type_features:
+                data['histogram_hsv'] = get_hsv_histogram(normalized_masked_img)
+            if 'histogram_lab' in answers_type_features:
+                data['histogram_lab'] = get_lab_histogram(normalized_masked_img)
+            if 'pyfeats' in answers_type_features:
+                data.update(get_pyfeats_features(specie_index, raw_img, mask))
+                    
+            series.append(pd.Series(data))
             with safe_open_w(file_path) as f:
                 pill_masked_img.save(f)
-        print(f"[+] End with {label}\n\n")
-    # print(df_features)
+        local_print(f"[+] End with {label}\n\n")
+    df_features = pd.DataFrame(series)
 
-    if generate_pickle.lower() == 'y':
-        print(f"Number of images, {len(data)}")
-        print(f"[+] Generate pickle")
-        prefix_data = 'all' if int(data_used_raw) == -1 else str(data_used_raw)
-        path_pickle = f"{choose_final_path}/export/data_{type_output.lower()}_{prefix_data}_{type_img}.pkl"
-        os.makedirs(os.path.dirname(path_pickle), exist_ok=True)
-        joblib.dump(data, path_pickle)
-        print(f"[+] pickle save at {path_pickle}")
+    local_print(f"Number of images, {len(df_features)}")
+    local_print(f"[+] Generate pickle")
+    prefix_data = 'all' if int(data_used) == -1 else str(data_used)
+    path_pickle = f"{dest_path}/export/data_{type_output.lower()}_{prefix_data}_{type_img}.pkl"
+    os.makedirs(os.path.dirname(path_pickle), exist_ok=True)
+    joblib.dump(df_features, path_pickle)
+    local_print(f"[+] pickle save at {path_pickle}")
