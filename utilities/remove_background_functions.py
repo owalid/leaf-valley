@@ -25,21 +25,6 @@ color_dict_HSV = {
     'lightpurple': [[155, 128, 255], [128, 38, 25]],
 }
 
-# def replace_text(text, lst, rep=' '):
-#       for l in lst:
-#             text = text.replace(l, rep)
-#       return text
-
-# def cropp_resize_image(img_masked, img2resize):
-#     arr = 1*(img_masked.sum(axis=1)>0)
-#     x1 = list(arr).index(1)
-#     x2 = len(arr) - list(arr)[::-1].index(1)
-#     arr = 1*(img_masked.sum(axis=0)>0)
-#     y1 = list(arr).index(1)
-#     y2 = len(arr) - list(arr)[::-1].index(1)
-
-#     return cv.resize(img2resize[x1:x2+1,y1:y2+1,], img_masked.shape, interpolation=cv.INTER_CUBIC)
-
 
 def mask_from_lab(img, k=2, ch='S'):
     ch = 'HSV'.index(ch.upper())
