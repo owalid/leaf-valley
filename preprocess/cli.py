@@ -100,7 +100,6 @@ if __name__ == '__main__':
     parser.add_argument("-src", "--src-directory", required=False, type=str, default='', help='Directory source who can find images. default (../data/{augmented})')
     parser.add_argument("-c", "--classification", required=False, type=str, default="HEALTHY_NOT_HEALTHY", help='Classification type: HEALTHY_NOT_HEALTHY(default), ONLY_HEALTHY, NOT_HEALTHY, ALL')
     parser.add_argument("-n", "--number-img", required=False, type=int, default=1000, help='Number of images to use per class to select maximum of all classes use -1. (default 1000)')
-    parser.add_argument("-tp", "--type-preprocess", required=False, type=str, default="ml", help='Type of preprocess. ml or dp. (default: ml)')
     parser.add_argument("-rt", "--result-type", required=False, type=str, default="GRAY", help='Type of result image for DP: GRAY, GABOR, CANNY, RGB. (default: GRAY)')
     parser.add_argument("-dst", "--destination", required=False, type=str, default='', help='Path to save the data. (default: ../data/preprocess)')
     parser.add_argument("-f", "--features", required=False, type=str, help='Features to extract (separate by ,)\nList of features:\nFor DP: rgb, gray, canny, gabor\nFor ML: graycoprops, lpb_histogram, hue_moment, haralick, histogram_hsv, histogram_lab, pyfeats')
