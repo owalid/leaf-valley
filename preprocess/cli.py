@@ -103,7 +103,7 @@ if __name__ == '__main__':
     parser.add_argument("-tp", "--type-preprocess", required=False, type=str, default="ml", help='Type of preprocess. ml or dp. (default: ml)')
     parser.add_argument("-rt", "--result-type", required=False, type=str, default="GRAY", help='Type of result image for DP: GRAY, GABOR, CANNY, RGB. (default: GRAY)')
     parser.add_argument("-dst", "--destination", required=False, type=str, default='', help='Path to save the data. (default: ../data/preprocess)')
-    parser.add_argument("-f", "--features", required=True, type=str, help='Features to extract (separate by ,)\nList of features:\nFor DP: rgb, gray, canny, gabor\nFor ML: graycoprops, lpb_histogram, hue_moment, haralick, histogram_hsv, histogram_lab, pyfeats')
+    parser.add_argument("-f", "--features", required=False, type=str, help='Features to extract (separate by ,)\nList of features:\nFor DP: rgb, gray, canny, gabor\nFor ML: graycoprops, lpb_histogram, hue_moment, haralick, histogram_hsv, histogram_lab, pyfeats')
     parser.add_argument("-s", "--size", required=False, type=int, default=256, help='Size of images. (default 256x256)')
     parser.add_argument("-v", "--verbose", required=False, action='store_true', default=False, help='Verbose')
     args = parser.parse_args()
