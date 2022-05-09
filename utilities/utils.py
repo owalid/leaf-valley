@@ -4,66 +4,6 @@ import cv2 as cv
 import numpy as np
 from multiprocessing.pool import ThreadPool
 from plantcv import plantcv as pcv
-import h5py
-
-def update_data_dict(data_dict, key, value):
-  if key not in data_dict:
-    data_dict[key] = []
-  data_dict[key].append(value)
-  return data_dict
-
-def is_array(x):
-  '''
-    Check if x is an array
-  '''
-  return isinstance(x, list) or isinstance(x, np.ndarray)
-
-def store_dataset(path, dict, verbose):
-  '''
-    Store dataset in h5py file
-    path: path of h5py file
-    dict: dictionary to store
-  '''
-  print(F"PATH: {path}")
-  h = h5py.File(path, 'w')
-  
-  if verbose:
-    print("Saving dataset with: \n")
-    
-  # Saves labels
-  for col in dict.keys():
-    col_array = np.array(dict[col])
-    shape_array = np.shape(col_array)
-    if len(shape_array) == 1:
-      col_array = col_array.reshape((-1, 1))
-      shape_array = np.shape(col_array)
-    
-    first_element = col_array[0]
-    while is_array(first_element):  # If array, keep going
-      first_element = first_element[0]
-      
-    # Select the correct type for h5py file
-    if type(first_element) is float or type(first_element) is np.float64 or type(first_element) is np.float32: # If float
-      col_type = h5py.h5t.IEEE_F32BE
-      col_type_str = "h5py.h5t.IEEE_F32BE"
-    elif type(first_element) is bool:
-      col_array.astype(np.uint8)
-      col_type = h5py.h5t.STD_I8LE
-      col_type_str = "h5py.h5t.STD_I8LE"
-    elif type(first_element) is int or type(first_element) is np.int64 or type(first_element) is np.int32: # If int or int64
-      col_type = h5py.h5t.STD_I32LE
-      col_type_str = "h5py.h5t.STD_I32LE"
-    elif type(first_element) is np.str_ or type(first_element) is str: # If string or np.str
-      col_type = h5py.string_dtype('utf-8')
-      col_type_str = "h5py.string_dtype('utf-8')"
-    col_array = np.array(col_array, dtype=col_type)
-    
-    if verbose:
-      print(f"[+] Column: {col} - Type: {col_type_str} - Shape: {shape_array}")
-
-    # Create the dataset
-    h.create_dataset(col, shape_array, col_type, data=col_array)
-  
 
 def replace_text(text, lst, rep=' '):
     '''
