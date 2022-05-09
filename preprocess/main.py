@@ -6,7 +6,6 @@ from itertools import repeat
 from tqdm import tqdm
 import random
 import os
-from tabnanny import verbose
 import cv2 as cv
 import numpy as np
 from plantcv import plantcv as pcv
@@ -296,7 +295,6 @@ if __name__ == '__main__':
         
     if len(answers_type_features) > 0:
         local_print(f"[+] answers_type_features: {answers_type_features}")
-    data = dict()
     local_print("=====================================================")
     
     with concurrent.futures.ProcessPoolExecutor() as executor:
