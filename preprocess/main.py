@@ -69,6 +69,9 @@ def get_df_filtered(df, type_output):
         return df
     
     df = df.loc[(df['specie'] != 'background_without_leaves')]
+
+    if type_output == ALL:
+        return df
     if type_output == HEALTHY_NOT_HEALTHY:
         df_others_specie = df.loc[(~df['specie'].isin(list(df.specie.values)))]
         return pd.concat([df_others_specie, df])
@@ -82,15 +85,8 @@ def get_df_filtered(df, type_output):
             list(df_filtred.specie.values))]
         return pd.concat([df_others_specie, df_filtred])
 
-<<<<<<< HEAD
 def generate_img(path_img, type_img, size_img, cropped_img, normalize_img, normalized_type):
-=======
-
-def generate_img_without_bg(specie_directory, img_number, type_img, size_img, cropped_img, normalize_img, normalized_type):
-    path_img = f"../data/augmentation/{specie_directory}/image ({img_number}).JPG"
->>>>>>> a22a70b (fix features_Storing)
     bgr_img, _, _ = pcv.readimage(path_img, mode='bgr')
-<<<<<<< HEAD
     rgb_img = cv.cvtColor(bgr_img, cv.COLOR_BGR2RGB)
 
     if cropped_img == True:
@@ -118,8 +114,6 @@ def generate_img_without_bg(specie_directory, img_number, type_img, size_img, cr
 
 def generate_img_without_bg(path_img, type_img, size_img, cropped_img, normalize_img, normalized_type):
     bgr_img, _, _ = pcv.readimage(path_img, mode='bgr')
-=======
->>>>>>> 9b852b2 (add options for normalization)
     mask, new_img = remove_bg(bgr_img)
 
     if cropped_img == True:
@@ -144,7 +138,6 @@ def generate_img_without_bg(path_img, type_img, size_img, cropped_img, normalize
         array_img = cv.normalize(array_img, None, alpha=0, beta=1, norm_type=normalized_type, dtype=cv.CV_32F)
 
     return pill_img, array_img, bgr_img, mask
-<<<<<<< HEAD
 
 def multiprocess_worker(specie_directory, df_filtred, data_used, type_output, src_directory, dest_path, size_img, crop_img, normalize_img, normalize_type, type_img, should_remove_bg, answers_type_features, write_img):
     current_df = df_filtred.loc[specie_directory]
@@ -233,8 +226,6 @@ def multiprocess_worker(specie_directory, df_filtred, data_used, type_output, sr
             with safe_open_w(file_path) as f:
                 pill_masked_img.save(f)
     return data
-=======
->>>>>>> 9b852b2 (add options for normalization)
 
 
 # MAIN
@@ -247,11 +238,7 @@ if __name__ == '__main__':
     parser.add_argument("-crop", "--crop-img", required=False, action='store_true', default=False, help='Remove padding around leaf')
     parser.add_argument("-nor", "--normalize-img", required=False, action='store_true', default=True, help='Normalize images, you can specify the normalization type with the option -nortype')
     parser.add_argument("-nortype", "--normalize-type", required=False, type=str, default='NORM_MINMAX', help='Normalize images features with cv.normalize (Default: NORM_MINMAX) \nTypes: https://vovkos.github.io/doxyrest-showcase/opencv/sphinx_rtd_theme/enum_cv_NormTypes.html')
-<<<<<<< HEAD
     parser.add_argument("-c", "--classification", required=False, type=str, default="ALL", help='Classification type: HEALTHY_NOT_HEALTHY, ONLY_HEALTHY, NOT_HEALTHY, ALL (default)')
-=======
-    parser.add_argument("-c", "--classification", required=False, type=str, default="HEALTHY_NOT_HEALTHY", help='Classification type: HEALTHY_NOT_HEALTHY(default), ONLY_HEALTHY, NOT_HEALTHY, ALL')
->>>>>>> 9b852b2 (add options for normalization)
     parser.add_argument("-n", "--number-img", required=False, type=int, default=1000, help='Number of images to use per class to select maximum of all classes use -1. (default 1000)')
     parser.add_argument("-rt", "--result-type", required=False, type=str, default="GRAY", help='Type of result image for DP: GRAY, GABOR, CANNY, RGB. (default: GRAY)')
     parser.add_argument("-dst", "--destination", required=False, type=str, default='', help='Path to save the data. (default: data/preprocess)')
@@ -269,10 +256,7 @@ if __name__ == '__main__':
     src_directory = os.path.join(args.src_directory, res_augmented) if args.src_directory != '' else f"data/{res_augmented}"
     df = get_df(src_directory)
     type_output = args.classification
-<<<<<<< HEAD
     should_remove_bg = args.remove_bg
-=======
->>>>>>> 9b852b2 (add options for normalization)
     write_img = args.write_img
     crop_img = args.crop_img
     normalize_img = args.normalize_img
@@ -322,7 +306,6 @@ if __name__ == '__main__':
         if VERBOSE:
             results = list(tqdm(executor.map(multiprocess_worker, indexes_species, repeat(df_filtred), repeat(data_used), repeat(type_output), repeat(src_directory), repeat(dest_path), repeat(size_img), repeat(crop_img), repeat(normalize_img), repeat(normalize_type), repeat(type_img), repeat(should_remove_bg), repeat(answers_type_features), repeat(write_img)), total=len(indexes_species)))
         else:
-<<<<<<< HEAD
             results = list(executor.map(multiprocess_worker, indexes_species, repeat(df_filtred), repeat(data_used), repeat(type_output), repeat(src_directory), repeat(dest_path), repeat(size_img), repeat(crop_img), repeat(normalize_img), repeat(normalize_type), repeat(type_img), repeat(should_remove_bg), repeat(answers_type_features), repeat(write_img)))
             
     data = dict()
@@ -337,57 +320,6 @@ if __name__ == '__main__':
             print(f"[+] {key}: have len: {len(data[key])}")
                 
     local_print(f"Total of images processed: {len(data['classes'])}")
-=======
-            number_img = current_data_used
-            indexes = random.sample(list(range(1, current_df.number_img)), number_img) # Get alls indexes with random without repetition.
-        local_print(f"[+] index {specie_directory}")
-        local_print(f"[+] Start generate specie: {specie}")
-        local_print(f"[+] Number of images: {number_img}")
-        
-        for index in indexes:
-            if len(indexes) // 2 == np.where(indexes == index):
-                local_print("[+] 50%")
-            pill_masked_img, masked_img, raw_img, mask = generate_img_without_bg(specie_directory, index, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
-            file_path = f"{dest_path}/{label}/{specie}-{disease}-{index}.jpg"
-            specie_index = f"{specie}_{disease}_{index}"
-            data = update_data_dict(data, 'labels', specie_index)
-            data = update_data_dict(data, 'classes', disease)
-            
-            # FEATURES DEEP LEARNING
-            if 'rgb' in answers_type_features or len(answers_type_features) == 0:
-                data = update_data_dict(data, 'rgb_img',  masked_img)
-            if 'gabor' in answers_type_features:
-                data = update_data_dict(data, 'gabor_img',  get_gabor_img(masked_img))
-            if 'gray' in answers_type_features:
-                data = update_data_dict(data, 'gray_img',  bgrtogray(masked_img))
-            if 'canny' in answers_type_features:
-                data = update_data_dict(data, 'canny_img',  get_canny_img(masked_img))
-                
-            # FEATURES MACHINE LEARNING
-            if 'graycoprops' in answers_type_features:
-                data = update_data_dict(data, 'graycoprops',  get_graycoprops(masked_img))
-            if 'lpb_histogram' in answers_type_features:
-                data = update_data_dict(data, 'lpb_histogram',  get_lbp_histogram(masked_img))
-            if 'hue_moment' in answers_type_features:
-                data = update_data_dict(data, 'hue_moment',  get_hue_moment(masked_img))
-            if 'haralick' in answers_type_features:
-                data = update_data_dict(data, 'haralick',  get_haralick(masked_img))
-            if 'histogram_hsv' in answers_type_features:
-                data = update_data_dict(data, 'histogram_hsv',  get_hsv_histogram(masked_img))
-            if 'histogram_lab' in answers_type_features:
-                data = update_data_dict(data, 'histogram_lab',  get_lab_histogram(masked_img))
-            if 'pyfeats' in answers_type_features:
-                pyfeats_features = get_pyfeats_features(raw_img, mask)
-                for feature in pyfeats_features:
-                    data = update_data_dict(data, feature, pyfeats_features[feature])
-                    
-            if write_img:
-                with safe_open_w(file_path) as f:
-                    pill_masked_img.save(f)
-        local_print(f"[+] End with {label}\n\n")
-    
-    local_print(f"Number of images, {len(data)}")
->>>>>>> 9b852b2 (add options for normalization)
     local_print(f"[+] Generate hdf5 file")
     prefix_data = 'all' if int(data_used) == -1 else str(data_used)
     path_hdf = os.path.join(dest_path, 'export', f"data_{type_output.lower()}_{prefix_data}_{'_'.join(answers_type_features)}.h5")
