@@ -34,7 +34,10 @@ def store_dataset(path, dict, verbose):
   # Saves labels
   for col in dict.keys():
     col_array = np.array(dict[col])
-    shape_array = np.shape(col_array)
+    shape_array = np.shape(col_array))
+    if len(shape_array) == 1:
+      col_array = col_array.reshape((-1, 1))
+      shape_array = np.shape(col_array)
     
     first_element = col_array[0]
     
