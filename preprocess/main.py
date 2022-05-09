@@ -6,6 +6,7 @@ from itertools import repeat
 from tqdm import tqdm
 import random
 import os
+from tabnanny import verbose
 import cv2 as cv
 import numpy as np
 from plantcv import plantcv as pcv
