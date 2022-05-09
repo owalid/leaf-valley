@@ -18,6 +18,14 @@ def is_array(x):
   '''
   return isinstance(x, list) or isinstance(x, np.ndarray)
 
+def get_dataset(path):
+  '''
+    Get dataset from h5py file
+  '''
+  print(F"PATH: {path}")
+  hf = h5py.File(path, 'r')
+  return hf
+  
 def store_dataset(path, dict, verbose):
   '''
     Store dataset in h5py file
@@ -47,7 +55,7 @@ def store_dataset(path, dict, verbose):
     if type(first_element) is float or type(first_element) is np.float64 or type(first_element) is np.float32: # If float
       col_type = h5py.h5t.IEEE_F32BE
       col_type_str = "h5py.h5t.IEEE_F32BE"
-    elif type(first_element) is bool:
+    elif type(first_element) is bool or type(first_element) is np.uint8:
       col_array.astype(np.uint8)
       col_type = h5py.h5t.STD_I8LE
       col_type_str = "h5py.h5t.STD_I8LE"
