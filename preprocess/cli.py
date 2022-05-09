@@ -90,25 +90,24 @@ def generate_img_without_bg(specie_directory, img_number, type_img, specie, heal
 
 # MAIN
 if __name__ == '__main__':
-    res_augmented = input(
-        'use not augmented or augmented ?\n0) for not augmented (default)\n1) for augmented\n> ')
-
-    if res_augmented == '1':
-        res_augmented = 'augmented'
-        df = get_df('../data/augmentation')
-    else:
-        res_augmented = 'no_augmented'
-        df = get_df('../data/no_augmentation')
-
-    type_output = input(
-        'Type of outputs \n0) healthy_not_healthy (default)\n1) only healthy\n2) only disases\n> ')
-    if type_output == '' or not type_output.isnumeric() or int(type_output) == 0:
-        type_output = HEALTHY_NOT_HEALTHY
-    elif int(type_output) == 1:
-        type_output = ONLY_HEALTHY
-    else:
-        type_output = NOT_HEALTHY
-
+    parser = ap.ArgumentParser(formatter_class=RawTextHelpFormatter)
+    parser.add_argument("-a", "--augmented", required=False, action='store_true', default=False, help='Use directory augmented')
+    parser.add_argument("-src", "--src-directory", required=False, type=str, default='', help='Directory source who can find images. default (../data/{augmented})')
+    parser.add_argument("-c", "--classification", required=False, type=str, default="HEALTHY_NOT_HEALTHY", help='Classification type: HEALTHY_NOT_HEALTHY(default), ONLY_HEALTHY, NOT_HEALTHY, ALL')
+    parser.add_argument("-n", "--number-img", required=False, type=int, default=1000, help='Number of images to use per class to select maximum of all classes use -1. (default 1000)')
+    parser.add_argument("-tp", "--type-preprocess", required=False, type=str, default="ml", help='Type of preprocess. ml or dp. (default: ml)')
+    parser.add_argument("-rt", "--result-type", required=False, type=str, default="GRAY", help='Type of result image for DP: GRAY, GABOR, CANNY, COLOR. (default: GRAY)')
+    parser.add_argument("-dst", "--destination", required=False, type=str, default='', help='Path to save the data. (default: ../data/preprocess)')
+    parser.add_argument("-f", "--features", required=True, type=str, help='Features to extract (separate by ,)\nList of features:\nFor DP: rgb, gray, canny, gabor\nFor ML: graycoprops, lpb_histogram, hue_moment, haralick, histogram_hsv, histogram_lab, pyfeats')
+    parser.add_argument("-s", "--size", required=False, type=int, default=256, help='Size of images. (default 256x256)')
+    parser.add_argument("-v", "--verbose", required=False, action='store_true', default=False, help='Verbose')
+    args = parser.parse_args()
+    print(args)
+    
+    res_augmented = 'augmentation' if args.augmented else 'no_augmentation'
+    src_directory = args.src_directory if args.src_directory != '' else f"../data/{res_augmented}"
+    df = get_df(src_directory)
+    type_output = args.classification
     df_filtred = get_df_filtered(df, type_output)
     indexes_species = df_filtred.index
 
@@ -186,10 +185,17 @@ if __name__ == '__main__':
             label = specie
         for index in range(1, number_img):
             if int(number_img / 2) == index:
+<<<<<<< HEAD
                 print("[+] 50%")
             pill_masked_img, normalized_masked_img, masked_img, raw_img, mask = generate_img_without_bg(
                 specie_directory, index, type_img, specie, healthy, size_img)
             file_path = f"{choose_final_path}/{label}/{specie}-{disease}-{index}.jpg"
+=======
+                local_print("[+] 50%")
+            file_path = f"{dest_path}/{label}/{specie}-{disease}-{index}.jpg"
+            pill_masked_img, normalized_masked_img, masked_img, raw_img, mask = generate_img_without_bg(
+                f"{src_directory}/{specie_index}", index, type_img, size_img)
+>>>>>>> 6ce8853 (add storing datasets with h5py)
             specie_index = f"{specie}_{disease}_{index}"
             # df_features.loc[specie_index] = {}
             # df_features[specie_index] = {}
