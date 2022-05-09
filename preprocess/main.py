@@ -65,10 +65,11 @@ def get_data_used(data_used, df, type_output):
 def get_df_filtered(df, type_output):
     df = df.loc[(df['specie'] != 'background_without_leaves')]
 
+    if type_output == ALL:
+        return df
     if type_output == HEALTHY_NOT_HEALTHY:
         df_others_specie = df.loc[(~df['specie'].isin(list(df.specie.values)))]
         return pd.concat([df_others_specie, df])
-
     else:
         if type_output == ONLY_HEALTHY:
             df_filtred = df.loc[df['healthy']]
