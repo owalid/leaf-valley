@@ -125,7 +125,7 @@ def get_df(path='../../data/augmentation'):
 
       return pandas dataframe
     '''
-    all_folder = os.listdir(path)
+    all_folder = [d for d in os.listdir(path) if '__' in d]
     df = pd.DataFrame(columns=['number_img', 'disease',
                       'disease_family', 'healthy', 'specie'], index=all_folder)
 
