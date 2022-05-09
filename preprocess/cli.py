@@ -63,8 +63,8 @@ def get_df_filtered(df, type_output):
         return pd.concat([df_others_specie, df_filtred])
 
 
-def generate_img_without_bg(specie_directory, img_number, type_img, size_img, cropped_img=False):
-    path_img = f"../data/augmentation/{specie_directory}/image ({img_number}).JPG"
+def generate_img_without_bg(src_directory, img_number, type_img, size_img, cropped_img=False):
+    path_img = f"{src_directory}/image ({img_number}).JPG"
     bgr_img, _, _ = pcv.readimage(path_img, mode='bgr')
 
     mask, new_img = remove_bg(bgr_img)
@@ -110,8 +110,8 @@ if __name__ == '__main__':
     print(args)
     
     res_augmented = 'augmentation' if args.augmented else 'no_augmentation'
-    df_src_path = args.src_directory if args.src_directory != '' else f"../data/{res_augmented}"
-    df = get_df(df_src_path)
+    src_directory = args.src_directory if args.src_directory != '' else f"../data/{res_augmented}"
+    df = get_df(src_directory)
     type_output = args.classification
     df_filtred = get_df_filtered(df, type_output)
     indexes_species = df_filtred.index
@@ -156,9 +156,9 @@ if __name__ == '__main__':
         for index in range(1, number_img):
             if int(number_img / 2) == index:
                 local_print("[+] 50%")
-            pill_masked_img, normalized_masked_img, masked_img, raw_img, mask = generate_img_without_bg(
-                specie_directory, index, type_img, size_img)
             file_path = f"{dest_path}/{label}/{specie}-{disease}-{index}.jpg"
+            pill_masked_img, normalized_masked_img, masked_img, raw_img, mask = generate_img_without_bg(
+                f"{src_directory}/{specie_index}", index, type_img, size_img)
             specie_index = f"{specie}_{disease}_{index}"
             data = dict()
             data['label'] = specie_index
