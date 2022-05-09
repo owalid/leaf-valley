@@ -18,7 +18,7 @@ from inspect import getsourcefile
 import os.path as path, sys
 current_dir = path.dirname(path.abspath(getsourcefile(lambda:0)))
 sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
-from utilities.utils import crop_resize_image, safe_open_w, get_df, get_canny_img, get_gabor_img, store_dataset, update_data_dict
+from utilities.utils import crop_resize_image, safe_open_w, get_df, get_canny_img, get_gabor_img, store_dataset, update_data_dict, bgrtogray
 from utilities.extract_features import get_pyfeats_features, get_lbp_histogram, get_hue_moment, get_haralick, get_hsv_histogram, get_lab_histogram, get_graycoprops
 from utilities.remove_background_functions import remove_bg
 
@@ -32,6 +32,18 @@ HEALTHY_NOT_HEALTHY = 'HEALTHY_NOT_HEALTHY'
 ONLY_HEALTHY = 'ONLY_HEALTHY'
 NOT_HEALTHY = 'NOT_HEALTHY'
 ALL = 'ALL'
+
+CV_NORMALIZE_TYPE = {
+    'NORM_INF': cv.NORM_INF,
+    'NORM_L1': cv.NORM_L1,
+    'NORM_L2': cv.NORM_L2,
+    'NORM_L2SQR': cv.NORM_L2SQR,
+    'NORM_HAMMING': cv.NORM_HAMMING,
+    'NORM_HAMMING2': cv.NORM_HAMMING2,
+    'NORM_TYPE_MASK': cv.NORM_TYPE_MASK,
+    'NORM_RELATIVE': cv.NORM_RELATIVE,
+    'NORM_MINMAX': cv.NORM_MINMAX
+}
 
 def local_print(msg):
     if VERBOSE:
@@ -68,10 +80,9 @@ def get_df_filtered(df, type_output):
         return pd.concat([df_others_specie, df_filtred])
 
 
-def generate_img_without_bg(specie_directory, img_number, type_img, size_img, cropped_img=False):
+def generate_img_without_bg(specie_directory, img_number, type_img, size_img, cropped_img, normalize_img, normalized_type):
     path_img = f"../data/augmentation/{specie_directory}/image ({img_number}).JPG"
     bgr_img, _, _ = pcv.readimage(path_img, mode='bgr')
-
     mask, new_img = remove_bg(bgr_img)
 
     if cropped_img == True:
@@ -79,23 +90,23 @@ def generate_img_without_bg(specie_directory, img_number, type_img, size_img, cr
 
     im = Image.fromarray(new_img)
     enhancer = ImageEnhance.Sharpness(im)
-    im_s_1 = enhancer.enhance(2)
-
+    pill_img = enhancer.enhance(2)
+    array_img = np.array(pill_img)
+    array_img = cv.resize(array_img, size_img)
+    
     if type_img == 'canny':
-        edges = pcv.canny_edge_detect(np.array(im_s_1))
-        normalized_masked_img = cv.normalize(
-            edges, edges, 0, 255, norm_type=cv.NORM_MINMAX, dtype=cv.CV_32F)
-        return Image.fromarray(edges), cv.resize(normalized_masked_img, size_img), edges
-    else:  # COLOR OR GRAY
-        array_img = np.array(im_s_1)
-        array_img = cv.resize(array_img, size_img)
-        normalized_masked_img = cv.normalize(
-            array_img, None, alpha=0, beta=1, norm_type=cv.NORM_MINMAX, dtype=cv.CV_32F)
-        if type_img == 'gray':
-            gray_img = cv.cvtColor(array_img, cv.COLOR_BGR2GRAY)
-            im_s_1 = Image.fromarray(gray_img)
+        edges = pcv.canny_edge_detect(array_img)
+        pill_img = Image.fromarray(edges)
+    elif type_img == 'gray':
+        gray_img = cv.cvtColor(array_img, cv.COLOR_BGR2GRAY)
+        pill_img = Image.fromarray(gray_img)
+    elif type_img == 'gabor':
+        gabor_img = get_gabor_img(array_img)
+        pill_img = Image.fromarray(gabor_img)
+    if normalize_img:
+        array_img = cv.normalize(array_img, None, alpha=0, beta=1, norm_type=normalized_type, dtype=cv.CV_32F)
 
-        return im_s_1, normalized_masked_img, array_img, bgr_img, mask
+    return pill_img, array_img, bgr_img, mask
 
 
 # MAIN
@@ -103,6 +114,10 @@ if __name__ == '__main__':
     parser = ap.ArgumentParser(formatter_class=RawTextHelpFormatter)
     parser.add_argument("-a", "--augmented", required=False, action='store_true', default=False, help='Use directory augmented')
     parser.add_argument("-src", "--src-directory", required=False, type=str, default='', help='Directory source who can find images. default (data/{augmented})')
+    parser.add_argument("-wi", "--write-img", required=False, action='store_true', default=False, help='Write images (png) in the new directory')
+    parser.add_argument("-crop", "--crop-img", required=False, action='store_true', default=False, help='Remove padding around leaf')
+    parser.add_argument("-nor", "--normalize-img", required=False, action='store_true', default=True, help='Normalize images, you can specify the normalization type with the option -nortype')
+    parser.add_argument("-nortype", "--normalize-type", required=False, type=str, default='NORM_MINMAX', help='Normalize images features with cv.normalize (Default: NORM_MINMAX) \nTypes: https://vovkos.github.io/doxyrest-showcase/opencv/sphinx_rtd_theme/enum_cv_NormTypes.html')
     parser.add_argument("-c", "--classification", required=False, type=str, default="HEALTHY_NOT_HEALTHY", help='Classification type: HEALTHY_NOT_HEALTHY(default), ONLY_HEALTHY, NOT_HEALTHY, ALL')
     parser.add_argument("-n", "--number-img", required=False, type=int, default=1000, help='Number of images to use per class to select maximum of all classes use -1. (default 1000)')
     parser.add_argument("-rt", "--result-type", required=False, type=str, default="GRAY", help='Type of result image for DP: GRAY, GABOR, CANNY, RGB. (default: GRAY)')
@@ -114,10 +129,16 @@ if __name__ == '__main__':
     print(args)
     
     random.seed(42)
+    normalize_type = args.normalize_type
+    normalize_type = 'NORM_MINMAX' if normalize_type not in CV_NORMALIZE_TYPE.keys() else normalize_type
+    
     res_augmented = 'augmentation' if args.augmented else 'no_augmentation'
     src_directory = os.path.join(args.src_directory, res_augmented) if args.src_directory != '' else f"data/{res_augmented}"
     df = get_df(src_directory)
     type_output = args.classification
+    write_img = args.write_img
+    crop_img = args.crop_img
+    normalize_img = args.normalize_img
     df_filtred = get_df_filtered(df, type_output)
     indexes_species = df_filtred.index
     if len(indexes_species) == 0:
@@ -151,6 +172,9 @@ if __name__ == '__main__':
     local_print(f"[+] size output images: {size_img}")
     local_print(f"[+] type image: {type_img}")
     local_print(f"[+] path: {dest_path}")
+    if normalize_img:
+        local_print(f"[+] Normalized type: cv.{normalize_type}")
+        
     if len(answers_type_features) > 0:
         local_print(f"[+] answers_type_features: {answers_type_features}")
     data = dict()
@@ -185,7 +209,7 @@ if __name__ == '__main__':
         for index in indexes:
             if len(indexes) // 2 == np.where(indexes == index):
                 local_print("[+] 50%")
-            pill_masked_img, normalized_masked_img, masked_img, raw_img, mask = generate_img_without_bg(specie_directory, index, type_img, size_img)
+            pill_masked_img, masked_img, raw_img, mask = generate_img_without_bg(specie_directory, index, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
             file_path = f"{dest_path}/{label}/{specie}-{disease}-{index}.jpg"
             specie_index = f"{specie}_{disease}_{index}"
             data = update_data_dict(data, 'labels', specie_index)
@@ -193,40 +217,36 @@ if __name__ == '__main__':
             
             # FEATURES DEEP LEARNING
             if 'rgb' in answers_type_features or len(answers_type_features) == 0:
-                data = update_data_dict(data, 'rgb_img',  normalized_masked_img)
+                data = update_data_dict(data, 'rgb_img',  masked_img)
             if 'gabor' in answers_type_features:
-                data = update_data_dict(data, 'gabor_img',  get_gabor_img(normalized_masked_img))
+                data = update_data_dict(data, 'gabor_img',  get_gabor_img(masked_img))
             if 'gray' in answers_type_features:
-                gray_img = cv.cvtColor(normalized_masked_img, cv.COLOR_BGR2GRAY)
-                data = update_data_dict(data, 'gray_img',  gray_img)
+                data = update_data_dict(data, 'gray_img',  bgrtogray(masked_img))
             if 'canny' in answers_type_features:
-                data = update_data_dict(data, 'canny_img',  get_canny_img(normalized_masked_img))
+                data = update_data_dict(data, 'canny_img',  get_canny_img(masked_img))
                 
             # FEATURES MACHINE LEARNING
             if 'graycoprops' in answers_type_features:
                 data = update_data_dict(data, 'graycoprops',  get_graycoprops(masked_img))
             if 'lpb_histogram' in answers_type_features:
-                data = update_data_dict(data, 'lpb_histogram',  get_lbp_histogram(normalized_masked_img))
+                data = update_data_dict(data, 'lpb_histogram',  get_lbp_histogram(masked_img))
             if 'hue_moment' in answers_type_features:
-                data = update_data_dict(data, 'hue_moment',  get_hue_moment(normalized_masked_img))
+                data = update_data_dict(data, 'hue_moment',  get_hue_moment(masked_img))
             if 'haralick' in answers_type_features:
-                data = update_data_dict(data, 'haralick',  get_haralick(normalized_masked_img))
+                data = update_data_dict(data, 'haralick',  get_haralick(masked_img))
             if 'histogram_hsv' in answers_type_features:
-                data = update_data_dict(data, 'histogram_hsv',  get_hsv_histogram(normalized_masked_img))
+                data = update_data_dict(data, 'histogram_hsv',  get_hsv_histogram(masked_img))
             if 'histogram_lab' in answers_type_features:
-                data = update_data_dict(data, 'histogram_lab',  get_lab_histogram(normalized_masked_img))
+                data = update_data_dict(data, 'histogram_lab',  get_lab_histogram(masked_img))
             if 'pyfeats' in answers_type_features:
                 pyfeats_features = get_pyfeats_features(raw_img, mask)
                 for feature in pyfeats_features:
                     data = update_data_dict(data, feature, pyfeats_features[feature])
                     
-            # series.append(pd.Series(data))
-            with safe_open_w(file_path) as f:
-                pill_masked_img.save(f)
+            if write_img:
+                with safe_open_w(file_path) as f:
+                    pill_masked_img.save(f)
         local_print(f"[+] End with {label}\n\n")
-    # df_features = pd.DataFrame(series)
-    # df_features['labels'] = df_features['labels'].astype("string")
-    # df_features['classes'] = df_features['classes'].astype("string")
     
     local_print(f"Number of images, {len(data)}")
     local_print(f"[+] Generate hdf5 file")
