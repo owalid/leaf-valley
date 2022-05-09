@@ -6,6 +6,7 @@ from itertools import repeat
 from tqdm import tqdm
 import random
 import os
+from tabnanny import verbose
 import cv2 as cv
 import numpy as np
 from plantcv import plantcv as pcv
@@ -81,7 +82,13 @@ def get_df_filtered(df, type_output):
             list(df_filtred.specie.values))]
         return pd.concat([df_others_specie, df_filtred])
 
+<<<<<<< HEAD
 def generate_img(path_img, type_img, size_img, cropped_img, normalize_img, normalized_type):
+=======
+
+def generate_img_without_bg(specie_directory, img_number, type_img, size_img, cropped_img=False):
+    path_img = f"../data/augmentation/{specie_directory}/image ({img_number}).JPG"
+>>>>>>> a22a70b (fix features_Storing)
     bgr_img, _, _ = pcv.readimage(path_img, mode='bgr')
     rgb_img = cv.cvtColor(bgr_img, cv.COLOR_BGR2RGB)
 
@@ -295,6 +302,7 @@ if __name__ == '__main__':
         
     if len(answers_type_features) > 0:
         local_print(f"[+] answers_type_features: {answers_type_features}")
+    data = dict()
     local_print("=====================================================")
     
     with concurrent.futures.ProcessPoolExecutor() as executor:
