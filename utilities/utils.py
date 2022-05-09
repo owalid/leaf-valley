@@ -18,6 +18,14 @@ def is_array(x):
   '''
   return isinstance(x, list) or isinstance(x, np.ndarray)
 
+def get_dataset(path):
+  '''
+    Get dataset from h5py file
+  '''
+  print(F"PATH: {path}")
+  hf = h5py.File(path, 'r')
+  return hf
+  
 def store_dataset(path, dict, verbose):
   '''
     Store dataset in h5py file
