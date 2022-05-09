@@ -4,6 +4,7 @@
 
 import random
 import os
+from tabnanny import verbose
 import cv2 as cv
 import joblib
 import numpy as np
@@ -67,8 +68,8 @@ def get_df_filtered(df, type_output):
         return pd.concat([df_others_specie, df_filtred])
 
 
-def generate_img_without_bg(src_directory, img_number, type_img, size_img, cropped_img=False):
-    path_img = f"{src_directory}/image ({img_number}).JPG"
+def generate_img_without_bg(specie_directory, img_number, type_img, size_img, cropped_img=False):
+    path_img = f"../data/augmentation/{specie_directory}/image ({img_number}).JPG"
     bgr_img, _, _ = pcv.readimage(path_img, mode='bgr')
 
     mask, new_img = remove_bg(bgr_img)
@@ -152,6 +153,7 @@ if __name__ == '__main__':
     local_print(f"[+] path: {dest_path}")
     if len(answers_type_features) > 0:
         local_print(f"[+] answers_type_features: {answers_type_features}")
+    data = dict()
     local_print("=====================================================")
     for specie_directory in indexes_species:
         current_df = df_filtred.loc[specie_directory]
@@ -183,52 +185,53 @@ if __name__ == '__main__':
         for index in indexes:
             if len(indexes) // 2 == np.where(indexes == index):
                 local_print("[+] 50%")
+            pill_masked_img, normalized_masked_img, masked_img, raw_img, mask = generate_img_without_bg(specie_directory, index, type_img, size_img)
             file_path = f"{dest_path}/{label}/{specie}-{disease}-{index}.jpg"
-            pill_masked_img, normalized_masked_img, masked_img, raw_img, mask = generate_img_without_bg(
-                f"{src_directory}/{specie_directory}", index, type_img, size_img)
             specie_index = f"{specie}_{disease}_{index}"
-            data = dict()
-            data['label'] = specie_index
-            data['class'] = label
+            data = update_data_dict(data, 'labels', specie_index)
+            data = update_data_dict(data, 'classes', disease)
             
-                
             # FEATURES DEEP LEARNING
             if 'rgb' in answers_type_features or len(answers_type_features) == 0:
-                data['rgb_img'].append(normalized_masked_img)
+                data = update_data_dict(data, 'rgb_img',  normalized_masked_img)
             if 'gabor' in answers_type_features:
-                data['gabor_img'].append(get_gabor_img(normalized_masked_img))
+                data = update_data_dict(data, 'gabor_img',  get_gabor_img(normalized_masked_img))
             if 'gray' in answers_type_features:
                 gray_img = cv.cvtColor(normalized_masked_img, cv.COLOR_BGR2GRAY)
-                data['gray_img'].append(gray_img)
+                data = update_data_dict(data, 'gray_img',  gray_img)
             if 'canny' in answers_type_features:
-                data['canny_img'].append(get_canny_img(normalized_masked_img))
+                data = update_data_dict(data, 'canny_img',  get_canny_img(normalized_masked_img))
                 
             # FEATURES MACHINE LEARNING
             if 'graycoprops' in answers_type_features:
-                data['graycoprops'] = get_graycoprops(masked_img)
+                data = update_data_dict(data, 'graycoprops',  get_graycoprops(masked_img))
             if 'lpb_histogram' in answers_type_features:
-                data['lpb_histogram'] = get_lbp_histogram(normalized_masked_img)
+                data = update_data_dict(data, 'lpb_histogram',  get_lbp_histogram(normalized_masked_img))
             if 'hue_moment' in answers_type_features:
-                data['hue_moment'] = get_hue_moment(normalized_masked_img)
+                data = update_data_dict(data, 'hue_moment',  get_hue_moment(normalized_masked_img))
             if 'haralick' in answers_type_features:
-                data['haralick'] = get_haralick(normalized_masked_img)
+                data = update_data_dict(data, 'haralick',  get_haralick(normalized_masked_img))
             if 'histogram_hsv' in answers_type_features:
-                data['histogram_hsv'] = get_hsv_histogram(normalized_masked_img)
+                data = update_data_dict(data, 'histogram_hsv',  get_hsv_histogram(normalized_masked_img))
             if 'histogram_lab' in answers_type_features:
-                data['histogram_lab'] = get_lab_histogram(normalized_masked_img)
+                data = update_data_dict(data, 'histogram_lab',  get_lab_histogram(normalized_masked_img))
             if 'pyfeats' in answers_type_features:
-                data.update(get_pyfeats_features(raw_img, mask))
+                pyfeats_features = get_pyfeats_features(raw_img, mask)
+                for feature in pyfeats_features:
+                    data = update_data_dict(data, feature, pyfeats_features[feature])
                     
-            series.append(pd.Series(data))
+            # series.append(pd.Series(data))
             with safe_open_w(file_path) as f:
                 pill_masked_img.save(f)
         local_print(f"[+] End with {label}\n\n")
-    df_features = pd.DataFrame(series)
-
-    local_print(f"Number of images, {len(df_features)}")
-    local_print(f"[+] Generate pickle")
-    prefix_data = 'all' if int(data_used) == -1 else str(data_used)
-    path_pickle = f"{dest_path}/export/data_{type_output.lower()}_{prefix_data}_{type_img}.pkl"
-    os.makedirs(os.path.dirname(path_pickle), exist_ok=True)
-    joblib.dump(df_features, path_pickle)
-    local_print(f"[+] pickle save at {path_pickle}")
+    # df_features = pd.DataFrame(series)
+    # df_features['labels'] = df_features['labels'].astype("string")
+    # df_features['classes'] = df_features['classes'].astype("string")
+    
+    local_print(f"Number of images, {len(data)}")
+    local_print(f"[+] Generate hdf5 file")
+    prefix_data = 'all' if int(data_used) == -1 else str(data_used - 1)
+    path_hdf = f"{dest_path}/export/data_{type_output.lower()}_{prefix_data}_{type_img}.h5"
+    os.makedirs(os.path.dirname(path_hdf), exist_ok=True)
+    store_dataset(path_hdf, data, VERBOSE)
+    local_print(f"[+] pickle save at {path_hdf}")
