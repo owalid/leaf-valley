@@ -30,7 +30,6 @@ def store_dataset(path, dict, verbose):
   if verbose:
     print("Saving dataset with: \n")
     
-
   # Saves labels
   for col in dict.keys():
     col_array = np.array(dict[col])
