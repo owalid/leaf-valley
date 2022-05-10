@@ -1,4 +1,5 @@
 import os
+import matplotlib.pyplot as plt
 import pandas as pd
 import cv2 as cv
 import numpy as np
@@ -43,9 +44,6 @@ def store_dataset(path, dict, verbose):
   for col in dict.keys():
     col_array = np.array(dict[col])
     shape_array = np.shape(col_array)
-    if len(shape_array) == 1:
-      col_array = col_array.reshape((-1, 1))
-      shape_array = np.shape(col_array)
     
     first_element = col_array[0]
     
@@ -74,7 +72,6 @@ def store_dataset(path, dict, verbose):
       
     # Create the dataset
     h.create_dataset(col, shape_array, col_type, data=col_array)
-  
 
 def replace_text(text, lst, rep=' '):
     '''
