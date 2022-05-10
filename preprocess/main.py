@@ -213,7 +213,7 @@ if __name__ == '__main__':
             pill_masked_img, masked_img, raw_img, mask = generate_img_without_bg(specie_directory, index, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
             file_path = f"{dest_path}/{label}/{specie}-{disease}-{index}.jpg"
             specie_index = f"{specie}_{disease}_{index}"
-            data = update_data_dict(data, 'labels', specie_index)
+            data = update_data_dict(data, 'labels', label)
             data = update_data_dict(data, 'classes', disease)
             
             # FEATURES DEEP LEARNING
