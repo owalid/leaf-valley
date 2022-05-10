@@ -102,7 +102,7 @@ if __name__ == '__main__':
     parser.add_argument("-n", "--number-img", required=False, type=int, default=1000, help='Number of images to use per class to select maximum of all classes use -1. (default 1000)')
     parser.add_argument("-rt", "--result-type", required=False, type=str, default="GRAY", help='Type of result image for DP: GRAY, GABOR, CANNY, RGB. (default: GRAY)')
     parser.add_argument("-dst", "--destination", required=False, type=str, default='', help='Path to save the data. (default: ../data/preprocess)')
-    parser.add_argument("-f", "--features", required=False, type=str, help='Features to extract (separate by ,)\nList of features:\nFor DP: rgb, gray, canny, gabor\nFor ML: graycoprops, lpb_histogram, hue_moment, haralick, histogram_hsv, histogram_lab, pyfeats')
+    parser.add_argument("-f", "--features", required=False, type=str, help='Features to extract separate by ","\nExample: -f "graycoprops, lpb_histogram, hue_moment" or -f=graycoprops,lpb_histogram,hue_moment\nList of features:\n   - For DP: rgb, gray, canny, gabor\n   - For ML: graycoprops, lpb_histogram, hue_moment, haralick, histogram_hsv, histogram_lab, pyfeats')
     parser.add_argument("-s", "--size", required=False, type=int, default=256, help='Size of images. (default 256x256)')
     parser.add_argument("-v", "--verbose", required=False, action='store_true', default=False, help='Verbose')
     args = parser.parse_args()
