@@ -25,7 +25,7 @@ class ConfusionMatrixCallback(CustomCallBack):
         print(cm.shape)
         con_mat_df = pd.DataFrame(cm, index=self.le.classes_, columns=self.le.classes_)
         print(con_mat_df)
-        figure = plt.figure(figsize=(8, 8))
+        figure = plt.figure(figsize=(15, 15))
         sns.heatmap(con_mat_df, annot=True,cmap=plt.cm.Blues)
         plt.tight_layout()
         plt.ylabel('True label')
