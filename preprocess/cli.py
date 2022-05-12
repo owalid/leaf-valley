@@ -185,17 +185,10 @@ if __name__ == '__main__':
             label = specie
         for index in range(1, number_img):
             if int(number_img / 2) == index:
-<<<<<<< HEAD
                 print("[+] 50%")
             pill_masked_img, normalized_masked_img, masked_img, raw_img, mask = generate_img_without_bg(
                 specie_directory, index, type_img, specie, healthy, size_img)
             file_path = f"{choose_final_path}/{label}/{specie}-{disease}-{index}.jpg"
-=======
-                local_print("[+] 50%")
-            file_path = f"{dest_path}/{label}/{specie}-{disease}-{index}.jpg"
-            pill_masked_img, normalized_masked_img, masked_img, raw_img, mask = generate_img_without_bg(
-                f"{src_directory}/{specie_index}", index, type_img, size_img)
->>>>>>> 6ce8853 (add storing datasets with h5py)
             specie_index = f"{specie}_{disease}_{index}"
             # df_features.loc[specie_index] = {}
             # df_features[specie_index] = {}
