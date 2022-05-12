@@ -7,6 +7,19 @@ from multiprocessing.pool import ThreadPool
 from plantcv import plantcv as pcv
 import h5py
 
+def chunks(arr, chunk_size):
+  '''
+    Split array into chunks
+    Args:
+      arr: array to split
+      chunk_size: size of chunks
+    Returns:
+      list of chunks
+  '''
+  return [arr[i:i+chunk_size] for i in range(0, len(arr), chunk_size)]
+  
+    
+  
 def update_data_dict(data_dict, key, value):
   if key not in data_dict:
     data_dict[key] = []
