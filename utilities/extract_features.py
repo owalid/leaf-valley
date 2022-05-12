@@ -9,8 +9,13 @@ import cv2 as cv
 import pyfeats as pf
 import mahotas
 from skimage.feature import local_binary_pattern, graycomatrix, graycoprops
-sys.path.append("../utilities")
-from utils import bgrtogray
+
+
+from inspect import getsourcefile
+import os.path as path, sys
+current_dir = path.dirname(path.abspath(getsourcefile(lambda:0)))
+sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
+from utilities.utils import bgrtogray
 
 def get_pyfeats_features(raw_bgr_img, mask):
     f = bgrtogray(raw_bgr_img)
