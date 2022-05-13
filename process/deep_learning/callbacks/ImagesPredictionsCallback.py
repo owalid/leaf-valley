@@ -35,12 +35,13 @@ class ImagesPredictionsCallback(CustomCallBack):
         test_true = self.le.inverse_transform(np.argmax(self.y_valid, axis=-1))
         
         index = 0
-        chunks_img = self.chunks(test_pred, 9)
+        chunks_img = self.chunks(test_pred, 6)
         figures_array = []
         for chunk_img in chunks_img:
-            figure = plt.figure(figsize=(12, 12))
+            figure = plt.figure(figsize=(7, 7))
             for i in range(len(chunk_img)):
-                plt.subplot(3, 3, i + 1, title=f"predicted: {test_pred[index]}\ntrue: {test_true[index]}")
+                plt.subplot(3, 2, i + 1, title=f"predicted: {test_pred[index]}\ntrue: {test_true[index]}")
+                plt.tight_layout()
                 plt.xticks([])
                 plt.yticks([])
                 plt.grid(False)

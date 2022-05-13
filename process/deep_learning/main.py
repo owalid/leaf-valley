@@ -11,9 +11,11 @@ from sklearn.model_selection import train_test_split
 import sys
 import numpy as np
 from callbacks.ConfusionMatrixCallback import ConfusionMatrixCallback
+from callbacks.ClassificationReportCallback import ClassificationReportCallback
 from callbacks.ImagesPredictionsCallback import ImagesPredictionsCallback
-from metrics import recall_m, precision_m, f1_m, auc_score
+from metrics import recall_m, precision_m, f1_m
 from sklearn import preprocessing
+from sklearn.metrics import average_precision_score
 sys.path.append('../../utilities')
 from utils import get_dataset
 import tensorflow as tf
@@ -108,7 +110,8 @@ def run_all_models(x_train, x_valid, y_train, y_valid, epochs=1):
                         # CUSTOM METRICS FILE: metrics.py
                         f1_m,
                         precision_m,
-                        recall_m
+                        recall_m,
+                        tf.keras.metrics.AUC()
                     ])
         current_model.fit(x_train, y_train, validation_data=(x_valid, y_valid), epochs=epochs, callbacks=callbacks)
         
@@ -160,6 +163,7 @@ if __name__ == '__main__':
     callbacks = [
         tensorboard_cb,
         ConfusionMatrixCallback(x_valid, y_valid, le, file_writer),
+        ClassificationReportCallback(x_valid, y_valid, le, file_writer),
         ImagesPredictionsCallback(x_valid, y_valid, le, file_writer)
     ]
     
@@ -168,15 +172,19 @@ if __name__ == '__main__':
                 loss=tf.keras.losses.categorical_crossentropy,
                 metrics=[
                     'accuracy',
-                    # 'categorical_accuracy',
-                    # 'sparse_categorical_accuracy',
-                    # 'sparse_top_k_categorical_accuracy',
-                    # 'auc',
+                    'mean_absolute_error',
+                    'categorical_accuracy',
+                    'categorical_crossentropy',
+                    tf.keras.metrics.AUC(),
+                    tf.keras.metrics.FalsePositives(),
+                    tf.keras.metrics.FalseNegatives(),
+                    tf.keras.metrics.TruePositives(),
+                    tf.keras.metrics.TrueNegatives(),
+                    
                     # CUSTOM METRICS FILE: metrics.py
                     f1_m,
                     precision_m,
                     recall_m
-                    # auc_score
                 ])
     initial_epochs = 1
     
