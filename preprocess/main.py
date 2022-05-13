@@ -2,6 +2,7 @@
   CLI used to preprocess the data and get features and classes.
 '''
 
+import random
 import os
 import cv2 as cv
 import joblib
@@ -100,19 +101,20 @@ def generate_img_without_bg(src_directory, img_number, type_img, size_img, cropp
 if __name__ == '__main__':
     parser = ap.ArgumentParser(formatter_class=RawTextHelpFormatter)
     parser.add_argument("-a", "--augmented", required=False, action='store_true', default=False, help='Use directory augmented')
-    parser.add_argument("-src", "--src-directory", required=False, type=str, default='', help='Directory source who can find images. default (../data/{augmented})')
+    parser.add_argument("-src", "--src-directory", required=False, type=str, default='', help='Directory source who can find images. default (data/{augmented})')
     parser.add_argument("-c", "--classification", required=False, type=str, default="HEALTHY_NOT_HEALTHY", help='Classification type: HEALTHY_NOT_HEALTHY(default), ONLY_HEALTHY, NOT_HEALTHY, ALL')
     parser.add_argument("-n", "--number-img", required=False, type=int, default=1000, help='Number of images to use per class to select maximum of all classes use -1. (default 1000)')
     parser.add_argument("-rt", "--result-type", required=False, type=str, default="GRAY", help='Type of result image for DP: GRAY, GABOR, CANNY, RGB. (default: GRAY)')
-    parser.add_argument("-dst", "--destination", required=False, type=str, default='', help='Path to save the data. (default: ../data/preprocess)')
-    parser.add_argument("-f", "--features", required=False, type=str, help='Features to extract separate by ","\nExample: -f "graycoprops, lpb_histogram, hue_moment" or -f=graycoprops,lpb_histogram,hue_moment\nList of features:\n   - For DP: rgb, gray, canny, gabor\n   - For ML: graycoprops, lpb_histogram, hue_moment, haralick, histogram_hsv, histogram_lab, pyfeats')
+    parser.add_argument("-dst", "--destination", required=False, type=str, default='', help='Path to save the data. (default: data/preprocess)')
+    parser.add_argument("-f", "--features", required=False, type=str, help='Features to extract separate by ","\nExample: -f=graycoprops,lpb_histogram,hue_moment\nList of features:\n   - For DP: rgb, gray, canny, gabor\n   - For ML: graycoprops, lpb_histogram, hue_moment, haralick, histogram_hsv, histogram_lab, pyfeats')
     parser.add_argument("-s", "--size", required=False, type=int, default=256, help='Size of images. (default 256x256)')
     parser.add_argument("-v", "--verbose", required=False, action='store_true', default=False, help='Verbose')
     args = parser.parse_args()
     print(args)
     
+    random.seed(42)
     res_augmented = 'augmentation' if args.augmented else 'no_augmentation'
-    src_directory = os.path.join(args.src_directory, res_augmented) if args.src_directory != '' else f"../data/{res_augmented}"
+    src_directory = os.path.join(args.src_directory, res_augmented) if args.src_directory != '' else f"data/{res_augmented}"
     df = get_df(src_directory)
     type_output = args.classification
     df_filtred = get_df_filtered(df, type_output)
@@ -122,8 +124,14 @@ if __name__ == '__main__':
         exit()
 
     data_used = args.number_img
-    type_img = args.result_type.lower()    
-    dest_path = args.destination if args.destination != '' else f'../data/preprocess/{type_output}/{res_augmented}'
+    type_img = args.result_type.lower()
+    
+    if args.destination == '' and args.src_directory != '':
+        dest_path = args.src_directory
+    elif args.destination != '':
+        dest_path = args.destination
+    else:
+        dest_path = f'data/preprocess/{type_output}/{res_augmented}'
 
     if not os.path.exists(dest_path): # Create a dest_path if not exist. 
         os.makedirs(dest_path)
@@ -151,22 +159,29 @@ if __name__ == '__main__':
         disease = current_df.disease
         specie = current_df.specie
 
-        current_data_used = data_used if not isinstance(
-            data_used, dict) else data_used['healthy' if healthy else 'not_healthy']
-        number_img = current_df.number_img if current_data_used == - \
-            1 or current_df.number_img < current_data_used else current_data_used
-        local_print(f"[+] index {specie_directory}")
-        local_print(f"[+] Start generate specie: {specie}")
-        local_print(f"[+] Number of images: {number_img}")
+        current_data_used = data_used if not isinstance(data_used, dict) else data_used['healthy' if healthy else 'not_healthy']
 
         if type_output == HEALTHY_NOT_HEALTHY:
             label = 'healthy' if healthy else 'not_healthy'
         elif type_output == NOT_HEALTHY:
             label = disease
+        elif type_output == ALL:
+            label = f"{specie}_{disease}"
         else:
             label = specie
-        for index in range(1, number_img):
-            if int(number_img / 2) == index:
+        
+        if current_data_used == -1 or current_df.number_img < current_data_used:
+            number_img = current_df.number_img
+            indexes = list(range(1, current_df.number_img+1))
+        else:
+            number_img = current_data_used
+            indexes = random.sample(list(range(1, current_df.number_img)), number_img) # Get alls indexes with random without repetition.
+        local_print(f"[+] index {specie_directory}")
+        local_print(f"[+] Start generate specie: {specie}")
+        local_print(f"[+] Number of images: {number_img}")
+        
+        for index in range(len(indexes)):
+            if len(indexes) // 2 == np.where(indexes == index):
                 local_print("[+] 50%")
             file_path = f"{dest_path}/{label}/{specie}-{disease}-{index}.jpg"
             pill_masked_img, normalized_masked_img, masked_img, raw_img, mask = generate_img_without_bg(
