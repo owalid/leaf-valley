@@ -3,11 +3,11 @@ import pandas as pd
 import seaborn as sns
 import io
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import classification_report
 import tensorflow as tf
 from .CustomCallBack import CustomCallBack
 
-class ConfusionMatrixCallback(CustomCallBack):
+class ClassificationReportCallback(CustomCallBack):
     def __init__(self, x_valid, y_valid, le, file_writer):
         super().__init__(x_valid, y_valid, le, file_writer)
         
@@ -16,24 +16,12 @@ class ConfusionMatrixCallback(CustomCallBack):
         test_pred = (self.model.predict(self.x_valid) > 0.5).astype("int32")
         test_pred = self.le.inverse_transform(np.argmax(test_pred, axis=-1))
         test_true = self.le.inverse_transform(np.argmax(self.y_valid, axis=-1))
-        print(test_pred.shape, test_true.shape)
-        print(test_pred[0:10])
-        print(test_true[0:10])
-        cm = confusion_matrix(test_true, test_pred)
-        print(self.le.classes_)
-        print(self.le.classes_.shape)
-        print(cm.shape)
-        con_mat_df = pd.DataFrame(cm, index=self.le.classes_, columns=self.le.classes_)
-        print(con_mat_df)
+        clf_report = classification_report(test_true, test_pred, target_names=self.le.classes_, output_dict=True)
         figure = plt.figure(figsize=(10, 10))
-        sns.heatmap(con_mat_df, annot=True,cmap=plt.cm.Blues)
-        plt.tight_layout()
-        plt.ylabel('True label')
-        plt.xlabel('Predicted label')
-        
+        sns.heatmap(pd.DataFrame(clf_report).iloc[:-1, :].T, annot=True)
+        plt.tight_layout()        
         buf = io.BytesIO()
         plt.savefig(buf, format='png')
-
         plt.close(figure)
         buf.seek(0)
         image = tf.image.decode_png(buf.getvalue(), channels=4)
@@ -41,6 +29,6 @@ class ConfusionMatrixCallback(CustomCallBack):
         
         # Log the confusion matrix as an image summary.
         with self.file_writer.as_default():
-            tf.summary.image("Confusion Matrix", image, step=epoch)
+            tf.summary.image("Classification report", image, step=epoch)
 
         
