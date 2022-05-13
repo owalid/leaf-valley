@@ -3,11 +3,12 @@
 ## Directories
 
 ```
-analysis/ -> Jupyter notebook
+analysis/
 data/ -> Data sources
   augmentation/ -> Data augmented
   no_augmentation/ -> Data not augmented
-preprocess/ -> Preprocess dataset
+preprocess/
+utilities/
 ```
 
 ## Preprocess dataset
