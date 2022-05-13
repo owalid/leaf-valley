@@ -22,7 +22,7 @@ import tensorflow as tf
 from tensorflow.keras import metrics
 import tensorflow.keras.layers as tfl
 import tensorflow.keras.backend as K
-from models import vgg_16
+from models import inception_v3
 
 
 def get_all_models(input_shape, num_classes):
@@ -119,9 +119,12 @@ def run_all_models(x_train, x_valid, y_train, y_valid, epochs=1):
     
 if __name__ == '__main__':
     parser = ap.ArgumentParser(formatter_class=RawTextHelpFormatter)
-    parser.add_argument("-path", "--path-dataset", required=False, type=str, default='../../data/deep_learning/export/data_all_20_gray.h5', help='Path of your dataset (h5 file)')
+    parser.add_argument("-path", "--path-dataset", required=False, type=str, default='../../data/deep_learning/export/data_all_200_gray.h5', help='Path of your dataset (h5 file)')
+    parser.add_argument("-lt", "--launch-tensorboard", required=False, action='store_true', default=False, help='Launch tensorboard')
     args = parser.parse_args()
     path_dataset = args.path_dataset
+    launch_tensorboard = args.launch_tensorboard
+    
     if path_dataset.split('.')[-1] != 'h5':
         print("Please provide a h5 file")
         exit(0)
@@ -132,13 +135,9 @@ if __name__ == '__main__':
     print(f"Dataset keys: {hf.keys()}")
     print(f"Dataset rgb shape: {hf['rgb_img'].shape}")
     
-    
-    
     img_size = (hf['rgb_img'].shape[1], hf['rgb_img'].shape[2], hf['rgb_img'].shape[3])
-    # print(f"img_size: {img_size}")
     classes = np.array(hf['classes']).astype(str)
     labels = np.array(hf['labels'])
-    # print("classes", classes)
     le = preprocessing.LabelEncoder()
     le.fit(classes)
     class_names = le.classes_
@@ -148,13 +147,13 @@ if __name__ == '__main__':
     print(encoded_y[0])
     x_train, x_valid, y_train, y_valid = train_test_split(images, encoded_y, test_size=0.4, shuffle=True)
     print(x_train.shape, y_train.shape)
-    # print(le.inverse_transform(encoded_y))
-    model = vgg_16(img_size, len(class_names))
+    model = inception_v3(img_size, len(class_names))
     
     # Analyze the results with tensorboard
     base_dir = '../../logs/tensorboard'
     os.system(f'rm -rf {base_dir}/*')
     logdir = base_dir + '/' + datetime.now().strftime("%Y%m%d-%H%M%S")
+    
     # Define the basic TensorBoard callback.
     tensorboard_cb = tf.keras.callbacks.TensorBoard(log_dir=logdir, write_graph=True, write_images=True, histogram_freq=1)
     
@@ -186,13 +185,13 @@ if __name__ == '__main__':
                     precision_m,
                     recall_m
                 ])
-    initial_epochs = 1
+    initial_epochs = 5
     
-    # %tensorboard --logdir ../logs/tensorbord/
     history = model.fit(x_train, y_train, validation_data=(x_valid, y_valid), epochs=initial_epochs, callbacks=callbacks)
 
-    print("run tensorboard")
-    os.system(f'tensorboard --logdir={logdir}')
+    if launch_tensorboard:
+        print("run tensorboard")
+        os.system(f'tensorboard --logdir={logdir}')
     
     print(f"Model trained for {initial_epochs} epochs")
     print(f"Model summary: {model.summary()}")

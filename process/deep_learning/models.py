@@ -112,7 +112,7 @@ def inception_v3(input_shape, num_classes):
     '''
     
     preprocess_input = tf.keras.applications.vgg16.preprocess_input
-    base_model = tf.keras.applications.inception_v3.InceptionV3(input_shape=input_shape, include_top=False, weights='imagenet')
+    base_model = tf.keras.applications.InceptionV3(input_shape=input_shape, include_top=False, weights='imagenet')
     base_model.trainable = False # freeze the base model by making it non trainable
     inputs = tf.keras.Input(shape=input_shape)
     x = inputs
