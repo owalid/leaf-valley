@@ -1,0 +1,5 @@
+scikit-image>=0.19.2
+opencv-python
+pyfeats
+mahotas
+plantcv
