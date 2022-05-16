@@ -244,7 +244,6 @@ if __name__ == '__main__':
         os.makedirs(dest_models)
         
     model_names = model_names.replace(' ', '').split(',') if model_names != '' else models_availaibles
-    print(model_names)
     model_names = [model_name.upper() for model_name in model_names]
     
     # Check if models correspond to base_models and not duplicated
@@ -291,7 +290,4 @@ if __name__ == '__main__':
     if launch_tensorboard:
         print("[+] Run tensorboard")
         os.system(f'tensorboard --logdir={dest_logs}')
-    
-    
-    
     
