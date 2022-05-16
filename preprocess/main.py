@@ -127,7 +127,7 @@ if __name__ == '__main__':
     type_img = args.result_type.lower()
     
     if args.destination == '' and args.src_directory != '':
-        dest_path = args.src_directory
+        dest_path = f"{args.src_directory}/preprocess/{res_augmented}"
     elif args.destination != '':
         dest_path = args.destination
     else:
