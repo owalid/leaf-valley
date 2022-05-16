@@ -189,13 +189,13 @@ if __name__ == '__main__':
         current_data_used = data_used if not isinstance(data_used, dict) else data_used['healthy' if healthy else 'not_healthy']
 
         if type_output == HEALTHY_NOT_HEALTHY:
-            label = 'healthy' if healthy else 'not_healthy'
+            class_name = 'healthy' if healthy else 'not_healthy'
         elif type_output == NOT_HEALTHY:
-            label = disease
+            class_name = disease
         elif type_output == ALL:
-            label = f"{specie}_{disease}"
+            class_name = f"{specie}_{disease}"
         else:
-            label = specie
+            class_name = specie
         
         if current_data_used == -1 or current_df.number_img <= current_data_used:
             number_img = current_df.number_img
@@ -211,10 +211,10 @@ if __name__ == '__main__':
             if len(indexes) // 2 == np.where(indexes == index):
                 local_print("[+] 50%")
             pill_masked_img, masked_img, raw_img, mask = generate_img_without_bg(specie_directory, index, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
-            file_path = f"{dest_path}/{label}/{specie}-{disease}-{index}.jpg"
+            file_path = f"{dest_path}/{class_name}/{specie}-{disease}-{index}.jpg"
             specie_index = f"{specie}_{disease}_{index}"
-            data = update_data_dict(data, 'labels', label)
-            data = update_data_dict(data, 'classes', disease)
+            # data = update_data_dict(data, 'labels', class_name)
+            data = update_data_dict(data, 'classes', class_name)
             
             # FEATURES DEEP LEARNING
             if 'rgb' in answers_type_features or len(answers_type_features) == 0:
@@ -249,11 +249,11 @@ if __name__ == '__main__':
             if write_img:
                 with safe_open_w(file_path) as f:
                     pill_masked_img.save(f)
-        local_print(f"[+] End with {label}\n\n")
+        local_print(f"[+] End with {class_name}\n\n")
     
     local_print(f"Number of images, {len(data)}")
     local_print(f"[+] Generate hdf5 file")
-    prefix_data = 'all' if int(data_used) == -1 else str(data_used - 1)
+    prefix_data = 'all' if int(data_used) == -1 else str(data_used)
     path_hdf = f"{dest_path}/export/data_{type_output.lower()}_{prefix_data}_{type_img}.h5"
     os.makedirs(os.path.dirname(path_hdf), exist_ok=True)
     store_dataset(path_hdf, data, VERBOSE)

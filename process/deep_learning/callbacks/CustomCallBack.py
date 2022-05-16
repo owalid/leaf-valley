@@ -1,5 +1,4 @@
 from abc import abstractclassmethod
-import numpy as np
 from tensorflow import keras
 
 
