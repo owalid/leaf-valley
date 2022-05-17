@@ -1,0 +1,8 @@
+pandas
+numpy
+flask
+flask-sqlalchemy
+flask_cors
+jsonify
+faker
+psycopg2
