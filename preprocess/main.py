@@ -170,7 +170,7 @@ if __name__ == '__main__':
         else:
             label = specie
         
-        if current_data_used == -1 or current_df.number_img < current_data_used:
+        if current_data_used == -1 or current_df.number_img <= current_data_used:
             number_img = current_df.number_img
             indexes = list(range(1, current_df.number_img+1))
         else:
