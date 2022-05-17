@@ -1,0 +1,31 @@
+version: '3'
+
+services:
+  api:
+    container_name: vic2api
+    restart: always
+    build:
+      context: ./api
+    volumes:
+      - ./api:/home/api
+    expose:
+      - 5000
+    ports:
+      - 5000:5000
+    command: python3 run.py
+
+  frontend:
+    container_name: vic2app
+    build:
+      context: ./client
+    volumes:
+      - ./client:/home/app
+      - vic2i_node_modules:/app/node_modules:cached
+    expose:
+      - 3000
+    ports:
+      - 3000:3000
+
+volumes:
+  vic2i_node_modules:
+    driver: local
