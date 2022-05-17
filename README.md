@@ -89,6 +89,15 @@ docker compose up
 
 # Web part
 
+## With docker
+
+```
+cd app
+docker compose up
+```
+
+## Manualy
+
 ### Start api
 ```
 cd app/api
