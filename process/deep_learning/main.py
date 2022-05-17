@@ -220,7 +220,6 @@ if __name__ == '__main__':
     dest_logs = args.dest_logs 
     VERBOSE = args.verbose
     
-    print(path_dataset)
     
     if not os.path.exists(path_dataset):
         print("[-] File does not exist")
