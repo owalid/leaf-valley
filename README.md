@@ -39,3 +39,18 @@ optional arguments:
   -s SIZE, --size SIZE  Size of images. (default 256x256)
   -v, --verbose         Verbose
 ```
+
+# Web part
+
+### Start api
+```
+cd app/api
+python run.py
+```
+
+### Start client
+```
+cd app/client/
+yarn # install dependencies
+yarn dev
+```

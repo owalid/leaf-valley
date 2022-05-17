@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "preinstall": "node tools/preinstall.js",
     "dev": "nuxt",
     "build": "nuxt build",
     "start": "nuxt start",
