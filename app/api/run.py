@@ -21,7 +21,6 @@ def create_app(test_config=None):
     from routes import predict_bp
 
     # why blueprints http://flask.pocoo.org/docs/1.0/blueprints/
-    app.register_blueprint(analysis_bp.mod)
     app.register_blueprint(predict_bp.mod)
 
     return app

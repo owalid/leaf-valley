@@ -1,7 +1,9 @@
+from statistics import mode
 from flask import Blueprint, jsonify
+from flask import request
 from utils.mixins import create_response, serialize_list
 from controllers.prediction import PredictionController
-
+import os
 mod = Blueprint('predict_routes', __name__, url_prefix='/api/models')
 
 @mod.route('/')
@@ -10,4 +12,13 @@ def get_models():
 
 @mod.route('/predict', methods=[ 'POST' ])
 def get_prediction():
-    return PredictionController.predict()
+    data = request.get_json()
+    if data:
+        img = data.get('img')
+        model_name = data.get('model_name')
+
+        if img and model_name:
+            return PredictionController.predict(img, model_name)
+        return create_response(data={'error': 'Incorrect body'}, status=500)
+    else:
+        return create_response(data={'error': 'Incorrect body'}, status=500)
