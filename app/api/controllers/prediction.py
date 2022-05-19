@@ -25,8 +25,7 @@ class PredictionController:
         model_exist = os.path.exists(model_path)
         
         if model_exist:
-            if 'model_name' in models:
-                models[model_name] = keras.models.load_model(model_path)
+            models[model_name] = keras.models.load_model(model_path)
 
             model = models[model_name]
             base64_decoded = base64.b64decode(b64img)
