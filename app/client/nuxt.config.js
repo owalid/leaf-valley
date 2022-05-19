@@ -22,7 +22,7 @@ export default {
 
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
   plugins: [
-    '~/plugins/client/vuetify.client'
+    '~/plugins/vuetify'
   ],
 
   // Auto import components: https://go.nuxtjs.dev/config-components
@@ -71,7 +71,9 @@ export default {
 
   // Vuetify module configuration: https://go.nuxtjs.dev/config-vuetify
   vuetify: {
+    treeShake: true,
     customVariables: ['~/assets/variables.scss'],
+    defaultAssets: false,
     theme: {
       dark: true,
       themes: {
@@ -90,17 +92,13 @@ export default {
 
   // Build Configuration: https://go.nuxtjs.dev/config-build
   build: {
-    extend (config, ctx) {
-      if (!ctx.isServer) {
-        config.node = {
-          fs: 'empty'
-        }
-      }
-    },
     transpile: [/^vuetify/],
     extractCSS: true,
     standalone: true,
     ignoreOrder: false,
+    filenames: {
+      chunk: ({ isDev }) => (isDev ? '[name].js' : '[id].[contenthash].js')
+    },
     html: {
       minify: {
         collapseBooleanAttributes: true,
@@ -120,17 +118,32 @@ export default {
       splitChunks: {
         chunks: 'all',
         automaticNameDelimiter: '.',
-        name: 'vic-2-i',
-        maxSize : 646000,
+        name: 'vic2i',
+        minSize: 20000,
+        minChunks: 1,
+        maxAsyncRequests: 30,
+        maxInitialRequests: 30,
+        enforceSizeThreshold: 50000,
         cacheGroups: {
           styles: {
             name: 'styles',
             test: /\.(css|vue)$/,
             chunks: 'all',
             enforce: true
-          }
+          },
+          defaultVendors: {
+            test: /[\\/]node_modules[\\/]/,
+            priority: -10,
+            reuseExistingChunk: true,
+          },
+          default: {
+            minChunks: 2,
+            priority: -20,
+            reuseExistingChunk: true,
+          },
         }
       }
-    }
+    },
+    extend (config, ctx) {},
   }
 }

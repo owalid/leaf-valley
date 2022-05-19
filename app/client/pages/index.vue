@@ -4,6 +4,7 @@
       <v-col>
         <v-select
           v-model="modelSelected"
+          :disabled="processingPrediction"
           label="Select a model"
           :items="models"
         />
@@ -15,51 +16,32 @@
           label="Upload a file(s) (maximum 5)"
           accept="image/*"
           placeholder="No file chosen"
+          :disabled="processingPrediction"
           @change="onChangeFileInput"
         />
       </v-col>
       <v-col>
         <v-btn
+          :disabled="processingPrediction"
           @click="getPredictions"
         >
           Predict
         </v-btn>
       </v-col>
     </v-row>
-    <v-row>
-      <!-- <div v-for="result in results" :key="result.indexPayload">
-        
-      </div> -->
-      <div v-if="rawFiles" class="d-flex align-items-center justify-space-around">
-          <v-img width="20%" height="20%" :src="b64Files[0]" />
-
-          <v-progress-linear
-            indeterminate
-            color="green darken-2"
-          ></v-progress-linear>
-
-          <v-img width="20%" height="20%" :src="b64Files[0]" />
-      </div>
-      <!-- <v-row v-if="rawFiles" align="center">
-        <v-col>
-        </v-col>
-        <v-col cols="6">
-          <v-progress-linear
-            indeterminate
-            color="green darken-2"
-          ></v-progress-linear>
-        </v-col>
-        <v-col>
-        </v-col>
-      </v-row> -->
+    <v-row v-for="result in results" :key="result.indexPayload">
+      <render-prediction-result :result="result" />
     </v-row>
   </v-container>
 </template>
 
 <script>
+import RenderPredictionResult from '~/components/RenderPredictionResult';
+
 export default {
   name: 'IndexPage',
-  async asyncData({$axios}) {
+  components: { RenderPredictionResult },
+  async asyncData({ $axios }) {
     const res = await $axios.get('/models/')
     const {result} = res.data
     return {
@@ -69,7 +51,7 @@ export default {
   data() {
     return {
       modelSelected: null,
-      rawFiles: null,
+      rawFiles: [],
       b64Files: null,
       models: {},
       results: [],
@@ -77,30 +59,27 @@ export default {
     };
   },
   computed: {
-    shouldDisableForm() {
-      return !this.processingPrediction
-    },
     payloads() {
       const result = [];
 
       this.b64Files.forEach(b64file => {
-        result.push({ model: this.modelSelected, file: b64file })
+        result.push({ model_name: this.modelSelected, img: b64file })
       });
       return result;
     }
   },
   methods: {
-    onChangeFileInput(newFiles) {
+    async onChangeFileInput(newFiles) {
+      newFiles = newFiles.slice(0, 5);
       const vm = this;
       this.b64Files = [];
-      newFiles.forEach(async (file) => {
+      await Promise.all(newFiles.map(async (file) => {
         const b64File = await vm.toBase64(file);
-        // this.b64Files.push(b64File.split(',')[1]);
-        this.b64Files.push(b64File);
-      });
+        this.b64Files.push(b64File.split(',')[1]);
+      }));
     },
 
-  // transform files to base64
+  // Transform files to base64
   toBase64(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -111,22 +90,40 @@ export default {
   }, 
   async sendPostAndAddToResults(payload, indexPayload) {
     try {
-      const request = await this.$axios.post('/predict/', payload);
+      this.results.push({ indexPayload, source_img: payload.img });
+      // Todo delete this
+      const randomNumber = Math.floor(Math.random() * (3000 - 200 + 1) + 200)
+      const waitFor = delay => new Promise(resolve => setTimeout(resolve, delay));
+      await waitFor(randomNumber);
+      // Todo end
+      const request = await this.$axios.post('/models/predict', payload);
+
+
       const { prediction } = request.data;
-      this.results.push({ ...prediction, indexPayload });
-      this.results = this.results.sort((a, b) => a.indexPayload - b.indexPayload);
+      this.results.forEach((result, indexResult) => {
+        if (result.indexPayload === indexPayload) {
+          this.results[indexResult] = { ...this.results[indexResult], ...prediction };
+        }
+      })
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error(error);
+      this.results.forEach((result, indexResult) => {
+        if (result.indexPayload === indexPayload) {
+          const {result} = error.response.data;
+          this.results[indexResult] = { ...this.results[indexResult], error: result };
+        }
+      })
+    } finally { // We sort because promises are async and its exucted in parallel
+      this.results.sort((a, b) => a.indexPayload - b.indexPayload);
     }
   },
   async getPredictions() {
-      const promises = [];
-
-      this.payloads.forEach((payload, indexPayload) => {
-        promises.push(this.sendPostAndAddToResults(payload, indexPayload));
-      });
+      this.results = [];
       this.processingPrediction = true;
-      await Promise.all(promises);
+
+      // Post to server each images in parallel
+      await Promise.all(this.payloads.map((payload, indexPayload) => this.sendPostAndAddToResults(payload, indexPayload)));
       this.processingPrediction = false;
     }
   }
@@ -138,4 +135,6 @@ export default {
   border-radius: 5px;
   width: 25%;
 }
+
+
 </style>
