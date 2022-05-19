@@ -91,11 +91,6 @@ export default {
   async sendPostAndAddToResults(payload, indexPayload) {
     try {
       this.results.push({ indexPayload, source_img: payload.img });
-      // Todo delete this
-      const randomNumber = Math.floor(Math.random() * (3000 - 200 + 1) + 200)
-      const waitFor = delay => new Promise(resolve => setTimeout(resolve, delay));
-      await waitFor(randomNumber);
-      // Todo end
       const request = await this.$axios.post('/models/predict', payload);
 
 
