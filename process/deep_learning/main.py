@@ -173,6 +173,9 @@ def extract_features(hf):
     for key in hf.keys():
         if key != 'classes':
             local_print(f"[+] Add {key} feature in X.")
+            if len(np.array(hf[key]).shape) != 4:
+                print(f"[-] Feature {key} have not 4 dim")
+                exit(6)
             if x is None:
                 x = np.array(hf[key])
             else:
@@ -200,6 +203,7 @@ if __name__ == '__main__':
     models_availaibles = list(base_models.keys())
     parser = ap.ArgumentParser(formatter_class=RawTextHelpFormatter)
     parser.add_argument("-p", "--path-dataset", required=False, type=str, default='data/deep_learning/export/data_all_20_gray.h5', help='Path of your dataset (h5 file)')
+    parser.add_argument("-lab", "--lab-process", required=False, action='store_true', default=False, help='Lab process.')
     parser.add_argument("-lt", "--launch-tensorboard", required=False, action='store_true', default=False, help='Launch tensorboard after fitting')
     parser.add_argument("-b", "--batch-size", required=False, type=int, default=32, help='Batch size')
     parser.add_argument("-e", "--epochs", required=False, type=int, default=50, help='Epoch')
@@ -217,7 +221,8 @@ if __name__ == '__main__':
     model_names = args.models
     should_save_model = args.save_model
     dest_models = args.dest_models
-    dest_logs = args.dest_logs 
+    dest_logs = args.dest_logs
+    lab_process = args.lab_process
     VERBOSE = args.verbose
     
     
@@ -263,15 +268,18 @@ if __name__ == '__main__':
         exit(4)
     
     X, y = extract_features(hf)
+    local_print(f"[+] X shape: {X.shape}")
+    local_print(f"[+] y shape: {y.shape}")
     
     if X.shape[0] == 0 or y.shape[0] == 0:
         print("[-] Dataset is empty, please check your dataset")
         exit(5)
 
-    local_print(f"[+] X shape: {X.shape}")
-    local_print(f"[+] y shape: {y.shape}")
+    if len(X.shape) != 4:
+        print("[-] Dataset is not in 4D")
+        exit(6)
     
-    input_shape = (X.shape[1], X.shape[2], X.shape[3])
+    input_shape = tuple(X.shape[1:])
     local_print(f"[+] Input shape: {input_shape}")
     y, le, class_names = encode_labels(y)
     num_classes = len(class_names)
