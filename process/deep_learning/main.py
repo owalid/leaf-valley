@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 import sys
 import numpy as np
 from sklearn import preprocessing
-from custom_models import classic_cnn, alexnet
+from custom_models import classic_cnn, alexnet, lab_process
 from metrics import recall_m, precision_m, f1_m
 
 # Tensorflow
@@ -74,6 +74,10 @@ base_models = {
     'XCEPTION': {
         'base': tf.keras.applications.Xception,
         'preprocess_input': tf.keras.applications.xception.preprocess_input
+    },
+    'LAB_PROCESS': {
+        'base': lab_process,
+        'preprocess_input': None
     }
 }
 
@@ -105,7 +109,7 @@ def run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num
     keras_verbose = 1 if VERBOSE else 0
     for model_name in model_names:
         if base_models[model_name]['preprocess_input'] is None: # if is not pretrained model
-            current_model = base_models['base'](input_shape, num_classes)
+            current_model = base_models[model_name]['base'](input_shape, num_classes)
         else:
             current_model = get_model(input_shape, num_classes, model_name)  # get pretrained model
         local_print("==========================================================")
@@ -203,7 +207,6 @@ if __name__ == '__main__':
     models_availaibles = list(base_models.keys())
     parser = ap.ArgumentParser(formatter_class=RawTextHelpFormatter)
     parser.add_argument("-p", "--path-dataset", required=False, type=str, default='data/deep_learning/export/data_all_20_gray.h5', help='Path of your dataset (h5 file)')
-    parser.add_argument("-lab", "--lab-process", required=False, action='store_true', default=False, help='Lab process.')
     parser.add_argument("-lt", "--launch-tensorboard", required=False, action='store_true', default=False, help='Launch tensorboard after fitting')
     parser.add_argument("-b", "--batch-size", required=False, type=int, default=32, help='Batch size')
     parser.add_argument("-e", "--epochs", required=False, type=int, default=50, help='Epoch')
