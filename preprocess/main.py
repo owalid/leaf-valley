@@ -19,7 +19,7 @@ import os.path as path, sys
 current_dir = path.dirname(path.abspath(getsourcefile(lambda:0)))
 sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
 from utilities.utils import crop_resize_image, safe_open_w, get_df, get_canny_img, get_gabor_img, store_dataset, update_data_dict, bgrtogray
-from utilities.extract_features import get_pyfeats_features, get_lpb_histogram, get_hue_moment, get_haralick, get_hsv_histogram, get_lab_histogram, get_graycoprops
+from utilities.extract_features import get_pyfeats_features, get_lpb_histogram, get_hue_moment, get_haralick, get_hsv_histogram, get_lab_histogram, get_graycoprops, get_lab_img
 from utilities.remove_background_functions import remove_bg
 
 pcv.params.debug = ''
@@ -225,6 +225,8 @@ if __name__ == '__main__':
                 data = update_data_dict(data, 'gray_img',  bgrtogray(masked_img))
             if 'canny' in answers_type_features:
                 data = update_data_dict(data, 'canny_img',  get_canny_img(masked_img))
+            if 'lab' in answers_type_features:
+                data = update_data_dict(data, 'lab',  get_lab_img(masked_img))
                 
             # FEATURES MACHINE LEARNING
             if 'graycoprops' in answers_type_features:
