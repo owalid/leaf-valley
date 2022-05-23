@@ -19,7 +19,7 @@ import os.path as path, sys
 current_dir = path.dirname(path.abspath(getsourcefile(lambda:0)))
 sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
 from utilities.utils import crop_resize_image, safe_open_w, get_df, get_canny_img, get_gabor_img, store_dataset, update_data_dict, bgrtogray
-from utilities.extract_features import get_pyfeats_features, get_lbp_histogram, get_hue_moment, get_haralick, get_hsv_histogram, get_lab_histogram, get_graycoprops
+from utilities.extract_features import get_pyfeats_features, get_lpb_histogram, get_hue_moment, get_haralick, get_hsv_histogram, get_lab_histogram, get_graycoprops
 from utilities.remove_background_functions import remove_bg
 
 pcv.params.debug = ''
@@ -82,7 +82,7 @@ def get_df_filtered(df, type_output):
 
 
 def generate_img_without_bg(specie_directory, img_number, type_img, size_img, cropped_img, normalize_img, normalized_type):
-    path_img = f"../data/augmentation/{specie_directory}/image ({img_number}).JPG"
+    path_img = f"data/augmentation/{specie_directory}/image ({img_number}).JPG"
     bgr_img, _, _ = pcv.readimage(path_img, mode='bgr')
     mask, new_img = remove_bg(bgr_img)
 
@@ -230,7 +230,7 @@ if __name__ == '__main__':
             if 'graycoprops' in answers_type_features:
                 data = update_data_dict(data, 'graycoprops',  get_graycoprops(masked_img))
             if 'lpb_histogram' in answers_type_features:
-                data = update_data_dict(data, 'lpb_histogram',  get_lbp_histogram(masked_img))
+                data = update_data_dict(data, 'lpb_histogram',  get_lpb_histogram(masked_img))
             if 'hue_moment' in answers_type_features:
                 data = update_data_dict(data, 'hue_moment',  get_hue_moment(masked_img))
             if 'haralick' in answers_type_features:

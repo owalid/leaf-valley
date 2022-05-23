@@ -34,14 +34,16 @@ def store_dataset(path, dict, verbose):
   for col in dict.keys():
     col_array = np.array(dict[col])
     shape_array = np.shape(col_array)
+
     if len(shape_array) == 1:
       col_array = col_array.reshape((-1, 1))
       shape_array = np.shape(col_array)
     
     first_element = col_array[0]
+    
     while is_array(first_element):  # If array, keep going
       first_element = first_element[0]
-      
+
     # Select the correct type for h5py file
     if type(first_element) is float or type(first_element) is np.float64 or type(first_element) is np.float32: # If float
       col_type = h5py.h5t.IEEE_F32BE
@@ -56,10 +58,12 @@ def store_dataset(path, dict, verbose):
     elif type(first_element) is np.str_ or type(first_element) is str: # If string or np.str
       col_type = h5py.string_dtype('utf-8')
       col_type_str = "h5py.string_dtype('utf-8')"
-    col_array = np.array(col_array, dtype=col_type)
-    
+      
     if verbose:
       print(f"[+] Column: {col} - Type: {col_type_str} - Shape: {shape_array}")
+    
+    col_array = np.array(col_array, dtype=col_type)
+    
 
     # Create the dataset
     h.create_dataset(col, shape_array, col_type, data=col_array)
@@ -178,7 +182,7 @@ def kmean_img(img, k_n):
     return res.reshape((img.shape))
 
 
-def get_df(path='../../data/augmentation'):
+def get_df(path='data/augmentation'):
     '''
       Get dataframe from path of datasets
       path: path of datasets

@@ -353,7 +353,7 @@ def get_pyfeats_features(raw_bgr_img, mask):
     return result
 
 
-def get_lbp_histogram(img):
+def get_lpb_histogram(img):
     '''
         Returns the LBP histogram of the given img.
     '''
@@ -362,13 +362,11 @@ def get_lbp_histogram(img):
     img = bgrtogray(img)
     lbp = local_binary_pattern(img, n_points, radius, method='uniform')
 
-    n_bins = int(lbp.max() + 1)
     (hist, _) = np.histogram(lbp.ravel(),
-                             bins=n_bins,
-                             range=(0, n_bins))
+                             bins=10)
 
     # normalize the histogram
-    hist = hist.astype("float")
+    hist = hist.astype(np.float)
     hist /= (hist.sum() + 1e-7)
     return hist
 
