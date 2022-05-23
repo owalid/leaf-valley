@@ -408,6 +408,12 @@ def get_lab_histogram(img):
     cv.normalize(hist, hist)
     return hist.flatten()
 
+def get_lab_img(img):
+    '''
+        Get the lab channels of an img.
+    '''
+    return cv.cvtColor(img, cv.COLOR_RGB2LAB)
+
 def get_graycoprops(img):
     img = bgrtogray(img)
 
