@@ -225,7 +225,6 @@ if __name__ == '__main__':
     should_save_model = args.save_model
     dest_models = args.dest_models
     dest_logs = args.dest_logs
-    lab_process = args.lab_process
     VERBOSE = args.verbose
     
     
