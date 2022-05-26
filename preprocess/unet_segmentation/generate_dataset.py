@@ -5,8 +5,12 @@ from matplotlib import pyplot as plt
 import os
 import sys
 
-sys.path.append("/Users/agritech/vic-2_i/utilities")
-from utils import get_df
+from inspect import getsourcefile
+import os.path as path, sys
+current_dir = path.dirname(path.abspath(getsourcefile(lambda:0)))
+sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
+sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
+from utilities.utils import get_df
 
 def remove_noise(gray, num):
   Y, X = gray.shape
@@ -82,6 +86,7 @@ if __name__ == '__main__':
 
     if not os.path.exists(DEST_DATASET_PATH):
         os.makedirs(DEST_DATASET_PATH)
+        print("[+] create dataset folder for unet segmentation")
 
     df = get_df('./data/no_augmentation')
     indexes_species = df.index
@@ -89,8 +94,8 @@ if __name__ == '__main__':
     for specie in range(len(indexes_species)):
             current_df = df.loc[indexes_species[specie]]
             if current_df.specie == 'corn' and current_df.healthy:
-                for index in range(1, 300):
-                        im_path = f"/Users/agritech/vic-2_i/data/no_augmentation/{indexes_species[specie]}/image ({index}).JPG"
+                for index in range(1, 15):
+                        im_path = f"data/no_augmentation/{indexes_species[specie]}/image ({index}).JPG"
                         ret = generate_img_without_bg(im_path)
 
                         if mask is not None:
@@ -99,3 +104,4 @@ if __name__ == '__main__':
                                 cv.imwrite(f'{DEST_DATASET_PATH}/mask/{i}.png', mask*255)
                                 cv.imwrite(f'{DEST_DATASET_PATH}/rgb/{i}.png', rgb_img)
                                 i += 1
+    print("[+] dataset generated")

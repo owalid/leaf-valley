@@ -14,3 +14,7 @@ rm data/*.zip
 # Install dependencies
 echo "Install python dependencies"
 pip install -r requirements.txt
+
+# Create dataset for unet segmentation
+echo "Create dataset for unet segmentation"
+python preprocess/unet_segmentation/generate_dataset.py
