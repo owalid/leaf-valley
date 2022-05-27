@@ -7,7 +7,7 @@ from pathlib import Path
 import imghdr
 
 VERBOSE = False
-DATASET_PATH = 'data/unet_dataset'
+DATASET_PATH = 'data/dataset_for_segmentation'
 
 
 def local_print(msg):

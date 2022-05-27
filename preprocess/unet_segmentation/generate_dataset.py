@@ -8,7 +8,7 @@ import sys
 from inspect import getsourcefile
 import os.path as path, sys
 current_dir = path.dirname(path.abspath(getsourcefile(lambda:0)))
-sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
+current_dir = current_dir[:current_dir.rfind(path.sep)]
 sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
 from utilities.utils import get_df
 
@@ -82,26 +82,32 @@ def generate_img_without_bg(path_img):
 if __name__ == '__main__':
     DATA_PATH = 'data'
     SOURCE_DATASET_PATH = 'data/no_augmentation'
-    DEST_DATASET_PATH = 'data/segmented_dataset'
+    DEST_DATASET_PATH = 'data/dataset_for_segmentation'
 
     if not os.path.exists(DEST_DATASET_PATH):
         os.makedirs(DEST_DATASET_PATH)
         print("[+] create dataset folder for unet segmentation")
+        
+    path_mask = os.path.join(DEST_DATASET_PATH, "mask")
+    if not os.path.exists(path_mask):
+        os.makedirs(path_mask)
+        
+    path_rgb = os.path.join(DEST_DATASET_PATH, "rgb")
+    if not os.path.exists(path_rgb):
+        os.makedirs(path_rgb)
 
-    df = get_df('./data/no_augmentation')
+    df = get_df(SOURCE_DATASET_PATH)
     indexes_species = df.index
     i = 0
+    
     for specie in range(len(indexes_species)):
             current_df = df.loc[indexes_species[specie]]
-            if current_df.specie == 'corn' and current_df.healthy:
-                for index in range(1, 15):
+            if current_df.specie != 'corn' and current_df.healthy:
+                for index in range(1, 50):
                         im_path = f"data/no_augmentation/{indexes_species[specie]}/image ({index}).JPG"
-                        ret = generate_img_without_bg(im_path)
-
-                        if mask is not None:
-                                mask, rgb_img = ret
-                                mask.dtype = 'uint8'
-                                cv.imwrite(f'{DEST_DATASET_PATH}/mask/{i}.png', mask*255)
-                                cv.imwrite(f'{DEST_DATASET_PATH}/rgb/{i}.png', rgb_img)
-                                i += 1
-    print("[+] dataset generated")
+                        mask, rgb_img = generate_img_without_bg(im_path)
+                        mask.dtype = 'uint8'
+                        cv.imwrite(f'{DEST_DATASET_PATH}/mask/{i}.png', mask*255)
+                        cv.imwrite(f'{DEST_DATASET_PATH}/rgb/{i}.png', rgb_img)
+                        i += 1
+    print(f"[+] Dataset generated in {DEST_DATASET_PATH}")
