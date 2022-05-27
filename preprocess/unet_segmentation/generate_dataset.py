@@ -21,9 +21,6 @@ def remove_noise(gray, num):
       for j in range(X)] for i in range(Y)]
   result = np.array(nearest_neigbours, dtype=np.uint8)
   return result
-  
-def blur_img(img, k):
-  return cv.blur(img.copy(), k)
 
 def kmean(img, k_n):
   Z = img.reshape((-1,3))
