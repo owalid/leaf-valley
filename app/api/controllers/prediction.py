@@ -1,4 +1,5 @@
 from itertools import chain
+import cv2 as cv
 import os
 import base64
 from PIL import Image
@@ -7,8 +8,18 @@ import numpy as np
 import io
 from utils.mixins import create_response, serialize_list
 from tensorflow import keras
+import sys
+
+from inspect import getsourcefile
+import os.path as path, sys
+current_dir = path.dirname(path.abspath(getsourcefile(lambda:0)))
+current_dir = current_dir[:current_dir.rfind(path.sep)]
+current_dir = current_dir[:current_dir.rfind(path.sep)]
+sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
+from utilities.remove_background_functions import remove_bg
 
 global models
+models = {}
 
 class PredictionController:
     def get_models():
@@ -21,6 +32,7 @@ class PredictionController:
     
 
     def predict(b64img, model_name):
+        print(model_name)
         model_path = f'../../data/models_saved/{model_name}.h5'
         model_exist = os.path.exists(model_path)
         
@@ -28,17 +40,20 @@ class PredictionController:
             models[model_name] = keras.models.load_model(model_path)
 
             model = models[model_name]
+            print(type(model))
             base64_decoded = base64.b64decode(b64img)
             image = Image.open(io.BytesIO(base64_decoded))
             image_np = np.array(image)
+            print(image_np[0])
             im_withoutbg_b64 = ''
             
             # call remove background function
-            '''
-                im_arr = remove_bg(img_np) # TODO uncomment this when remove_bg function is ready
-                im_bytes = im_arr.tobytes()
-                im_withoutbg_b64 = base64.b64encode(im_bytes)
-            '''
+            _, new_img = remove_bg(image_np)
+            # jpg_img = cv.imencode('.jpg', im_arr)
+            # im_withoutbg_b64 = base64.b64encode(jpg_img[1]).decode('utf-8')
+            
+            im_bytes = new_img.tobytes()
+            im_withoutbg_b64 = base64.b64encode(im_bytes).decode('utf-8')
             
             # call predict function
             '''
@@ -58,3 +73,4 @@ class PredictionController:
     def get_leaves_by_dir(directory):
         result = []
         return create_response(data={'result': result})
+
