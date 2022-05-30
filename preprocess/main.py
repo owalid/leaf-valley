@@ -14,6 +14,7 @@ from PIL import Image, ImageEnhance
 import pandas as pd
 import argparse as ap
 from argparse import RawTextHelpFormatter
+import json
 
 from inspect import getsourcefile
 import os.path as path, sys
@@ -230,6 +231,7 @@ def multiprocess_worker(specie_directory, df_filtred, data_used, type_output, sr
 
 # MAIN
 if __name__ == '__main__':
+    classes_maps = json.load(open('config/classes_maps.json'))
     parser = ap.ArgumentParser(formatter_class=RawTextHelpFormatter)
     parser.add_argument("-a", "--augmented", required=False, action='store_true', default=False, help='Use directory augmented')
     parser.add_argument("-rmbg", "--remove-bg", required=False, action='store_true', default=False, help='Remove background before preprocess')
