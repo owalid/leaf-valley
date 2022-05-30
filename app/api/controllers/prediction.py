@@ -3,7 +3,6 @@ import cv2 as cv
 import os
 import base64
 from PIL import Image
-from itsdangerous import base64_encode
 import numpy as np
 import io
 from utils.mixins import create_response, serialize_list
@@ -30,9 +29,20 @@ class PredictionController:
             all_models = [f.split(".")[-2] for f in os.listdir(models_dir_path) if '__' and f.split(".")[-1] == 'h5' in f]
         return create_response(data={'models': all_models})
     
-
+   
+    
     def predict(b64img, model_name):
         print(model_name)
+        
+        # protect to lfi and RFI
+        model_name = path.basename(model_name)
+        model_name = model_name.replace("%", '')
+        if model_name.find('/') != -1 or \
+            model_name.find('\\') != -1 or \
+            model_name.find('..') != -1 or \
+            model_name.find('.') != -1:
+            return create_response(data={'error': 'Incorrect model name don\'t try to hack us.'}, status=500)
+        
         model_path = f'../../data/models_saved/{model_name}.h5'
         model_exist = os.path.exists(model_path)
         
@@ -47,13 +57,13 @@ class PredictionController:
             print(image_np[0])
             im_withoutbg_b64 = ''
             
+            
             # call remove background function
             _, new_img = remove_bg(image_np)
-            # jpg_img = cv.imencode('.jpg', im_arr)
-            # im_withoutbg_b64 = base64.b64encode(jpg_img[1]).decode('utf-8')
             
-            im_bytes = new_img.tobytes()
-            im_withoutbg_b64 = base64.b64encode(im_bytes).decode('utf-8')
+             # convert numpy array image to base64
+            _, img_arr = cv.imencode('.jpg', new_img)
+            im_withoutbg_b64 = base64.b64encode(img_arr).decode('utf-8')
             
             # call predict function
             '''
@@ -73,4 +83,3 @@ class PredictionController:
     def get_leaves_by_dir(directory):
         result = []
         return create_response(data={'result': result})
-
