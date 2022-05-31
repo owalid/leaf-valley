@@ -175,7 +175,8 @@ def apply_gaborfilter(img, filters=create_gaborfilter()):
 
 
 def remove_bg(img):
-    img = clash(img, type='LAB', cliplimit=22.0, tilegridsize=(12, 12))
+    original_img = img
+    img = clash(original_img, type='LAB', cliplimit=22.0, tilegridsize=(12, 12))
     img = apply_gaborfilter(img)
 
     blur = np.array(cv.GaussianBlur(np.array(img), (7, 7),
@@ -210,7 +211,7 @@ def remove_bg(img):
         mask = cv.bitwise_or(mask, HSV['black'])
     else:
         mask = cv.bitwise_and(mask, np.invert(HSV['black']))
-    masked = pcv.apply_mask(img=img, mask=mask, mask_color='white')
+    masked = pcv.apply_mask(img=original_img, mask=mask, mask_color='white')
 
     return mask, masked
 
