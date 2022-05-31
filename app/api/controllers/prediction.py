@@ -99,13 +99,13 @@ class PredictionController:
             _, new_img = remove_bg(image_np)
             new_img = cv.resize(new_img, tuple(model.layers[0].get_output_at(0).get_shape().as_list()[1:-1]))
             
-            # Get prediction labels
+            # get prediction labels
             y = model.predict(new_img[tf.newaxis, ...])
             label_encoded = np.argmax(y, axis=-1)[0]
             prediction_label = class_names[label_encoded]
             prediction_accuracy = str(y.max())
             
-             # convert numpy array image to base64
+            # convert numpy array image to base64
             _, img_arr = cv.imencode('.jpg', new_img)
             im_withoutbg_b64 = base64.b64encode(img_arr).decode('utf-8')
             prediction_data = {
