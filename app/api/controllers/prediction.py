@@ -8,6 +8,10 @@ import io
 from utils.mixins import create_response, serialize_list
 from tensorflow import keras
 import sys
+import json
+import h5py
+import tensorflow as tf
+from keras.models import load_model
 
 from inspect import getsourcefile
 import os.path as path, sys
@@ -16,6 +20,7 @@ current_dir = current_dir[:current_dir.rfind(path.sep)]
 current_dir = current_dir[:current_dir.rfind(path.sep)]
 sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
 from utilities.remove_background_functions import remove_bg
+from process.deep_learning.metrics import recall_m, precision_m, f1_m
 
 global models
 models = {}
@@ -47,32 +52,40 @@ class PredictionController:
         model_exist = os.path.exists(model_path)
         
         if model_exist:
-            models[model_name] = keras.models.load_model(model_path)
+            custom_objects={'recall_m': recall_m, 'precision_m': precision_m, 'f1_m': f1_m}
+            models[model_name] = load_model(model_path, custom_objects)
+            f = h5py.File(model_path, mode='r')
+            class_names_raw = None
+            if 'class_names' in f.attrs and len(f.attrs['class_names']) > 0:
+                class_names_raw = f.attrs.get('class_names')
+                class_names = json.loads(class_names_raw)
+                f.close()
+            else:
+                f.close()
+                return create_response(data={'error': 'Error don\'t have classes for classification.'}, status=500)
 
             model = models[model_name]
-            print(type(model))
             base64_decoded = base64.b64decode(b64img)
             image = Image.open(io.BytesIO(base64_decoded))
             image_np = np.array(image)
-            print(image_np[0])
             im_withoutbg_b64 = ''
-            
             
             # call remove background function
             _, new_img = remove_bg(image_np)
+            
+            # Get prediction labels
+            y = model.predict(new_img[tf.newaxis, ...])
+            label_encoded = np.argmax(y, axis=-1)[0]
+            prediction_label = class_names[label_encoded]
+            prediction_accuracy = y.max()
             
              # convert numpy array image to base64
             _, img_arr = cv.imencode('.jpg', new_img)
             im_withoutbg_b64 = base64.b64encode(img_arr).decode('utf-8')
             
-            # call predict function
-            '''
-                y = model.predict(im_arr) # TODO uncomment this when remove_bg function is ready and model.predict(im_arr) is ready
-            '''
-            
             prediction = {
-                'prediction': 'healthy',
-                'accuracy': 0.9,
+                'prediction': prediction_label,
+                'accuracy': prediction_accuracy,
                 'im_withoutbg_b64': im_withoutbg_b64
             }
             return create_response(data={'result': prediction})
