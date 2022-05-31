@@ -20,7 +20,7 @@ current_dir = current_dir[:current_dir.rfind(path.sep)]
 current_dir = current_dir[:current_dir.rfind(path.sep)]
 sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
 from utilities.remove_background_functions import remove_bg
-from process.deep_learning.metrics import recall_m, precision_m, f1_m
+# todo decoment this when deep learning classifier is merged: from process.deep_learning.metrics import recall_m, precision_m, f1_m
 
 global models
 models = {}
@@ -37,6 +37,31 @@ class PredictionController:
    
     
     def predict(b64img, model_name):
+        
+        # TODO REMOVE THIS WHEN PR OF DEEP-LEARNING IS MERGED
+        import tensorflow as tf
+        import numpy as np
+        from keras import backend as K
+
+        def recall_m(y_true, y_pred):
+            true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+            possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
+            recall = true_positives / (possible_positives + K.epsilon())
+            return recall
+
+        def precision_m(y_true, y_pred):
+            true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+            predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
+            precision = true_positives / (predicted_positives + K.epsilon())
+            return precision
+
+        def f1_m(y_true, y_pred):
+            precision = precision_m(y_true, y_pred)
+            recall = recall_m(y_true, y_pred)
+            return 2*((precision*recall)/(precision+recall+K.epsilon()))
+        
+        # END TODO
+        
         print(model_name)
         
         # protect to lfi and RFI
@@ -72,23 +97,23 @@ class PredictionController:
             
             # call remove background function
             _, new_img = remove_bg(image_np)
+            new_img = cv.resize(new_img, tuple(model.layers[0].get_output_at(0).get_shape().as_list()[1:-1]))
             
             # Get prediction labels
             y = model.predict(new_img[tf.newaxis, ...])
             label_encoded = np.argmax(y, axis=-1)[0]
             prediction_label = class_names[label_encoded]
-            prediction_accuracy = y.max()
+            prediction_accuracy = str(y.max())
             
              # convert numpy array image to base64
             _, img_arr = cv.imencode('.jpg', new_img)
             im_withoutbg_b64 = base64.b64encode(img_arr).decode('utf-8')
-            
-            prediction = {
+            prediction_data = {
                 'prediction': prediction_label,
-                'accuracy': prediction_accuracy,
+                'accuracy': str(prediction_accuracy),
                 'im_withoutbg_b64': im_withoutbg_b64
             }
-            return create_response(data={'result': prediction})
+            return create_response(data=prediction_data)
         else:
             return create_response(data={'error': f'{model_name} model not found'}, status=500)
             
