@@ -8,10 +8,14 @@ import numpy as np
 from sklearn import preprocessing
 from custom_models import classic_cnn, alexnet, lab_process
 from metrics import recall_m, precision_m, f1_m
+import h5py
+import json
 
 # Tensorflow
 import tensorflow as tf
 import tensorflow.keras.layers as tfl
+from keras.models import save_model
+
 
 # Callbacks
 from callbacks.ConfusionMatrixCallback import ConfusionMatrixCallback
@@ -140,7 +144,7 @@ def run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num
         local_print(f"[+] Fitting model {model_name}...")
         current_model.fit(x_train, y_train, verbose=keras_verbose, validation_data=(x_valid, y_valid), epochs=epochs, callbacks=callbacks, batch_size=batch_size)
         if should_save_model:
-            current_model.save(f"{dest_models}/{model_name}")
+            save_model_ext(current_model, f"{dest_models}/{model_name}.h5", le=le)
             
         local_print(f"[+] Model trained for {epochs} epochs")
         local_print(f"[+] Model summary: {current_model.summary()}")
@@ -164,6 +168,14 @@ def get_tensorboard_callbacks(model_name, x_valid, y_valid, le, dest_logs):
     ]
     return callbacks
 
+
+def save_model_ext(model, filepath, overwrite=True, le=None):
+    # https://stackoverflow.com/questions/44310448/attaching-class-labels-to-a-keras-model
+    save_model(model, filepath, overwrite)
+    if le is not None:
+        f = h5py.File(filepath, mode='a')
+        f.attrs['class_names'] = json.dumps(list(le.classes_))
+        f.close()
         
 def extract_features(hf):
     '''
@@ -225,7 +237,6 @@ if __name__ == '__main__':
     should_save_model = args.save_model
     dest_models = args.dest_models
     dest_logs = args.dest_logs
-    lab_process = args.lab_process
     VERBOSE = args.verbose
     
     
