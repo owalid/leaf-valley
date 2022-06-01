@@ -44,7 +44,7 @@ class ImagesPredictionsCallback(CustomCallBack):
                 plt.xticks([])
                 plt.yticks([])
                 plt.grid(False)
-                plt.imshow(self.x_valid[index], cmap='gray')
+                plt.imshow((self.x_valid[index] * 255).astype(np.uint8), cmap='gray')
                 index += 1
             figures_array.append(self.canvas2rgb_array(figure.canvas))
         with self.file_writer.as_default():
