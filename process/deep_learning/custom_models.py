@@ -61,6 +61,175 @@ def alexnet(input_shape, num_classes):
         tfl.Dense(num_classes, activation='softmax')
     ])
 
+
+# LAB HSV models
+    
+def common_model_hsv_lab(model, inputs, num_classes):
+    # Implement inception block for lab concatenation
+    
+    # Block a
+    # 1x1 convolution
+    conv1x1 = tfl.Conv2D(filters=64, kernel_size=(1,1), strides=(1,1), padding="same", activation="relu")(model)
+    
+    # 3x3 convolution
+    conv3x3 = tfl.Conv2D(filters=96, kernel_size=(3,3), strides=(1,1), padding="same", activation="relu")(model)
+    conv3x3 = tfl.Conv2D(filters=128, kernel_size=(3,3), strides=(1,1), padding="same", activation="relu")(conv3x3)
+    
+    # 5x5 convolution
+    conv5x5 = tfl.Conv2D(filters=16, kernel_size=(5,5), strides=(1,1), padding="same", activation="relu")(model)
+    conv5x5 = tfl.Conv2D(filters=32, kernel_size=(5,5), strides=(1,1), padding="same", activation="relu")(conv5x5)
+    
+    # Max pooling
+    max_pool = tfl.MaxPool2D(pool_size=(3,3), strides=(1,1), padding="same")(model)
+    max_pool = tfl.Conv2D(filters=32, kernel_size=(1,1), strides=(1,1), padding="same", activation="relu")(max_pool)
+    
+    # Concatenate all the layers
+    layers = tfl.concatenate([conv1x1, conv3x3, conv5x5, max_pool], axis=-1)
+    
+    # Block b
+    # 1x1 convolution
+    conv1x1 = tfl.Conv2D(filters=128, kernel_size=(1,1), strides=(1,1), padding="same", activation="relu")(layers)
+    
+    # 3x3 convolution
+    conv3x3 = tfl.Conv2D(filters=128, kernel_size=(3,3), strides=(1,1), padding="same", activation="relu")(layers)
+    conv3x3 = tfl.Conv2D(filters=192, kernel_size=(3,3), strides=(1,1), padding="same", activation="relu")(conv3x3)
+    
+    # 5x5 convolution
+    conv5x5 = tfl.Conv2D(filters=32, kernel_size=(5,5), strides=(1,1), padding="same", activation="relu")(layers)
+    conv5x5 = tfl.Conv2D(filters=96, kernel_size=(5,5), strides=(1,1), padding="same", activation="relu")(conv5x5)
+    
+    # Max pooling
+    max_pool = tfl.MaxPool2D(pool_size=(3,3), strides=(1,1), padding="same")(layers)
+    max_pool = tfl.Conv2D(filters=64, kernel_size=(1,1), strides=(1,1), padding="same", activation="relu")(max_pool)
+    
+    # Concatenate all the layers
+    layers = tf.keras.layers.concatenate([conv1x1, conv3x3, conv5x5, max_pool], axis=-1)
+    model = tfl.concatenate([model, layers], axis=-1)
+
+	# Flatten the output of the inception block
+    model = tfl.GlobalAveragePooling2D()(model)
+    model = tfl.Dense(512, activation='relu')(model)
+    model = tfl.Dropout(0.5)(model)
+    prediction_layer = tfl.Dense(num_classes, activation='softmax')
+    outputs = prediction_layer(model)
+    model = tf.keras.Model(inputs, outputs)
+    return model
+    
+    
+
+def hs_v_process(input_shape, num_classes):
+    '''
+        Inspiration: https://github.com/joaopauloschuler/two-path-noise-lab-plant-disease
+        
+        SCHEMA:
+        HS  V
+        |   |
+    '''
+    inputs = tf.keras.Input(shape=input_shape)
+    
+    # layer copies channels from channel_start the number of channels given in channel_count.
+    hs_input = CopyChannels(0,2)(inputs)
+    v_input = CopyChannels(2,1)(inputs)
+    
+    # HS processing
+    hs_proc = tfl.Conv2D(filters=256, kernel_size=(11,11), strides=(1,1), padding="same")(hs_input)
+    hs_proc = tfl.Conv2D(filters=128, kernel_size=(5,5), strides=(1,1), padding="same")(hs_input)
+    hs_proc = tfl.Conv2D(filters=96, kernel_size=(3,3), strides=(1,1), padding="same")(hs_input)
+    hs_proc = tfl.MaxPooling2D()(hs_proc)
+
+    # V processing
+    v_proc = tfl.Conv2D(filters=256, kernel_size=(11,11), strides=(1,1), padding="same")(v_input)
+    v_proc = tfl.Conv2D(filters=128, kernel_size=(5,5), strides=(1,1), padding="same")(v_input)
+    v_proc = tfl.Conv2D(filters=96, kernel_size=(3,3), strides=(1,1), padding="same")(v_input)
+    v_proc = tfl.MaxPooling2D()(v_proc)
+
+    # LAB concatenation
+    hsv_model = tfl.concatenate([hs_proc, v_proc])
+    hsv_model = tfl.Conv2D(filters=32, kernel_size=(3,3), strides=(1,1), padding="same")(hsv_model)
+    hsv_model = tfl.Conv2D(filters=64, kernel_size=(3,3), strides=(1,1), padding="same")(hsv_model)
+    hsv_model = tfl.MaxPooling2D()(hsv_model)
+    
+    model = common_model_hsv_lab(hsv_model, inputs, num_classes)
+    return model
+
+def h_sv_process(input_shape, num_classes):
+    '''
+        Inspiration: https://github.com/joaopauloschuler/two-path-noise-lab-plant-disease
+        
+        SCHEMA:
+        H   SV
+        |   |
+    '''
+    inputs = tf.keras.Input(shape=input_shape)
+    
+    # layer copies channels from channel_start the number of channels given in channel_count.
+    h_input = CopyChannels(0,1)(inputs)
+    sv_input = CopyChannels(1,2)(inputs)
+    
+    # H processing
+    h_proc = tfl.Conv2D(filters=256, kernel_size=(11,11), strides=(1,1), padding="same")(h_input)
+    h_proc = tfl.Conv2D(filters=128, kernel_size=(5,5), strides=(1,1), padding="same")(h_input)
+    h_proc = tfl.Conv2D(filters=96, kernel_size=(3,3), strides=(1,1), padding="same")(h_input)
+    h_proc = tfl.MaxPooling2D()(h_proc)
+
+    # SV processing
+    sv_proc = tfl.Conv2D(filters=256, kernel_size=(11,11), strides=(1,1), padding="same")(sv_input)
+    sv_proc = tfl.Conv2D(filters=128, kernel_size=(5,5), strides=(1,1), padding="same")(sv_input)
+    sv_proc = tfl.Conv2D(filters=96, kernel_size=(3,3), strides=(1,1), padding="same")(sv_input)
+    sv_proc = tfl.MaxPooling2D()(sv_proc)
+
+    # LAB concatenation
+    hsv_model = tfl.concatenate([h_proc, sv_proc])
+    hsv_model = tfl.Conv2D(filters=32, kernel_size=(3,3), strides=(1,1), padding="same")(hsv_model)
+    hsv_model = tfl.Conv2D(filters=64, kernel_size=(3,3), strides=(1,1), padding="same")(hsv_model)
+    hsv_model = tfl.MaxPooling2D()(hsv_model)
+    
+    model = common_model_hsv_lab(hsv_model, inputs, num_classes)
+    return model
+
+def h_s_v_process(input_shape, num_classes):
+    '''
+        Inspiration: https://github.com/joaopauloschuler/two-path-noise-lab-plant-disease
+        
+        SCHEMA:
+        H   S   V
+        |   |   |
+    '''
+    inputs = tf.keras.Input(shape=input_shape)
+    
+    # layer copies channels from channel_start the number of channels given in channel_count.
+    h_input = CopyChannels(0,1)(inputs)
+    s_input = CopyChannels(1,1)(inputs)
+    v_input = CopyChannels(2,1)(inputs)
+    
+    # H processing
+    h_proc = tfl.Conv2D(filters=256, kernel_size=(11,11), strides=(1,1), padding="same")(h_input)
+    h_proc = tfl.Conv2D(filters=128, kernel_size=(5,5), strides=(1,1), padding="same")(h_input)
+    h_proc = tfl.Conv2D(filters=96, kernel_size=(3,3), strides=(1,1), padding="same")(h_input)
+    h_proc = tfl.MaxPooling2D()(h_proc)
+
+    # S processing
+    s_proc = tfl.Conv2D(filters=256, kernel_size=(11,11), strides=(1,1), padding="same")(s_input)
+    s_proc = tfl.Conv2D(filters=128, kernel_size=(5,5), strides=(1,1), padding="same")(s_input)
+    s_proc = tfl.Conv2D(filters=96, kernel_size=(3,3), strides=(1,1), padding="same")(s_input)
+    s_proc = tfl.MaxPooling2D()(s_proc)
+    
+    # V processing
+    v_proc = tfl.Conv2D(filters=256, kernel_size=(11,11), strides=(1,1), padding="same")(v_input)
+    v_proc = tfl.Conv2D(filters=128, kernel_size=(5,5), strides=(1,1), padding="same")(v_input)
+    v_proc = tfl.Conv2D(filters=96, kernel_size=(3,3), strides=(1,1), padding="same")(v_input)
+    v_proc = tfl.MaxPooling2D()(v_proc)
+
+    # LAB concatenation
+    hsv_model = tfl.concatenate([h_proc, s_proc, v_proc])
+    hsv_model = tfl.Conv2D(filters=32, kernel_size=(3,3), strides=(1,1), padding="same")(hsv_model)
+    hsv_model = tfl.Conv2D(filters=64, kernel_size=(3,3), strides=(1,1), padding="same")(hsv_model)
+    hsv_model = tfl.MaxPooling2D()(hsv_model)
+    
+    model = common_model_hsv_lab(hsv_model, inputs, num_classes)
+    return model
+    
+
 def lab_process(input_shape, num_classes):
     '''
         Inspiration: https://github.com/joaopauloschuler/two-path-noise-lab-plant-disease
@@ -89,53 +258,6 @@ def lab_process(input_shape, num_classes):
     lab_model = tfl.Conv2D(filters=64, kernel_size=(3,3), strides=(1,1), padding="same")(lab_model)
     lab_model = tfl.MaxPooling2D()(lab_model)
     
-    # Implement inception block for lab concatenation
-    
-    # Block a
-    # 1x1 convolution
-    conv1x1 = tfl.Conv2D(filters=64, kernel_size=(1,1), strides=(1,1), padding="same", activation="relu")(lab_model)
-    
-    # 3x3 convolution
-    conv3x3 = tfl.Conv2D(filters=96, kernel_size=(3,3), strides=(1,1), padding="same", activation="relu")(lab_model)
-    conv3x3 = tfl.Conv2D(filters=128, kernel_size=(3,3), strides=(1,1), padding="same", activation="relu")(conv3x3)
-    
-    # 5x5 convolution
-    conv5x5 = tfl.Conv2D(filters=16, kernel_size=(5,5), strides=(1,1), padding="same", activation="relu")(lab_model)
-    conv5x5 = tfl.Conv2D(filters=32, kernel_size=(5,5), strides=(1,1), padding="same", activation="relu")(conv5x5)
-    
-    # Max pooling
-    max_pool = tfl.MaxPool2D(pool_size=(3,3), strides=(1,1), padding="same")(lab_model)
-    max_pool = tfl.Conv2D(filters=32, kernel_size=(1,1), strides=(1,1), padding="same", activation="relu")(max_pool)
-    
-    # Concatenate all the layers
-    layers = tfl.concatenate([conv1x1, conv3x3, conv5x5, max_pool], axis=-1)
-    
-    # Block b
-    # 1x1 convolution
-    conv1x1 = tfl.Conv2D(filters=128, kernel_size=(1,1), strides=(1,1), padding="same", activation="relu")(layers)
-    
-    # 3x3 convolution
-    conv3x3 = tfl.Conv2D(filters=128, kernel_size=(3,3), strides=(1,1), padding="same", activation="relu")(layers)
-    conv3x3 = tfl.Conv2D(filters=192, kernel_size=(3,3), strides=(1,1), padding="same", activation="relu")(conv3x3)
-    
-    # 5x5 convolution
-    conv5x5 = tfl.Conv2D(filters=32, kernel_size=(5,5), strides=(1,1), padding="same", activation="relu")(layers)
-    conv5x5 = tfl.Conv2D(filters=96, kernel_size=(5,5), strides=(1,1), padding="same", activation="relu")(conv5x5)
-    
-    # Max pooling
-    max_pool = tfl.MaxPool2D(pool_size=(3,3), strides=(1,1), padding="same")(layers)
-    max_pool = tfl.Conv2D(filters=64, kernel_size=(1,1), strides=(1,1), padding="same", activation="relu")(max_pool)
-    
-    # Concatenate all the layers
-    layers = tf.keras.layers.concatenate([conv1x1, conv3x3, conv5x5, max_pool], axis=-1)
-    lab_model = tfl.concatenate([lab_model, layers], axis=-1)
-
-	# Flatten the output of the inception block
-    lab_model = tfl.GlobalAveragePooling2D()(lab_model)
-    lab_model = tfl.Dense(512, activation='relu')(lab_model)
-    lab_model = tfl.Dropout(0.5)(lab_model)
-    prediction_layer = tfl.Dense(num_classes, activation='softmax')
-    outputs = prediction_layer(lab_model)
-    model = tf.keras.Model(inputs, outputs)
+    model = common_model_hsv_lab(lab_model, inputs, num_classes)
     return model
     

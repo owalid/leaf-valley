@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 import sys
 import numpy as np
 from sklearn import preprocessing
-from custom_models import classic_cnn, alexnet, lab_process
+from custom_models import classic_cnn, alexnet, lab_process, hs_v_process, h_sv_process, h_s_v_process
 from metrics import recall_m, precision_m, f1_m
 import h5py
 import json
@@ -82,7 +82,19 @@ base_models = {
     'LAB_PROCESS': {
         'base': lab_process,
         'preprocess_input': None
-    }
+    },
+    'HS_V_PROCESS': {
+        'base': hs_v_process,
+        'preprocess_input': None
+    },
+    'H_SV_PROCESS': {
+        'base': h_sv_process,
+        'preprocess_input': None
+    },
+    'H_S_V_PROCESS': {
+        'base': h_s_v_process,
+        'preprocess_input': None
+    },
 }
 
 
