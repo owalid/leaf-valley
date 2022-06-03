@@ -94,7 +94,7 @@ base_models = {
     'H_S_V_PROCESS': {
         'base': h_s_v_process,
         'preprocess_input': None
-    },
+    }
 }
 
 
