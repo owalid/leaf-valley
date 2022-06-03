@@ -80,6 +80,33 @@ def get_df_filtered(df, type_output):
             list(df_filtred.specie.values))]
         return pd.concat([df_others_specie, df_filtred])
 
+def generate_img(specie_directory, img_number, type_img, size_img, cropped_img, normalize_img, normalized_type):
+    path_img = f"data/augmentation/{specie_directory}/image ({img_number}).JPG"
+    bgr_img, _, _ = pcv.readimage(path_img, mode='bgr')
+    rgb_img = cv.cvtColor(bgr_img, cv.COLOR_BGR2RGB)
+
+    if cropped_img == True:
+        rgb_img = crop_resize_image(rgb_img, rgb_img)
+    im = Image.fromarray(rgb_img)
+    enhancer = ImageEnhance.Sharpness(im)
+    pill_img = enhancer.enhance(2)
+    array_img = np.array(pill_img)
+    array_img = cv.resize(array_img, size_img)
+    
+    if type_img == 'canny':
+        edges = pcv.canny_edge_detect(array_img)
+        pill_img = Image.fromarray(edges)
+    elif type_img == 'gray':
+        gray_img = cv.cvtColor(array_img, cv.COLOR_BGR2GRAY)
+        pill_img = Image.fromarray(gray_img)
+    elif type_img == 'gabor':
+        gabor_img = get_gabor_img(array_img)
+        pill_img = Image.fromarray(gabor_img)
+    if normalize_img:
+        array_img = cv.normalize(array_img, None, alpha=0, beta=1, norm_type=normalized_type, dtype=cv.CV_32F)
+
+    return pill_img, array_img, bgr_img
+
 
 def generate_img_without_bg(specie_directory, img_number, type_img, size_img, cropped_img, normalize_img, normalized_type):
     path_img = f"data/augmentation/{specie_directory}/image ({img_number}).JPG"
@@ -114,6 +141,7 @@ def generate_img_without_bg(specie_directory, img_number, type_img, size_img, cr
 if __name__ == '__main__':
     parser = ap.ArgumentParser(formatter_class=RawTextHelpFormatter)
     parser.add_argument("-a", "--augmented", required=False, action='store_true', default=False, help='Use directory augmented')
+    parser.add_argument("-rbg", "--remove-bg", required=False, action='store_true', default=False, help='Remove background before preprocess')
     parser.add_argument("-src", "--src-directory", required=False, type=str, default='', help='Directory source who can find images. default (data/{augmented})')
     parser.add_argument("-wi", "--write-img", required=False, action='store_true', default=False, help='Write images (png) in the new directory')
     parser.add_argument("-crop", "--crop-img", required=False, action='store_true', default=False, help='Remove padding around leaf')
@@ -137,6 +165,7 @@ if __name__ == '__main__':
     src_directory = os.path.join(args.src_directory, res_augmented) if args.src_directory != '' else f"data/{res_augmented}"
     df = get_df(src_directory)
     type_output = args.classification
+    should_remove_bg = args.remove_bg
     write_img = args.write_img
     crop_img = args.crop_img
     normalize_img = args.normalize_img
@@ -210,7 +239,10 @@ if __name__ == '__main__':
         for index in indexes:
             if len(indexes) // 2 == np.where(indexes == index):
                 local_print("[+] 50%")
-            pill_masked_img, masked_img, raw_img, mask = generate_img_without_bg(specie_directory, index, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
+            if should_remove_bg:
+                pill_masked_img, masked_img, raw_img, mask = generate_img_without_bg(specie_directory, index, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
+            else:
+                pill_masked_img, masked_img, raw_img = generate_img(specie_directory, index, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
             file_path = f"{dest_path}/{label}/{specie}-{disease}-{index}.jpg"
             specie_index = f"{specie}_{disease}_{index}"
             data = update_data_dict(data, 'classes', label)
@@ -240,7 +272,7 @@ if __name__ == '__main__':
                 data = update_data_dict(data, 'histogram_hsv',  get_hsv_histogram(masked_img))
             if 'histogram_lab' in answers_type_features:
                 data = update_data_dict(data, 'histogram_lab',  get_lab_histogram(masked_img))
-            if 'pyfeats' in answers_type_features:
+            if 'pyfeats' in answers_type_features and not should_remove_bg:
                 pyfeats_features = get_pyfeats_features(raw_img, mask)
                 for feature in pyfeats_features:
                     data = update_data_dict(data, feature, pyfeats_features[feature])
@@ -250,10 +282,10 @@ if __name__ == '__main__':
                     pill_masked_img.save(f)
         local_print(f"[+] End with {label}\n\n")
     
-    local_print(f"Number of images, {len(data)}")
+    local_print(f"Total of images processed: {len(data['classes'])}")
     local_print(f"[+] Generate hdf5 file")
-    prefix_data = 'all' if int(data_used) == -1 else str(data_used - 1)
-    path_hdf = f"{dest_path}/export/data_{type_output.lower()}_{prefix_data}_{type_img}.h5"
+    prefix_data = 'all' if int(data_used) == -1 else str(data_used)
+    path_hdf = f"{dest_path}export/data_{type_output.lower()}_{prefix_data}_{'_'.join(answers_type_features)}.h5"
     os.makedirs(os.path.dirname(path_hdf), exist_ok=True)
     store_dataset(path_hdf, data, VERBOSE)
     local_print(f"[+] pickle save at {path_hdf}")
