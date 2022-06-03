@@ -32,11 +32,11 @@ def classic_cnn(input_shape, num_classes):
     return tf.keras.models.Sequential([
         tfl.Conv2D(filters=32, kernel_size=(3,3), strides=(1,1), activation='relu', input_shape=input_shape),
         tfl.MaxPool2D(pool_size=(2,2), strides=(2,2)),
-        tfl.flatten(),
+        tfl.Flatten(),
         tfl.GlobalAveragePooling2D(),
         tfl.Dense(512, activation='relu'),
         tfl.Dropout(0.5),
-        tf.Dense(num_classes, activation='softmax')
+        tfl.Dense(num_classes, activation='softmax')
     ])
 
 def alexnet(input_shape, num_classes):
@@ -117,42 +117,7 @@ def common_model_hsv_lab(model, inputs, num_classes):
     
     
 
-def hs_v_process(input_shape, num_classes):
-    '''
-        Inspiration: https://github.com/joaopauloschuler/two-path-noise-lab-plant-disease
-        
-        SCHEMA:
-        HS  V
-        |   |
-    '''
-    inputs = tf.keras.Input(shape=input_shape)
-    
-    # layer copies channels from channel_start the number of channels given in channel_count.
-    hs_input = CopyChannels(0,2)(inputs)
-    v_input = CopyChannels(2,1)(inputs)
-    
-    # HS processing
-    hs_proc = tfl.Conv2D(filters=256, kernel_size=(11,11), strides=(1,1), padding="same")(hs_input)
-    hs_proc = tfl.Conv2D(filters=128, kernel_size=(5,5), strides=(1,1), padding="same")(hs_input)
-    hs_proc = tfl.Conv2D(filters=96, kernel_size=(3,3), strides=(1,1), padding="same")(hs_input)
-    hs_proc = tfl.MaxPooling2D()(hs_proc)
-
-    # V processing
-    v_proc = tfl.Conv2D(filters=256, kernel_size=(11,11), strides=(1,1), padding="same")(v_input)
-    v_proc = tfl.Conv2D(filters=128, kernel_size=(5,5), strides=(1,1), padding="same")(v_input)
-    v_proc = tfl.Conv2D(filters=96, kernel_size=(3,3), strides=(1,1), padding="same")(v_input)
-    v_proc = tfl.MaxPooling2D()(v_proc)
-
-    # LAB concatenation
-    hsv_model = tfl.concatenate([hs_proc, v_proc])
-    hsv_model = tfl.Conv2D(filters=32, kernel_size=(3,3), strides=(1,1), padding="same")(hsv_model)
-    hsv_model = tfl.Conv2D(filters=64, kernel_size=(3,3), strides=(1,1), padding="same")(hsv_model)
-    hsv_model = tfl.MaxPooling2D()(hsv_model)
-    
-    model = common_model_hsv_lab(hsv_model, inputs, num_classes)
-    return model
-
-def h_sv_process(input_shape, num_classes):
+def hsv_process(input_shape, num_classes):
     '''
         Inspiration: https://github.com/joaopauloschuler/two-path-noise-lab-plant-disease
         
@@ -185,50 +150,7 @@ def h_sv_process(input_shape, num_classes):
     hsv_model = tfl.MaxPooling2D()(hsv_model)
     
     model = common_model_hsv_lab(hsv_model, inputs, num_classes)
-    return model
-
-def h_s_v_process(input_shape, num_classes):
-    '''
-        Inspiration: https://github.com/joaopauloschuler/two-path-noise-lab-plant-disease
-        
-        SCHEMA:
-        H   S   V
-        |   |   |
-    '''
-    inputs = tf.keras.Input(shape=input_shape)
-    
-    # layer copies channels from channel_start the number of channels given in channel_count.
-    h_input = CopyChannels(0,1)(inputs)
-    s_input = CopyChannels(1,1)(inputs)
-    v_input = CopyChannels(2,1)(inputs)
-    
-    # H processing
-    h_proc = tfl.Conv2D(filters=256, kernel_size=(11,11), strides=(1,1), padding="same")(h_input)
-    h_proc = tfl.Conv2D(filters=128, kernel_size=(5,5), strides=(1,1), padding="same")(h_input)
-    h_proc = tfl.Conv2D(filters=96, kernel_size=(3,3), strides=(1,1), padding="same")(h_input)
-    h_proc = tfl.MaxPooling2D()(h_proc)
-
-    # S processing
-    s_proc = tfl.Conv2D(filters=256, kernel_size=(11,11), strides=(1,1), padding="same")(s_input)
-    s_proc = tfl.Conv2D(filters=128, kernel_size=(5,5), strides=(1,1), padding="same")(s_input)
-    s_proc = tfl.Conv2D(filters=96, kernel_size=(3,3), strides=(1,1), padding="same")(s_input)
-    s_proc = tfl.MaxPooling2D()(s_proc)
-    
-    # V processing
-    v_proc = tfl.Conv2D(filters=256, kernel_size=(11,11), strides=(1,1), padding="same")(v_input)
-    v_proc = tfl.Conv2D(filters=128, kernel_size=(5,5), strides=(1,1), padding="same")(v_input)
-    v_proc = tfl.Conv2D(filters=96, kernel_size=(3,3), strides=(1,1), padding="same")(v_input)
-    v_proc = tfl.MaxPooling2D()(v_proc)
-
-    # LAB concatenation
-    hsv_model = tfl.concatenate([h_proc, s_proc, v_proc])
-    hsv_model = tfl.Conv2D(filters=32, kernel_size=(3,3), strides=(1,1), padding="same")(hsv_model)
-    hsv_model = tfl.Conv2D(filters=64, kernel_size=(3,3), strides=(1,1), padding="same")(hsv_model)
-    hsv_model = tfl.MaxPooling2D()(hsv_model)
-    
-    model = common_model_hsv_lab(hsv_model, inputs, num_classes)
-    return model
-    
+    return model 
 
 def lab_process(input_shape, num_classes):
     '''

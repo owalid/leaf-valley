@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 import sys
 import numpy as np
 from sklearn import preprocessing
-from custom_models import classic_cnn, alexnet, lab_process, hs_v_process, h_sv_process, h_s_v_process
+from custom_models import classic_cnn, alexnet, lab_process, hsv_process
 from metrics import recall_m, precision_m, f1_m
 import h5py
 import json
@@ -43,14 +43,6 @@ base_models = {
         'base': tf.keras.applications.VGG19,
         'preprocess_input': tf.keras.applications.vgg19.preprocess_input
     },
-    'CLASSIC_CNN': {
-        'base': classic_cnn,
-        'preprocess_input': None
-    },
-    'ALEXNET': {
-        'base': alexnet,
-        'preprocess_input': None
-    },
     'RESNET50': {
         'base': tf.keras.applications.ResNet50,
         'preprocess_input': tf.keras.applications.resnet50.preprocess_input
@@ -79,22 +71,22 @@ base_models = {
         'base': tf.keras.applications.Xception,
         'preprocess_input': tf.keras.applications.xception.preprocess_input
     },
+    'CLASSIC_CNN': {
+        'base': classic_cnn,
+        'preprocess_input': None
+    },
+    'ALEXNET': {
+        'base': alexnet,
+        'preprocess_input': None
+    },
     'LAB_PROCESS': {
         'base': lab_process,
         'preprocess_input': None
     },
-    'HS_V_PROCESS': {
-        'base': hs_v_process,
+    'HSV_PROCESS': {
+        'base': hsv_process,
         'preprocess_input': None
     },
-    'H_SV_PROCESS': {
-        'base': h_sv_process,
-        'preprocess_input': None
-    },
-    'H_S_V_PROCESS': {
-        'base': h_s_v_process,
-        'preprocess_input': None
-    }
 }
 
 
@@ -102,11 +94,17 @@ def local_print(msg):
     if VERBOSE:
         print(msg)
 
-def get_model(input_shape, num_classes, model_name):
+def get_model(input_shape, num_classes, model_name, should_train):
     base_model = base_models[model_name]
     preprocess_input = base_model['preprocess_input']
-    base_model = base_model['base'](input_shape=input_shape, include_top=False, weights='imagenet')
-    base_model.trainable = False # freeze the base model by making it non trainable
+
+    if should_train:
+        base_model = base_model['base'](input_shape=input_shape, include_top=False, weights='imagenet')
+        base_model.trainable = False # freeze the base model by making it non trainable
+    else:
+        base_model = base_model['base'](input_shape=input_shape, include_top=False)
+        base_model.trainable = True
+
     inputs = tf.keras.Input(shape=input_shape)
     x = inputs
     x = preprocess_input(x)
@@ -127,7 +125,8 @@ def run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num
         if base_models[model_name]['preprocess_input'] is None: # if is not pretrained model
             current_model = base_models[model_name]['base'](input_shape, num_classes)
         else:
-            current_model = get_model(input_shape, num_classes, model_name)  # get pretrained model
+            should_train = False if model_name.endswith('_TRAINED') else True
+            current_model = get_model(input_shape, num_classes, model_name, should_train)  # get pretrained model
         local_print("==========================================================")
         local_print(f"[+] Current model: {model_name}")
         
@@ -234,7 +233,7 @@ if __name__ == '__main__':
     parser.add_argument("-lt", "--launch-tensorboard", required=False, action='store_true', default=False, help='Launch tensorboard after fitting')
     parser.add_argument("-b", "--batch-size", required=False, type=int, default=32, help='Batch size')
     parser.add_argument("-e", "--epochs", required=False, type=int, default=50, help='Epoch')
-    parser.add_argument("-m", "--models", required=False, type=str, help=f'Select model(s), if grid search is enabled, you can select multiple models separate by ",". example -m=vgg19,resnet50. By default is select all models\nModels availables:\n{", ".join(models_availaibles)}.')
+    parser.add_argument("-m", "--models", required=False, type=str, help=f'Select model(s), if grid search is enabled, you can select multiple models separate by ",". example -m=vgg19,resnet50. By default is select all models.\nModels availables:\n{", ".join(models_availaibles)}.')
     parser.add_argument("-s", "--save-model", required=False, action='store_true', default=False, help='Save model')
     parser.add_argument("-dst-l", "--dest-logs", required=False, type=str, help='Destination for tensorboard logs. (default logs/tensorboard)')
     parser.add_argument("-dst-m", "--dest-models", required=False, type=str, help='Destination for model if save model is enabled')
