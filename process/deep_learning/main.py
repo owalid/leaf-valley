@@ -165,7 +165,7 @@ def run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num
 
 def get_tensorboard_callbacks(model_name, x_valid, y_valid, le, dest_logs):
     base_dir = dest_logs
-    os.system(f'rm -rf {base_dir}/*')
+    os.system(f'rm -rf {base_dir}/{model_name}')
     logdir = f"{base_dir}/{model_name}/{datetime.now().strftime('%Y%m%d')}"
     
     # Define the basic TensorBoard callback.
