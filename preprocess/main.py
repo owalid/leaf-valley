@@ -138,7 +138,7 @@ if __name__ == '__main__':
         print("The new directory is created!")
         
     answers_type_features = args.features.replace(' ', '').split(',') if args.features != None else []
-    answers_type_features = [type_img, 'graycoprops', 'lpb_histogram', 'hue_moment', 'haralick', 'histogram_hsv', 'histogram_lab', 'pyfeats'] if len(answers_type_features) == 0 else answers_type_features
+    answers_type_features = ['graycoprops', 'lpb_histogram', 'hue_moment', 'haralick', 'histogram_hsv', 'histogram_lab', 'pyfeats'] if len(answers_type_features) == 0 else answers_type_features
     
     size_img = (args.size, args.size) if args.size > 0 else DEFAULT_FINAL_IMG_SIZE
     VERBOSE = args.verbose
