@@ -141,7 +141,7 @@ def generate_img_without_bg(specie_directory, img_number, type_img, size_img, cr
 if __name__ == '__main__':
     parser = ap.ArgumentParser(formatter_class=RawTextHelpFormatter)
     parser.add_argument("-a", "--augmented", required=False, action='store_true', default=False, help='Use directory augmented')
-    parser.add_argument("-rbg", "--remove-bg", required=False, action='store_true', default=False, help='Remove background before preprocess')
+    parser.add_argument("-rmbg", "--remove-bg", required=False, action='store_true', default=False, help='Remove background before preprocess')
     parser.add_argument("-src", "--src-directory", required=False, type=str, default='', help='Directory source who can find images. default (data/{augmented})')
     parser.add_argument("-wi", "--write-img", required=False, action='store_true', default=False, help='Write images (png) in the new directory')
     parser.add_argument("-crop", "--crop-img", required=False, action='store_true', default=False, help='Remove padding around leaf')

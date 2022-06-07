@@ -15,12 +15,12 @@ utilities/
 
 ```
 python preprocess/main.py -h
-usage: main.py [-h] [-a] [-rbg] [-src SRC_DIRECTORY] [-wi] [-crop] [-nor] [-nortype NORMALIZE_TYPE] [-c CLASSIFICATION] [-n NUMBER_IMG] [-rt RESULT_TYPE] [-dst DESTINATION] [-f FEATURES] [-s SIZE] [-v]
+usage: main.py [-h] [-a] [-rmbg] [-src SRC_DIRECTORY] [-wi] [-crop] [-nor] [-nortype NORMALIZE_TYPE] [-c CLASSIFICATION] [-n NUMBER_IMG] [-rt RESULT_TYPE] [-dst DESTINATION] [-f FEATURES] [-s SIZE] [-v]
 
 optional arguments:
   -h, --help            show this help message and exit
   -a, --augmented       Use directory augmented
-  -rbg, --remove-bg     Remove background before preprocess
+  -rmbg, --remove-bg     Remove background before preprocess
   -src SRC_DIRECTORY, --src-directory SRC_DIRECTORY
                         Directory source who can find images. default (data/{augmented})
   -wi, --write-img      Write images (png) in the new directory
