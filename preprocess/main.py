@@ -236,7 +236,7 @@ if __name__ == '__main__':
         local_print(f"\n[+] index {specie_directory}")
         local_print(f"[+] Start generate specie: {specie}")
         local_print(f"[+] Number of images: {number_img}")
-        # iterator_indexes = tqdm(indexes, ncols=100) if VERBOSE else indexes_species
+        
         for index in tqdm(indexes, ncols=100) if VERBOSE else indexes_species:
             if should_remove_bg:
                 pill_masked_img, masked_img, raw_img, mask = generate_img_without_bg(specie_directory, index, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
