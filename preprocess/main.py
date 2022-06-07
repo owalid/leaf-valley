@@ -1,7 +1,7 @@
 '''
   CLI used to preprocess the data and get features and classes.
 '''
-
+from tqdm import tqdm
 import random
 import os
 from tabnanny import verbose
@@ -209,7 +209,8 @@ if __name__ == '__main__':
         local_print(f"[+] answers_type_features: {answers_type_features}")
     data = dict()
     local_print("=====================================================")
-    for specie_directory in indexes_species:
+    iterator_species = tqdm(indexes_species, ncols=45) if VERBOSE else indexes_species
+    for specie_directory in iterator_species:
         current_df = df_filtred.loc[specie_directory]
         healthy = current_df.healthy
         disease = current_df.disease
@@ -232,13 +233,11 @@ if __name__ == '__main__':
         else:
             number_img = current_data_used
             indexes = random.sample(list(range(1, current_df.number_img)), number_img) # Get alls indexes with random without repetition.
-        local_print(f"[+] index {specie_directory}")
+        local_print(f"\n[+] index {specie_directory}")
         local_print(f"[+] Start generate specie: {specie}")
         local_print(f"[+] Number of images: {number_img}")
-        
-        for index in indexes:
-            if len(indexes) // 2 == np.where(indexes == index):
-                local_print("[+] 50%")
+        # iterator_indexes = tqdm(indexes, ncols=100) if VERBOSE else indexes_species
+        for index in tqdm(indexes, ncols=100) if VERBOSE else indexes_species:
             if should_remove_bg:
                 pill_masked_img, masked_img, raw_img, mask = generate_img_without_bg(specie_directory, index, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
             else:
@@ -280,7 +279,7 @@ if __name__ == '__main__':
             if write_img:
                 with safe_open_w(file_path) as f:
                     pill_masked_img.save(f)
-        local_print(f"[+] End with {label}\n\n")
+        local_print(f"\n\n[+] End with {specie_directory}\n\n")
     
     local_print(f"Total of images processed: {len(data['classes'])}")
     local_print(f"[+] Generate hdf5 file")
@@ -288,4 +287,4 @@ if __name__ == '__main__':
     path_hdf = f"{dest_path}export/data_{type_output.lower()}_{prefix_data}_{'_'.join(answers_type_features)}.h5"
     os.makedirs(os.path.dirname(path_hdf), exist_ok=True)
     store_dataset(path_hdf, data, VERBOSE)
-    local_print(f"[+] pickle save at {path_hdf}")
+    local_print(f"[+] h5 file save at {path_hdf}")
