@@ -8,7 +8,7 @@ from inspect import getsourcefile
 import os.path as path, sys
 current_dir = path.dirname(path.abspath(getsourcefile(lambda:0)))
 sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
-from utilities.utils import bgrtorgb
+from utilities.utils import bgrtorgb, crop_resize_image
 
 color_dict_HSV = {
     'black': [[180, 255, 26], [0, 0, 0]],
@@ -214,39 +214,3 @@ def remove_bg(img):
     masked = pcv.apply_mask(img=original_img, mask=mask, mask_color='white')
 
     return mask, masked
-
-
-def preprocess_images(file_name):
-    try:
-        bgr_img = cv.resize(pcv.readimage(file_name)[
-                            0], (256, 256), interpolation=cv.INTER_CUBIC)
-        gray_img = cv.resize(pcv.readimage(file_name, mode='gray')[
-                             0], (256, 256), interpolation=cv.INTER_CUBIC)
-
-        mask, masked = remove_bg(bgr_img)
-
-        # Apply mask and add sharpness on the colored
-        im = Image.fromarray(bgrtorgb(masked))
-        enhancer = ImageEnhance.Sharpness(im)
-        enhanced = enhancer.enhance(2)
-        normalized_img = cv.normalize(np.array(
-            enhanced), None, alpha=0, beta=1, norm_type=cv.NORM_MINMAX, dtype=cv.CV_32F)
-
-        # Apply mask and add sharpness on the gray image
-        im = pcv.apply_mask(img=gray_img, mask=mask, mask_color='white')
-        img_gray_enh = ImageEnhance.Sharpness(Image.fromarray(im)).enhance(4)
-
-        canny = pcv.canny_edge_detect(np.array(normalized_img))
-        dilated = np.array(
-            cv.dilate(canny, (5, 5), iterations=5), dtype='uint8')
-        eroded = np.array(
-            cv.erode(dilated, (5, 5), iterations=5), dtype='uint8')
-
-        enh_canny = cv.bitwise_and(np.array(enhanced, dtype='uint8'), np.array(
-            enhanced, dtype='uint8'), mask=np.invert(canny))
-        crop_res = crop_resize_image(canny, enh_canny)
-    except Exception as e:
-        print("Error : ", file_name, e)
-        return bgrtorgb(bgr_img), np.zeros(bgr_img.shape), np.zeros(bgr_img.shape), np.zeros(bgr_img.shape), np.zeros(bgr_img.shape), np.zeros(bgr_img.shape), np.zeros(bgr_img.shape), np.zeros(bgr_img.shape), np.zeros(bgr_img.shape), np.zeros(bgr_img.shape)
-
-    return bgrtorgb(bgr_img), gray_img, canny, dilated, eroded, enhanced, img_gray_enh, normalized_img, enh_canny, crop_res
