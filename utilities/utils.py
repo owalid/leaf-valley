@@ -30,14 +30,11 @@ def store_dataset(path, dict, verbose):
   if verbose:
     print("Saving dataset with: \n")
     
+
   # Saves labels
   for col in dict.keys():
     col_array = np.array(dict[col])
     shape_array = np.shape(col_array)
-
-    if len(shape_array) == 1:
-      col_array = col_array.reshape((-1, 1))
-      shape_array = np.shape(col_array)
     
     first_element = col_array[0]
     
@@ -48,13 +45,13 @@ def store_dataset(path, dict, verbose):
     if type(first_element) is float or type(first_element) is np.float64 or type(first_element) is np.float32: # If float
       col_type = h5py.h5t.IEEE_F32BE
       col_type_str = "h5py.h5t.IEEE_F32BE"
-    elif type(first_element) is bool:
+    elif type(first_element) is bool or type(first_element) is np.uint8:
       col_array.astype(np.uint8)
-      col_type = h5py.h5t.STD_I8LE
-      col_type_str = "h5py.h5t.STD_I8LE"
+      col_type = h5py.h5t.STD_U8BE
+      col_type_str = "h5py.h5t.STD_U8BE"
     elif type(first_element) is int or type(first_element) is np.int64 or type(first_element) is np.int32: # If int or int64
-      col_type = h5py.h5t.STD_I32LE
-      col_type_str = "h5py.h5t.STD_I32LE"
+      col_type = h5py.h5t.STD_I32BE
+      col_type_str = "h5py.h5t.STD_I32BE"
     elif type(first_element) is np.str_ or type(first_element) is str: # If string or np.str
       col_type = h5py.string_dtype('utf-8')
       col_type_str = "h5py.string_dtype('utf-8')"
@@ -63,8 +60,7 @@ def store_dataset(path, dict, verbose):
       print(f"[+] Column: {col} - Type: {col_type_str} - Shape: {shape_array}")
     
     col_array = np.array(col_array, dtype=col_type)
-    
-
+      
     # Create the dataset
     h.create_dataset(col, shape_array, col_type, data=col_array)
   

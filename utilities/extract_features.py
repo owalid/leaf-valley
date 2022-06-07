@@ -414,6 +414,12 @@ def get_lab_img(img):
     '''
     return cv.cvtColor(img, cv.COLOR_RGB2LAB)
 
+def get_hsv_img(img):
+    '''
+        Get the hsv channels of an img.
+    '''
+    return cv.cvtColor(img, cv.COLOR_RGB2HSV)
+
 def get_graycoprops(img):
     img = bgrtogray(img)
 

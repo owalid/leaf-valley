@@ -19,7 +19,7 @@ import os.path as path, sys
 current_dir = path.dirname(path.abspath(getsourcefile(lambda:0)))
 sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
 from utilities.utils import crop_resize_image, safe_open_w, get_df, get_canny_img, get_gabor_img, store_dataset, update_data_dict, bgrtogray
-from utilities.extract_features import get_pyfeats_features, get_lpb_histogram, get_hue_moment, get_haralick, get_hsv_histogram, get_lab_histogram, get_graycoprops, get_lab_img
+from utilities.extract_features import get_pyfeats_features, get_lpb_histogram, get_hue_moment, get_haralick, get_hsv_histogram, get_lab_histogram, get_graycoprops, get_lab_img, get_hsv_img
 from utilities.remove_background_functions import remove_bg
 
 pcv.params.debug = ''
@@ -151,7 +151,7 @@ if __name__ == '__main__':
     parser.add_argument("-n", "--number-img", required=False, type=int, default=1000, help='Number of images to use per class to select maximum of all classes use -1. (default 1000)')
     parser.add_argument("-rt", "--result-type", required=False, type=str, default="GRAY", help='Type of result image for DP: GRAY, GABOR, CANNY, RGB. (default: GRAY)')
     parser.add_argument("-dst", "--destination", required=False, type=str, default='', help='Path to save the data. (default: data/preprocess)')
-    parser.add_argument("-f", "--features", required=False, type=str, help='Features to extract separate by ","\nExample: -f=graycoprops,lpb_histogram,hue_moment\nList of features:\n   - For DP: rgb, gray, canny, gabor\n   - For ML: graycoprops, lpb_histogram, hue_moment, haralick, histogram_hsv, histogram_lab, pyfeats')
+    parser.add_argument("-f", "--features", required=False, type=str, help='Features to extract separate by ","\nExample: -f=graycoprops,lpb_histogram,hue_moment\nList of features:\n   - For DP: rgb, gray, canny, gabor, lab, hsv\n   - For ML: graycoprops, lpb_histogram, hue_moment, haralick, histogram_hsv, histogram_lab, pyfeats')
     parser.add_argument("-s", "--size", required=False, type=int, default=256, help='Size of images. (default 256x256)')
     parser.add_argument("-v", "--verbose", required=False, action='store_true', default=False, help='Verbose')
     args = parser.parse_args()
@@ -219,13 +219,13 @@ if __name__ == '__main__':
         current_data_used = data_used if not isinstance(data_used, dict) else data_used['healthy' if healthy else 'not_healthy']
 
         if type_output == HEALTHY_NOT_HEALTHY:
-            label = 'healthy' if healthy else 'not_healthy'
+            class_name = 'healthy' if healthy else 'not_healthy'
         elif type_output == NOT_HEALTHY:
-            label = disease
+            class_name = disease
         elif type_output == ALL:
-            label = f"{specie}_{disease}"
+            class_name = f"{specie}_{disease}"
         else:
-            label = specie
+            class_name = specie
         
         if current_data_used == -1 or current_df.number_img <= current_data_used:
             number_img = current_df.number_img
@@ -242,35 +242,37 @@ if __name__ == '__main__':
                 pill_masked_img, masked_img, raw_img, mask = generate_img_without_bg(specie_directory, index, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
             else:
                 pill_masked_img, masked_img, raw_img = generate_img(specie_directory, index, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
-            file_path = f"{dest_path}/{label}/{specie}-{disease}-{index}.jpg"
+            file_path = f"{dest_path}/{class_name}/{specie}-{disease}-{index}.jpg"
             specie_index = f"{specie}_{disease}_{index}"
-            data = update_data_dict(data, 'classes', label)
+            data = update_data_dict(data, 'classes', class_name)
             
             # FEATURES DEEP LEARNING
             if 'rgb' in answers_type_features or len(answers_type_features) == 0:
-                data = update_data_dict(data, 'rgb_img',  masked_img)
+                data = update_data_dict(data, 'rgb_img', masked_img)
             if 'gabor' in answers_type_features:
-                data = update_data_dict(data, 'gabor_img',  get_gabor_img(masked_img))
+                data = update_data_dict(data, 'gabor_img', get_gabor_img(masked_img))
             if 'gray' in answers_type_features:
-                data = update_data_dict(data, 'gray_img',  bgrtogray(masked_img))
+                data = update_data_dict(data, 'gray_img', bgrtogray(masked_img))
             if 'canny' in answers_type_features:
-                data = update_data_dict(data, 'canny_img',  get_canny_img(masked_img))
+                data = update_data_dict(data, 'canny_img', get_canny_img(masked_img))
             if 'lab' in answers_type_features:
                 data = update_data_dict(data, 'lab',  get_lab_img(masked_img))
+            if 'hsv' in answers_type_features:
+                data = update_data_dict(data, 'hsv',  get_hsv_img(masked_img))
                 
             # FEATURES MACHINE LEARNING
             if 'graycoprops' in answers_type_features:
-                data = update_data_dict(data, 'graycoprops',  get_graycoprops(masked_img))
+                data = update_data_dict(data, 'graycoprops', get_graycoprops(masked_img))
             if 'lpb_histogram' in answers_type_features:
-                data = update_data_dict(data, 'lpb_histogram',  get_lpb_histogram(masked_img))
+                data = update_data_dict(data, 'lpb_histogram', get_lpb_histogram(masked_img))
             if 'hue_moment' in answers_type_features:
-                data = update_data_dict(data, 'hue_moment',  get_hue_moment(masked_img))
+                data = update_data_dict(data, 'hue_moment', get_hue_moment(masked_img))
             if 'haralick' in answers_type_features:
-                data = update_data_dict(data, 'haralick',  get_haralick(masked_img))
+                data = update_data_dict(data, 'haralick', get_haralick(masked_img))
             if 'histogram_hsv' in answers_type_features:
-                data = update_data_dict(data, 'histogram_hsv',  get_hsv_histogram(masked_img))
+                data = update_data_dict(data, 'histogram_hsv', get_hsv_histogram(masked_img))
             if 'histogram_lab' in answers_type_features:
-                data = update_data_dict(data, 'histogram_lab',  get_lab_histogram(masked_img))
+                data = update_data_dict(data, 'histogram_lab', get_lab_histogram(masked_img))
             if 'pyfeats' in answers_type_features and not should_remove_bg:
                 pyfeats_features = get_pyfeats_features(raw_img, mask)
                 for feature in pyfeats_features:
@@ -284,7 +286,7 @@ if __name__ == '__main__':
     local_print(f"Total of images processed: {len(data['classes'])}")
     local_print(f"[+] Generate hdf5 file")
     prefix_data = 'all' if int(data_used) == -1 else str(data_used)
-    path_hdf = f"{dest_path}export/data_{type_output.lower()}_{prefix_data}_{'_'.join(answers_type_features)}.h5"
+    path_hdf = os.path.join(dest_path, 'export', f"data_{type_output.lower()}_{prefix_data}_{'_'.join(answers_type_features)}.h5")
     os.makedirs(os.path.dirname(path_hdf), exist_ok=True)
     store_dataset(path_hdf, data, VERBOSE)
     local_print(f"[+] h5 file save at {path_hdf}")
