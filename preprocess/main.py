@@ -299,16 +299,17 @@ if __name__ == '__main__':
         local_print(f"[+] answers_type_features: {answers_type_features}")
     data = dict()
     local_print("=====================================================")
-    iterator_species = tqdm(indexes_species, ncols=45) if VERBOSE else indexes_species
     
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        results = executor.map(multiprocess_worker, iterator_species, repeat(df_filtred), repeat(data_used), repeat(type_output), repeat(src_directory), repeat(dest_path), repeat(size_img), repeat(crop_img), repeat(normalize_img), repeat(normalize_type), repeat(type_img), repeat(should_remove_bg), repeat(answers_type_features), repeat(write_img))
+        if VERBOSE:
+            results = list(tqdm(executor.map(multiprocess_worker, indexes_species, repeat(df_filtred), repeat(data_used), repeat(type_output), repeat(src_directory), repeat(dest_path), repeat(size_img), repeat(crop_img), repeat(normalize_img), repeat(normalize_type), repeat(type_img), repeat(should_remove_bg), repeat(answers_type_features), repeat(write_img)), total=len(indexes_species)))
+        else:
+            results = list(executor.map(multiprocess_worker, indexes_species, repeat(df_filtred), repeat(data_used), repeat(type_output), repeat(src_directory), repeat(dest_path), repeat(size_img), repeat(crop_img), repeat(normalize_img), repeat(normalize_type), repeat(type_img), repeat(should_remove_bg), repeat(answers_type_features), repeat(write_img)))
+            
     data = dict()
     for result in results:
         for key, value in result.items():
             if key not in data.keys():
-                print(key)
-                print(value)
                 data[key] = value if type(value) == list or type(value) == np.ndarray or type(value) == pd.DataFrame else [value]
             else:
                 data[key] += value
