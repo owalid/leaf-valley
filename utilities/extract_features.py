@@ -368,15 +368,19 @@ def get_lpb_histogram(img):
     # normalize the histogram
     hist = hist.astype(np.float)
     hist /= (hist.sum() + 1e-7)
-    return hist
+    
+    result = {f"lpb-histogram-{index}": hist[index] for index in range(len(hist))}
+    return result
 
 def get_hue_moment(img):
     '''
     Calculate the Hu Moments of an img.
     '''
     img = bgrtogray(img)
-    return cv.HuMoments(
-        cv.moments(img)).flatten()
+    hue_moment = cv.HuMoments(cv.moments(img)).flatten()
+    
+    result = {f"hue-moment-{index}": hue_moment[index] for index in range(len(hue_moment))}
+    return result
 
 
 def get_haralick(img):
@@ -384,8 +388,9 @@ def get_haralick(img):
     Calculate the Haralick texture features of an img.
     '''
     gray = bgrtogray(img)
-    return mahotas.features.haralick(
-        gray).mean(axis=0)
+    haralick = mahotas.features.haralick(gray).mean(axis=0)
+    result = {f"haralick-{index}": haralick[index] for index in range(len(haralick))}
+    return result
 
 def get_hsv_histogram(img):
     '''
@@ -394,8 +399,10 @@ def get_hsv_histogram(img):
     img = cv.cvtColor(img, cv.COLOR_BGR2HSV)
     hist = cv.calcHist([img], [0, 1, 2], None, [
                        8, 8, 8], [0, 256, 0, 256, 0, 256])
-    cv.normalize(hist, hist)
-    return hist.flatten()
+    
+    hist = hist.flatten()
+    result = {f"hsv-histogram-{index}": hist[index] for index in range(len(hist))}
+    return result
 
 def get_lab_histogram(img):
     '''
@@ -406,7 +413,9 @@ def get_lab_histogram(img):
     hist = cv.calcHist([img], [0, 1, 2], None, [
                        8, 8, 8], [0, 256, 0, 256, 0, 256])
     cv.normalize(hist, hist)
-    return hist.flatten()
+    hist = hist.flatten()
+    result = {f"lab-histogram-{index}": hist[index] for index in range(len(hist))}
+    return result
 
 def get_lab_img(img):
     '''
@@ -439,5 +448,7 @@ def get_graycoprops(img):
     contrast = graycoprops(glcm, 'contrast')
     features = np.array([dissimilarity, correlation,
                          homogeneity, energy, ASM, contrast])
+    features = features.flatten()
+    result = {f"graycomatrix-{index}": features[index] for index in range(len(features))}
 
-    return features.flatten()
+    return result

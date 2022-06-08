@@ -192,17 +192,29 @@ def multiprocess_worker(specie_directory, df_filtred, data_used, type_output, sr
             
         # FEATURES MACHINE LEARNING
         if 'graycoprops' in answers_type_features:
-            data = update_data_dict(data, 'graycoprops', get_graycoprops(masked_img))
+            features = get_graycoprops(masked_img)
+            for feature in features:
+                data = update_data_dict(data, feature, features[feature])
         if 'lpb_histogram' in answers_type_features:
-            data = update_data_dict(data, 'lpb_histogram', get_lpb_histogram(masked_img))
+            features = get_lpb_histogram(masked_img)
+            for feature in features:
+                data = update_data_dict(data, feature, features[feature])
         if 'hue_moment' in answers_type_features:
-            data = update_data_dict(data, 'hue_moment', get_hue_moment(masked_img))
+            features = get_hue_moment(masked_img)
+            for feature in features:
+                data = update_data_dict(data, feature, features[feature])
         if 'haralick' in answers_type_features:
-            data = update_data_dict(data, 'haralick', get_haralick(masked_img))
+            features = get_haralick(masked_img)
+            for feature in features:
+                data = update_data_dict(data, feature, features[feature])
         if 'histogram_hsv' in answers_type_features:
-            data = update_data_dict(data, 'histogram_hsv', get_hsv_histogram(masked_img))
+            features = get_hsv_histogram(masked_img)
+            for feature in features:
+                data = update_data_dict(data, feature, features[feature])
         if 'histogram_lab' in answers_type_features:
-            data = update_data_dict(data, 'histogram_lab', get_lab_histogram(masked_img))
+            features = get_lab_histogram(masked_img)
+            for feature in features:
+                data = update_data_dict(data, feature, features[feature])
         if 'pyfeats' in answers_type_features and should_remove_bg:
             pyfeats_features = get_pyfeats_features(raw_img, mask)
             for feature in pyfeats_features:
@@ -295,9 +307,14 @@ if __name__ == '__main__':
     for result in results:
         for key, value in result.items():
             if key not in data.keys():
-                data[key] = value
+                print(key)
+                print(value)
+                data[key] = value if type(value) == list or type(value) == np.ndarray or type(value) == pd.DataFrame else [value]
             else:
                 data[key] += value
+    if VERBOSE:            
+        for key in data.keys():
+            print(f"[+] {key}: have len: {len(data[key])}")
                 
     local_print(f"Total of images processed: {len(data['classes'])}")
     local_print(f"[+] Generate hdf5 file")
