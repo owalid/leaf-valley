@@ -1,6 +1,9 @@
 '''
   CLI used to preprocess the data and get features and classes.
 '''
+import concurrent.futures
+from itertools import repeat
+import multiprocessing as mp
 from tqdm import tqdm
 import random
 import os
@@ -134,6 +137,82 @@ def generate_img_without_bg(path_img, type_img, size_img, cropped_img, normalize
 
     return pill_img, array_img, bgr_img, mask
 
+def multiprocess_worker(specie_directory, df_filtred, data_used, type_output, src_directory, dest_path, size_img, crop_img, normalize_img, normalize_type, type_img, should_remove_bg, answers_type_features, write_img):
+    current_df = df_filtred.loc[specie_directory]
+    healthy = current_df.healthy
+    disease = current_df.disease
+    specie = current_df.specie
+    data = dict()
+    current_data_used = data_used if not isinstance(data_used, dict) else data_used['healthy' if healthy else 'not_healthy']
+
+    if type_output == HEALTHY_NOT_HEALTHY:
+        class_name = 'healthy' if healthy else 'not_healthy'
+    elif type_output == NOT_HEALTHY:
+        class_name = disease
+    elif type_output == ALL:
+        class_name = f"{specie}_{disease}"
+    else:
+        class_name = specie
+    
+    if current_data_used == -1 or current_df.number_img <= current_data_used:
+        number_img = current_df.number_img
+        indexes = list(range(1, current_df.number_img+1))
+    else:
+        number_img = current_data_used
+        indexes = random.sample(list(range(1, current_df.number_img)), number_img) # Get alls indexes with random without repetition.
+        
+    local_print(f"\n[+] index {specie_directory}")
+    local_print(f"[+] Start generate specie: {specie}")
+    local_print(f"[+] Number of images: {number_img}")
+
+    for index in tqdm(indexes, ncols=100) if VERBOSE else indexes:
+        path_img = os.path.join(src_directory, specie_directory, f"image ({index}).JPG")
+        
+        if should_remove_bg:
+            pill_masked_img, masked_img, raw_img, mask = generate_img_without_bg(path_img, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
+        else:
+            pill_masked_img, masked_img, raw_img = generate_img(path_img, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
+        file_path = os.path.join(dest_path, class_name, f"{specie}-{disease}-{index}.jpg")
+        specie_index = f"{specie}_{disease}_{index}"
+        data = update_data_dict(data, 'classes', class_name)
+        
+        # FEATURES DEEP LEARNING
+        if 'rgb' in answers_type_features or len(answers_type_features) == 0:
+            data = update_data_dict(data, 'rgb_img', masked_img)
+        if 'gabor' in answers_type_features:
+            data = update_data_dict(data, 'gabor_img', get_gabor_img(masked_img))
+        if 'gray' in answers_type_features:
+            data = update_data_dict(data, 'gray_img', bgrtogray(masked_img))
+        if 'canny' in answers_type_features:
+            data = update_data_dict(data, 'canny_img', get_canny_img(masked_img))
+        if 'lab' in answers_type_features:
+            data = update_data_dict(data, 'lab',  get_lab_img(masked_img))
+        if 'hsv' in answers_type_features:
+            data = update_data_dict(data, 'hsv',  get_hsv_img(masked_img))
+            
+        # FEATURES MACHINE LEARNING
+        if 'graycoprops' in answers_type_features:
+            data = update_data_dict(data, 'graycoprops', get_graycoprops(masked_img))
+        if 'lpb_histogram' in answers_type_features:
+            data = update_data_dict(data, 'lpb_histogram', get_lpb_histogram(masked_img))
+        if 'hue_moment' in answers_type_features:
+            data = update_data_dict(data, 'hue_moment', get_hue_moment(masked_img))
+        if 'haralick' in answers_type_features:
+            data = update_data_dict(data, 'haralick', get_haralick(masked_img))
+        if 'histogram_hsv' in answers_type_features:
+            data = update_data_dict(data, 'histogram_hsv', get_hsv_histogram(masked_img))
+        if 'histogram_lab' in answers_type_features:
+            data = update_data_dict(data, 'histogram_lab', get_lab_histogram(masked_img))
+        if 'pyfeats' in answers_type_features and should_remove_bg:
+            pyfeats_features = get_pyfeats_features(raw_img, mask)
+            for feature in pyfeats_features:
+                data = update_data_dict(data, feature, pyfeats_features[feature])
+                
+        if write_img:
+            with safe_open_w(file_path) as f:
+                pill_masked_img.save(f)
+    return data
+
 
 # MAIN
 if __name__ == '__main__':
@@ -169,6 +248,7 @@ if __name__ == '__main__':
     normalize_img = args.normalize_img
     df_filtred = get_df_filtered(df, type_output)
     indexes_species = df_filtred.index
+
     if len(indexes_species) == 0:
         print("No images to process")
         exit()
@@ -208,80 +288,17 @@ if __name__ == '__main__':
     data = dict()
     local_print("=====================================================")
     iterator_species = tqdm(indexes_species, ncols=45) if VERBOSE else indexes_species
-    for specie_directory in iterator_species:
-        current_df = df_filtred.loc[specie_directory]
-        healthy = current_df.healthy
-        disease = current_df.disease
-        specie = current_df.specie
-
-        current_data_used = data_used if not isinstance(data_used, dict) else data_used['healthy' if healthy else 'not_healthy']
-
-        if type_output == HEALTHY_NOT_HEALTHY:
-            class_name = 'healthy' if healthy else 'not_healthy'
-        elif type_output == NOT_HEALTHY:
-            class_name = disease
-        elif type_output == ALL:
-            class_name = f"{specie}_{disease}"
-        else:
-            class_name = specie
-        
-        if current_data_used == -1 or current_df.number_img <= current_data_used:
-            number_img = current_df.number_img
-            indexes = list(range(1, current_df.number_img+1))
-        else:
-            number_img = current_data_used
-            indexes = random.sample(list(range(1, current_df.number_img)), number_img) # Get alls indexes with random without repetition.
-        local_print(f"\n[+] index {specie_directory}")
-        local_print(f"[+] Start generate specie: {specie}")
-        local_print(f"[+] Number of images: {number_img}")
-        
-        for index in tqdm(indexes, ncols=100) if VERBOSE else indexes:
-            path_img = os.path.join(src_directory, specie_directory, f"image ({index}).JPG")
-            if should_remove_bg:
-                pill_masked_img, masked_img, raw_img, mask = generate_img_without_bg(path_img, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
-            else:
-                pill_masked_img, masked_img, raw_img = generate_img(path_img, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
-            file_path = f"{dest_path}/{class_name}/{specie}-{disease}-{index}.jpg"
-            specie_index = f"{specie}_{disease}_{index}"
-            data = update_data_dict(data, 'classes', class_name)
-            
-            # FEATURES DEEP LEARNING
-            if 'rgb' in answers_type_features or len(answers_type_features) == 0:
-                data = update_data_dict(data, 'rgb_img', masked_img)
-            if 'gabor' in answers_type_features:
-                data = update_data_dict(data, 'gabor_img', get_gabor_img(masked_img))
-            if 'gray' in answers_type_features:
-                data = update_data_dict(data, 'gray_img', bgrtogray(masked_img))
-            if 'canny' in answers_type_features:
-                data = update_data_dict(data, 'canny_img', get_canny_img(masked_img))
-            if 'lab' in answers_type_features:
-                data = update_data_dict(data, 'lab',  get_lab_img(masked_img))
-            if 'hsv' in answers_type_features:
-                data = update_data_dict(data, 'hsv',  get_hsv_img(masked_img))
-                
-            # FEATURES MACHINE LEARNING
-            if 'graycoprops' in answers_type_features:
-                data = update_data_dict(data, 'graycoprops', get_graycoprops(masked_img))
-            if 'lpb_histogram' in answers_type_features:
-                data = update_data_dict(data, 'lpb_histogram', get_lpb_histogram(masked_img))
-            if 'hue_moment' in answers_type_features:
-                data = update_data_dict(data, 'hue_moment', get_hue_moment(masked_img))
-            if 'haralick' in answers_type_features:
-                data = update_data_dict(data, 'haralick', get_haralick(masked_img))
-            if 'histogram_hsv' in answers_type_features:
-                data = update_data_dict(data, 'histogram_hsv', get_hsv_histogram(masked_img))
-            if 'histogram_lab' in answers_type_features:
-                data = update_data_dict(data, 'histogram_lab', get_lab_histogram(masked_img))
-            if 'pyfeats' in answers_type_features and should_remove_bg:
-                pyfeats_features = get_pyfeats_features(raw_img, mask)
-                for feature in pyfeats_features:
-                    data = update_data_dict(data, feature, pyfeats_features[feature])
-                    
-            if write_img:
-                with safe_open_w(file_path) as f:
-                    pill_masked_img.save(f)
-        local_print(f"\n\n[+] End with {specie_directory}\n\n")
     
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        results = executor.map(multiprocess_worker, iterator_species, repeat(df_filtred), repeat(data_used), repeat(type_output), repeat(src_directory), repeat(dest_path), repeat(size_img), repeat(crop_img), repeat(normalize_img), repeat(normalize_type), repeat(type_img), repeat(should_remove_bg), repeat(answers_type_features), repeat(write_img))
+    data = dict()
+    for result in results:
+        for key, value in result.items():
+            if key not in data.keys():
+                data[key] = value
+            else:
+                data[key] += value
+                
     local_print(f"Total of images processed: {len(data['classes'])}")
     local_print(f"[+] Generate hdf5 file")
     prefix_data = 'all' if int(data_used) == -1 else str(data_used)
