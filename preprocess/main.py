@@ -272,7 +272,7 @@ if __name__ == '__main__':
                 data = update_data_dict(data, 'histogram_hsv', get_hsv_histogram(masked_img))
             if 'histogram_lab' in answers_type_features:
                 data = update_data_dict(data, 'histogram_lab', get_lab_histogram(masked_img))
-            if 'pyfeats' in answers_type_features and not should_remove_bg:
+            if 'pyfeats' in answers_type_features and should_remove_bg:
                 pyfeats_features = get_pyfeats_features(raw_img, mask)
                 for feature in pyfeats_features:
                     data = update_data_dict(data, feature, pyfeats_features[feature])
