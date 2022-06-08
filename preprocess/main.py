@@ -80,8 +80,7 @@ def get_df_filtered(df, type_output):
             list(df_filtred.specie.values))]
         return pd.concat([df_others_specie, df_filtred])
 
-def generate_img(specie_directory, img_number, type_img, size_img, cropped_img, normalize_img, normalized_type):
-    path_img = f"data/augmentation/{specie_directory}/image ({img_number}).JPG"
+def generate_img(path_img, type_img, size_img, cropped_img, normalize_img, normalized_type):
     bgr_img, _, _ = pcv.readimage(path_img, mode='bgr')
     rgb_img = cv.cvtColor(bgr_img, cv.COLOR_BGR2RGB)
 
@@ -108,8 +107,7 @@ def generate_img(specie_directory, img_number, type_img, size_img, cropped_img, 
     return pill_img, array_img, bgr_img
 
 
-def generate_img_without_bg(specie_directory, img_number, type_img, size_img, cropped_img, normalize_img, normalized_type):
-    path_img = f"data/augmentation/{specie_directory}/image ({img_number}).JPG"
+def generate_img_without_bg(path_img, type_img, size_img, cropped_img, normalize_img, normalized_type):
     bgr_img, _, _ = pcv.readimage(path_img, mode='bgr')
     mask, new_img = remove_bg(bgr_img)
 
@@ -151,7 +149,7 @@ if __name__ == '__main__':
     parser.add_argument("-n", "--number-img", required=False, type=int, default=1000, help='Number of images to use per class to select maximum of all classes use -1. (default 1000)')
     parser.add_argument("-rt", "--result-type", required=False, type=str, default="GRAY", help='Type of result image for DP: GRAY, GABOR, CANNY, RGB. (default: GRAY)')
     parser.add_argument("-dst", "--destination", required=False, type=str, default='', help='Path to save the data. (default: data/preprocess)')
-    parser.add_argument("-f", "--features", required=False, type=str, help='Features to extract separate by ","\nExample: -f=graycoprops,lpb_histogram,hue_moment\nList of features:\n   - For DP: rgb, gray, canny, gabor, lab, hsv\n   - For ML: graycoprops, lpb_histogram, hue_moment, haralick, histogram_hsv, histogram_lab, pyfeats')
+    parser.add_argument("-f", "--features", required=False, type=str, help='Features to extract separate by ","\nExample: -f=graycoprops,lpb_histogram,hue_moment\nList of features:\n   - For DP: rgb,gray,canny,gabor,lab,hsv\n   - For ML: graycoprops,lpb_histogram,hue_moment,haralick,histogram_hsv,histogram_lab,pyfeats')
     parser.add_argument("-s", "--size", required=False, type=int, default=256, help='Size of images. (default 256x256)')
     parser.add_argument("-v", "--verbose", required=False, action='store_true', default=False, help='Verbose')
     args = parser.parse_args()
@@ -238,10 +236,11 @@ if __name__ == '__main__':
         local_print(f"[+] Number of images: {number_img}")
         
         for index in tqdm(indexes, ncols=100) if VERBOSE else indexes_species:
+            path_img = os.path.join(src_directory, specie_directory, f"image ({index}).JPG")
             if should_remove_bg:
-                pill_masked_img, masked_img, raw_img, mask = generate_img_without_bg(specie_directory, index, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
+                pill_masked_img, masked_img, raw_img, mask = generate_img_without_bg(path_img, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
             else:
-                pill_masked_img, masked_img, raw_img = generate_img(specie_directory, index, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
+                pill_masked_img, masked_img, raw_img = generate_img(path_img, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
             file_path = f"{dest_path}/{class_name}/{specie}-{disease}-{index}.jpg"
             specie_index = f"{specie}_{disease}_{index}"
             data = update_data_dict(data, 'classes', class_name)
