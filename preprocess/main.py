@@ -63,10 +63,11 @@ def get_data_used(data_used, df, type_output):
 
 
 def get_df_filtered(df, type_output):
-    df = df.loc[(df['specie'] != 'background_without_leaves')]
-
+    
     if type_output == ALL:
         return df
+    
+    df = df.loc[(df['specie'] != 'background_without_leaves')]
     if type_output == HEALTHY_NOT_HEALTHY:
         df_others_specie = df.loc[(~df['specie'].isin(list(df.specie.values)))]
         return pd.concat([df_others_specie, df])
@@ -233,7 +234,7 @@ if __name__ == '__main__':
     parser.add_argument("-crop", "--crop-img", required=False, action='store_true', default=False, help='Remove padding around leaf')
     parser.add_argument("-nor", "--normalize-img", required=False, action='store_true', default=True, help='Normalize images, you can specify the normalization type with the option -nortype')
     parser.add_argument("-nortype", "--normalize-type", required=False, type=str, default='NORM_MINMAX', help='Normalize images features with cv.normalize (Default: NORM_MINMAX) \nTypes: https://vovkos.github.io/doxyrest-showcase/opencv/sphinx_rtd_theme/enum_cv_NormTypes.html')
-    parser.add_argument("-c", "--classification", required=False, type=str, default="HEALTHY_NOT_HEALTHY", help='Classification type: HEALTHY_NOT_HEALTHY(default), ONLY_HEALTHY, NOT_HEALTHY, ALL')
+    parser.add_argument("-c", "--classification", required=False, type=str, default="ALL", help='Classification type: HEALTHY_NOT_HEALTHY, ONLY_HEALTHY, NOT_HEALTHY, ALL (default)')
     parser.add_argument("-n", "--number-img", required=False, type=int, default=1000, help='Number of images to use per class to select maximum of all classes use -1. (default 1000)')
     parser.add_argument("-rt", "--result-type", required=False, type=str, default="GRAY", help='Type of result image for DP: GRAY, GABOR, CANNY, RGB. (default: GRAY)')
     parser.add_argument("-dst", "--destination", required=False, type=str, default='', help='Path to save the data. (default: data/preprocess)')
