@@ -1,4 +1,5 @@
 import os
+import matplotlib.pyplot as plt
 import pandas as pd
 import cv2 as cv
 import numpy as np
@@ -6,6 +7,19 @@ from multiprocessing.pool import ThreadPool
 from plantcv import plantcv as pcv
 import h5py
 
+def chunks(arr, chunk_size):
+  '''
+    Split array into chunks
+    Args:
+      arr: array to split
+      chunk_size: size of chunks
+    Returns:
+      list of chunks
+  '''
+  return [arr[i:i+chunk_size] for i in range(0, len(arr), chunk_size)]
+  
+    
+  
 def update_data_dict(data_dict, key, value):
   if key not in data_dict:
     data_dict[key] = []
@@ -18,6 +32,14 @@ def is_array(x):
   '''
   return isinstance(x, list) or isinstance(x, np.ndarray)
 
+def get_dataset(path):
+  '''
+    Get dataset from h5py file
+  '''
+  print(F"PATH: {path}")
+  hf = h5py.File(path, 'r')
+  return hf
+  
 def store_dataset(path, dict, verbose):
   '''
     Store dataset in h5py file
@@ -63,7 +85,6 @@ def store_dataset(path, dict, verbose):
       
     # Create the dataset
     h.create_dataset(col, shape_array, col_type, data=col_array)
-  
 
 def replace_text(text, lst, rep=' '):
     '''

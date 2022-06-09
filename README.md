@@ -47,6 +47,34 @@ optional arguments:
   -v, --verbose         Verbose
 ```
 
+## Deep Learning process
+
+```
+python process/deep_learning/main.py -h
+usage: main.py [-h] [-p PATH_DATASET] [-lt] [-b BATCH_SIZE] [-e EPOCHS] [-m MODELS] [-s] [-dst-l DEST_LOGS] [-dst-m DEST_MODELS] [-v]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -p PATH_DATASET, --path-dataset PATH_DATASET
+                        Path of your dataset (h5 file)
+  -lt, --launch-tensorboard
+                        Launch tensorboard after fitting
+  -b BATCH_SIZE, --batch-size BATCH_SIZE
+                        Batch size
+  -e EPOCHS, --epochs EPOCHS
+                        Epoch
+  -m MODELS, --models MODELS
+                        Select model(s), if grid search is enabled, you can select multiple models separate by ",". example -m=vgg19,resnet50. By default is select all models.
+                        Models availables:
+                        VGG16,VGG16_PRETRAINED,VGG19,VGG19_PRETRAINED,RESNET50,RESNET50_PRETRAINED,RESNET50V2,RESNET50V2_PRETRAINED,INCEPTIONRESNETV2,INCEPTIONRESNETV2_PRETRAINED,INCEPTIONV3,INCEPTIONV3_PRETRAINED,EFFICIENTNETB0,EFFICIENTNETB0_PRETRAINED,EFFICIENTNETB7,EFFICIENTNETB7_PRETRAINED,XCEPTION,XCEPTION_PRETRAINED,CLASSIC_CNN,ALEXNET,LAB_PROCESS,HSV_PROCESS.
+  -s, --save-model      Save model
+  -dst-l DEST_LOGS, --dest-logs DEST_LOGS
+                        Destination for tensorboard logs. (default logs/tensorboard)
+  -dst-m DEST_MODELS, --dest-models DEST_MODELS
+                        Destination for model if save model is enabled
+  -v, --verbose         Verbose
+```
+
 # Web part
 
 ## With docker
