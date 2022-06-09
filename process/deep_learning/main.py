@@ -66,7 +66,7 @@ def run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num
     keras_verbose = 1 if VERBOSE else 0
     for model_name in model_names:
         should_train = False if model_name.endswith('_PRETRAINED') else True
-        model_name_key = model_name if not should_train else model_name.replace('_PRETRAINED', '')
+        model_name_key = model_name if should_train else model_name.replace('_PRETRAINED', '')
         
         if base_models[model_name_key]['preprocess_input'] is None: # if is not pretrained model
             current_model = base_models[model_name_key]['base'](input_shape, num_classes)
