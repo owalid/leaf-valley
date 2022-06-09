@@ -10,6 +10,7 @@ from models import base_models
 from metrics import recall_m, precision_m, f1_m
 import h5py
 import json
+from tensorflow.keras.optimizers import RMSprop, Adam, SGD, Adadelta, NAdam
 
 # Tensorflow
 import tensorflow as tf
@@ -32,6 +33,14 @@ sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
 from utilities.utils import get_dataset
 
 VERBOSE = False
+
+optimizers = {
+    'ADAM': Adam,
+    'RMSPROP': RMSprop,
+    'SGD': SGD,
+    'ADADELTA': Adadelta,
+    'NADAM': NAdam
+}
 
 def local_print(msg):
     if VERBOSE:
@@ -62,7 +71,7 @@ def get_model(input_shape, num_classes, model_name, should_train):
 
     return model
 
-def run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num_classes, batch_size, le, dest_logs, epochs, dest_models, should_save_model):
+def run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num_classes, batch_size, le, dest_logs, epochs, dest_models, should_save_model, optimizer, base_learning_rate):
     keras_verbose = 1 if VERBOSE else 0
     for model_name in model_names:
         should_train = False if model_name.endswith('_PRETRAINED') else True
@@ -77,9 +86,9 @@ def run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num
         
         callbacks = get_tensorboard_callbacks(model_name, x_valid, y_valid, le, dest_logs)
         
-        base_learning_rate = 0.001
         local_print(f"[+] Compile model {model_name}...")
-        current_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=base_learning_rate),
+        
+        current_model.compile(optimizer=optimizer(learning_rate=base_learning_rate),
                     loss=tf.keras.losses.categorical_crossentropy,
                     metrics=[
                         'accuracy',
@@ -190,14 +199,19 @@ if __name__ == '__main__':
     parser.add_argument("-p", "--path-dataset", required=False, type=str, default='data/deep_learning/export/data_all_20_gray.h5', help='Path of your dataset (h5 file)')
     parser.add_argument("-lt", "--launch-tensorboard", required=False, action='store_true', default=False, help='Launch tensorboard after fitting')
     parser.add_argument("-b", "--batch-size", required=False, type=int, default=32, help='Batch size')
+    parser.add_argument("-lr", "--learning-rate", required=False, type=float, default=0.001, help='Learning rate (default 0.001)')
+    parser.add_argument("-opt", "--optimizer", required=False, type=str, default="Adam", help=f'Optimizer (default adam). Available: {optimizers.keys()}')
     parser.add_argument("-e", "--epochs", required=False, type=int, default=50, help='Epoch')
     parser.add_argument("-m", "--models", required=False, type=str, help=f'Select model(s), if grid search is enabled, you can select multiple models separate by ",". example -m=vgg19,resnet50. By default is select all models.\nModels availables:\n{models_availaibles}.')
     parser.add_argument("-s", "--save-model", required=False, action='store_true', default=False, help='Save model')
     parser.add_argument("-dst-l", "--dest-logs", required=False, type=str, help='Destination for tensorboard logs. (default logs/tensorboard)')
     parser.add_argument("-dst-m", "--dest-models", required=False, type=str, help='Destination for model if save model is enabled')
     parser.add_argument("-v", "--verbose", required=False, action='store_true', default=False, help='Verbose')
+    
     args = parser.parse_args()
     print(args)
+    
+    base_learning_rate = args.learning_rate
     path_dataset = args.path_dataset
     launch_tensorboard = args.launch_tensorboard
     batch_size = args.batch_size
@@ -206,8 +220,10 @@ if __name__ == '__main__':
     should_save_model = args.save_model
     dest_models = args.dest_models
     dest_logs = args.dest_logs
+    
     VERBOSE = args.verbose
     
+    optimizer = optimizers[args.optimizer.upper()] if args.optimizer.upper() in optimizers.keys() else optimizers["ADAMS"]
     
     if not os.path.exists(path_dataset):
         print("[-] File does not exist")
@@ -275,7 +291,7 @@ if __name__ == '__main__':
     local_print(f"[+] X_valid.shape: {x_valid.shape} | y_valid.shape: {y_valid.shape}")
     
     # Run all models according to model_names arg
-    run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num_classes, batch_size, le, dest_logs, epochs, dest_models, should_save_model)
+    run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num_classes, batch_size, le, dest_logs, epochs, dest_models, should_save_model, optimizer, base_learning_rate)
  
     if launch_tensorboard:
         print("[+] Run tensorboard")
