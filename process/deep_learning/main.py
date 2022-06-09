@@ -69,7 +69,8 @@ def run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num
             current_model = base_models[model_name]['base'](input_shape, num_classes)
         else:
             should_train = False if model_name.endswith('_PRETRAINED') else True
-            current_model = get_model(input_shape, num_classes, model_name, should_train)  # get pretrained model
+            model_name_key = model_name if not should_train else model_name.replace('_PRETRAINED', '')
+            current_model = get_model(input_shape, num_classes, model_name_key, should_train)  # get pretrained model
         local_print("==========================================================")
         local_print(f"[+] Current model: {model_name}")
         
