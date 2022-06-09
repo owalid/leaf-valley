@@ -13,7 +13,7 @@ class ClassificationReportCallback(CustomCallBack):
         
     def on_epoch_end(self, epoch, logs=None):
         # Use the model to predict the values from the validation dataset.
-        test_pred = (self.model.predict(self.x_valid) > 0.5).astype("int32")
+        test_pred = self.model.predict(self.x_valid)
         test_pred = self.le.inverse_transform(np.argmax(test_pred, axis=-1))
         test_true = self.le.inverse_transform(np.argmax(self.y_valid, axis=-1))
         clf_report = classification_report(test_true, test_pred, target_names=self.le.classes_, output_dict=True)

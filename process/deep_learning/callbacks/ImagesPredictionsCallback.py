@@ -29,7 +29,7 @@ class ImagesPredictionsCallback(CustomCallBack):
         return buf.reshape(scale * nrows, scale * ncols, 3)
     
     def on_train_end(self, logs=None):
-        test_pred = (self.model.predict(self.x_valid) > 0.5).astype("int32")
+        test_pred = self.model.predict(self.x_valid)
         test_pred = self.le.inverse_transform(np.argmax(test_pred, axis=-1))
         test_true = self.le.inverse_transform(np.argmax(self.y_valid, axis=-1))
         
