@@ -10,7 +10,7 @@ from models import base_models
 from metrics import recall_m, precision_m, f1_m
 import h5py
 import json
-from tensorflow.keras.optimizers import RMSprop, Adam, SGD, Adadelta, NAdam
+from tensorflow.keras.optimizers import RMSprop, Adam, SGD, Adadelta, Nadam
 
 # Tensorflow
 import tensorflow as tf
@@ -39,7 +39,7 @@ optimizers = {
     'RMSPROP': RMSprop,
     'SGD': SGD,
     'ADADELTA': Adadelta,
-    'NADAM': NAdam
+    'NADAM': Nadam
 }
 
 def local_print(msg):
