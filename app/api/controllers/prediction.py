@@ -20,7 +20,7 @@ current_dir = current_dir[:current_dir.rfind(path.sep)]
 current_dir = current_dir[:current_dir.rfind(path.sep)]
 sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
 from utilities.remove_background_functions import remove_bg
-# todo decoment this when deep learning classifier is merged: from process.deep_learning.metrics import recall_m, precision_m, f1_m
+from process.deep_learning.metrics import recall_m, precision_m, f1_m
 
 global models
 models = {}
@@ -38,33 +38,7 @@ class PredictionController:
     
     def predict(b64img, model_name):
         
-        # TODO REMOVE THIS WHEN PR OF DEEP-LEARNING IS MERGED
-        import tensorflow as tf
-        import numpy as np
-        from keras import backend as K
-
-        def recall_m(y_true, y_pred):
-            true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
-            possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
-            recall = true_positives / (possible_positives + K.epsilon())
-            return recall
-
-        def precision_m(y_true, y_pred):
-            true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
-            predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
-            precision = true_positives / (predicted_positives + K.epsilon())
-            return precision
-
-        def f1_m(y_true, y_pred):
-            precision = precision_m(y_true, y_pred)
-            recall = recall_m(y_true, y_pred)
-            return 2*((precision*recall)/(precision+recall+K.epsilon()))
-        
-        # END TODO
-        
-        print(model_name)
-        
-        # protect to lfi and RFI
+        # protect to LFI and RFI attacks
         model_name = path.basename(model_name)
         model_name = model_name.replace("%", '')
         if model_name.find('/') != -1 or \
