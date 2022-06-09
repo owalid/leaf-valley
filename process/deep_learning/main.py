@@ -65,11 +65,13 @@ def get_model(input_shape, num_classes, model_name, should_train):
 def run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num_classes, batch_size, le, dest_logs, epochs, dest_models, should_save_model):
     keras_verbose = 1 if VERBOSE else 0
     for model_name in model_names:
-        if base_models[model_name]['preprocess_input'] is None: # if is not pretrained model
-            current_model = base_models[model_name]['base'](input_shape, num_classes)
+        should_train = False if model_name.endswith('_PRETRAINED') else True
+        model_name_key = model_name if should_train else model_name.replace('_PRETRAINED', '')
+        
+        if base_models[model_name_key]['preprocess_input'] is None: # if is not pretrained model
+            current_model = base_models[model_name_key]['base'](input_shape, num_classes)
         else:
-            should_train = False if model_name.endswith('_PRETRAINED') else True
-            current_model = get_model(input_shape, num_classes, model_name, should_train)  # get pretrained model
+            current_model = get_model(input_shape, num_classes, model_name_key, should_train)  # get pretrained model
         local_print("==========================================================")
         local_print(f"[+] Current model: {model_name}")
         
