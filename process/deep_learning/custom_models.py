@@ -29,38 +29,60 @@ class CopyChannels(tf.keras.layers.Layer):
     
 
 def classic_cnn(input_shape, num_classes):
-    return tf.keras.models.Sequential([
-        tfl.Conv2D(filters=32, kernel_size=(3,3), strides=(1,1), activation='relu', input_shape=input_shape),
-        tfl.MaxPool2D(pool_size=(2,2), strides=(2,2)),
-        tfl.Flatten(),
-        tfl.GlobalAveragePooling2D(),
-        tfl.Dense(512, activation='relu'),
-        tfl.Dropout(0.5),
-        tfl.Dense(num_classes, activation='softmax')
-    ])
+    inputs = tf.keras.Input(shape=input_shape)
+    
+    model = tfl.Conv2D(filters=256, kernel_size=(6,6), strides=(1,1), padding="same")(inputs)
+    model = tfl.ReLU()(model)
+    model = tfl.MaxPool2D(pool_size=(16,16), strides=(16,16), padding='same')(model)
+    
+    model = tfl.Conv2D(filters=128, kernel_size=(4,4), strides=(1,1), padding="same")(model)
+    model = tfl.ReLU()(model)
+    model = tfl.MaxPool2D(pool_size=(8,8), strides=(8,8), padding='same')(model)
+    
+    model = tfl.Conv2D(filters=96, kernel_size=(2,2), strides=(1,1), padding="same")(model)
+    model = tfl.ReLU()(model)
+    model = tfl.MaxPool2D(pool_size=(4,4), strides=(4,4), padding='same')(model)
+    
+    model = tfl.Flatten()(model)
+    model = tfl.Dense(512, activation='relu')(model)
+    model = tfl.Dropout(0.5)(model)
+    
+    prediction_layer = tfl.Dense(num_classes, activation='softmax')
+    outputs = prediction_layer(model)
+    model = tf.keras.Model(inputs, outputs)
+    
+    return model
 
 def alexnet(input_shape, num_classes):
-    return tf.keras.models.Sequential([
-        tfl.Conv2D(filters=96, kernel_size=(11,11), strides=(4,4), activation='relu', input_shape=input_shape),
-        tfl.BatchNormalization(),
-        tfl.MaxPool2D(pool_size=(3,3), strides=(2,2)),
-        tfl.Conv2D(filters=256, kernel_size=(5,5), strides=(1,1), activation='relu', padding="same"),
-        tfl.BatchNormalization(),
-        tfl.MaxPool2D(pool_size=(3,3), strides=(2,2)),
-        tfl.Conv2D(filters=384, kernel_size=(3,3), strides=(1,1), activation='relu', padding="same"),
-        tfl.BatchNormalization(),
-        tfl.Conv2D(filters=384, kernel_size=(3,3), strides=(1,1), activation='relu', padding="same"),
-        tfl.BatchNormalization(),
-        tfl.Conv2D(filters=256, kernel_size=(3,3), strides=(1,1), activation='relu', padding="same"),
-        tfl.BatchNormalization(),
-        tfl.MaxPool2D(pool_size=(3,3), strides=(2,2)),
-        tfl.Flatten(),
-        tfl.GlobalAveragePooling2D(),
-        tfl.Dense(512, activation='relu'),
-        tfl.Dropout(0.5),
-        tfl.Dense(num_classes, activation='softmax')
-    ])
+    inputs = tf.keras.Input(shape=input_shape)
 
+    model = tfl.Conv2D(filters=96, kernel_size=(11,11), strides=(4,4), activation='relu', input_shape=input_shape)(inputs)
+    model = tfl.BatchNormalization()(model)
+    
+    model = tfl.MaxPool2D(pool_size=(3,3), strides=(2,2))(model)
+    model = tfl.Conv2D(filters=256, kernel_size=(5,5), strides=(1,1), activation='relu', padding="same")(model)
+    model = tfl.BatchNormalization()(model)
+    
+    model = tfl.MaxPool2D(pool_size=(3,3), strides=(2,2))(model)
+    model = tfl.Conv2D(filters=384, kernel_size=(3,3), strides=(1,1), activation='relu', padding="same")(model)
+    model = tfl.BatchNormalization()(model)
+    
+    model = tfl.Conv2D(filters=384, kernel_size=(3,3), strides=(1,1), activation='relu', padding="same")(model)
+    model = tfl.BatchNormalization()(model)
+    
+    model = tfl.Conv2D(filters=256, kernel_size=(3,3), strides=(1,1), activation='relu', padding="same")(model)
+    model = tfl.BatchNormalization()(model)
+    
+    model = tfl.MaxPool2D(pool_size=(3,3), strides=(2,2))(model)
+    model = tfl.Flatten()(model)
+    model = tfl.Dense(512, activation='relu')(model)
+    model = tfl.Dropout(0.5)(model)
+
+    prediction_layer = tfl.Dense(num_classes, activation='softmax')
+    outputs = prediction_layer(model)
+    model = tf.keras.Model(inputs, outputs)
+    
+    return model
 
 # LAB HSV models
     

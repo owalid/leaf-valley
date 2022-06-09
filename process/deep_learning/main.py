@@ -125,7 +125,7 @@ def run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num
         if base_models[model_name]['preprocess_input'] is None: # if is not pretrained model
             current_model = base_models[model_name]['base'](input_shape, num_classes)
         else:
-            should_train = False if model_name.endswith('_TRAINED') else True
+            should_train = False if model_name.endswith('_PRETRAINED') else True
             current_model = get_model(input_shape, num_classes, model_name, should_train)  # get pretrained model
         local_print("==========================================================")
         local_print(f"[+] Current model: {model_name}")
@@ -175,6 +175,7 @@ def get_tensorboard_callbacks(model_name, x_valid, y_valid, le, dest_logs):
     callbacks = [
         tensorboard_cb,
         ConfusionMatrixCallback(x_valid, y_valid, le, file_writer)
+        # ClassificationReportCallback(x_valid, y_valid, le, file_writer)
         # ImagesPredictionsCallback(x_valid, y_valid, le, file_writer)
     ]
     return callbacks
