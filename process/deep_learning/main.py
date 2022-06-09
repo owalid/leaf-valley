@@ -213,7 +213,19 @@ def extract_features(hf):
         x = np.array([])
         
     return x, y
-    
+
+
+def get_models_availabled():
+    '''
+        Get all models availabled
+    '''
+    models_availaibles = ''
+    for key, value in base_models.items():
+        models_availaibles += f"{key},"
+        if value['preprocess_input'] is not None:
+            models_availaibles += f"{key}_PRETRAINED,"
+            
+    return models_availaibles[:-1]
     
 def encode_labels(y):
     '''
@@ -228,13 +240,13 @@ def encode_labels(y):
     return encoded_y, le, class_names
     
 if __name__ == '__main__':
-    models_availaibles = list(base_models.keys())
+    models_availaibles = get_models_availabled()
     parser = ap.ArgumentParser(formatter_class=RawTextHelpFormatter)
     parser.add_argument("-p", "--path-dataset", required=False, type=str, default='data/deep_learning/export/data_all_20_gray.h5', help='Path of your dataset (h5 file)')
     parser.add_argument("-lt", "--launch-tensorboard", required=False, action='store_true', default=False, help='Launch tensorboard after fitting')
     parser.add_argument("-b", "--batch-size", required=False, type=int, default=32, help='Batch size')
     parser.add_argument("-e", "--epochs", required=False, type=int, default=50, help='Epoch')
-    parser.add_argument("-m", "--models", required=False, type=str, help=f'Select model(s), if grid search is enabled, you can select multiple models separate by ",". example -m=vgg19,resnet50. By default is select all models.\nModels availables:\n{", ".join(models_availaibles)}.')
+    parser.add_argument("-m", "--models", required=False, type=str, help=f'Select model(s), if grid search is enabled, you can select multiple models separate by ",". example -m=vgg19,resnet50. By default is select all models.\nModels availables:\n{models_availaibles}.')
     parser.add_argument("-s", "--save-model", required=False, action='store_true', default=False, help='Save model')
     parser.add_argument("-dst-l", "--dest-logs", required=False, type=str, help='Destination for tensorboard logs. (default logs/tensorboard)')
     parser.add_argument("-dst-m", "--dest-models", required=False, type=str, help='Destination for model if save model is enabled')
