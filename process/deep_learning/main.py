@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 import sys
 import numpy as np
 from sklearn import preprocessing
-from custom_models import classic_cnn, alexnet, lab_process, hsv_process
+from models import base_models
 from metrics import recall_m, precision_m, f1_m
 import h5py
 import json
@@ -31,64 +31,7 @@ current_dir = current_dir[:current_dir.rfind(path.sep)]
 sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
 from utilities.utils import get_dataset
 
-
 VERBOSE = False
-
-base_models = {
-    'VGG16': {
-        'base': tf.keras.applications.VGG16,
-        'preprocess_input': tf.keras.applications.vgg16.preprocess_input
-    },
-    'VGG19': {
-        'base': tf.keras.applications.VGG19,
-        'preprocess_input': tf.keras.applications.vgg19.preprocess_input
-    },
-    'RESNET50': {
-        'base': tf.keras.applications.ResNet50,
-        'preprocess_input': tf.keras.applications.resnet50.preprocess_input
-    },
-    'RESNET50V2': {
-        'base': tf.keras.applications.ResNet50V2,
-        'preprocess_input': tf.keras.applications.resnet_v2.preprocess_input
-    },
-    'INCEPTIONRESNETV2': {
-        'base': tf.keras.applications.InceptionResNetV2,
-        'preprocess_input': tf.keras.applications.inception_resnet_v2.preprocess_input 
-    },
-    'INCEPTIONV3': {
-        'base': tf.keras.applications.InceptionV3,
-        'preprocess_input': tf.keras.applications.inception_v3.preprocess_input
-    },
-    'EFFICIENTNETB0': {
-        'base': tf.keras.applications.EfficientNetB0,
-        'preprocess_input': tf.keras.applications.efficientnet.preprocess_input
-    },
-    'EFFICIENTNETB7': {
-        'base': tf.keras.applications.EfficientNetB7,
-        'preprocess_input': tf.keras.applications.efficientnet.preprocess_input
-    },
-    'XCEPTION': {
-        'base': tf.keras.applications.Xception,
-        'preprocess_input': tf.keras.applications.xception.preprocess_input
-    },
-    'CLASSIC_CNN': {
-        'base': classic_cnn,
-        'preprocess_input': None
-    },
-    'ALEXNET': {
-        'base': alexnet,
-        'preprocess_input': None
-    },
-    'LAB_PROCESS': {
-        'base': lab_process,
-        'preprocess_input': None
-    },
-    'HSV_PROCESS': {
-        'base': hsv_process,
-        'preprocess_input': None
-    },
-}
-
 
 def local_print(msg):
     if VERBOSE:
