@@ -18,10 +18,9 @@ def create_app(test_config=None):
     CORS(app, origins=r"*")  # add CORS
 
     # import and register blueprints
-    from routes import analysis_bp, predict_bp
+    from routes import predict_bp
 
     # why blueprints http://flask.pocoo.org/docs/1.0/blueprints/
-    app.register_blueprint(analysis_bp.mod)
     app.register_blueprint(predict_bp.mod)
 
     return app
