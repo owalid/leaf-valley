@@ -3,4 +3,4 @@ numpy
 flask
 flask_cors
 jsonify
-tensorflow
+tensorflow==2.8.0
