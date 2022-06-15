@@ -84,7 +84,7 @@ class PredictionController:
             im_withoutbg_b64 = base64.b64encode(img_arr).decode('utf-8')
             prediction_data = {
                 'prediction': prediction_label,
-                'accuracy': str(prediction_accuracy),
+                'score': str(prediction_accuracy),
                 'im_withoutbg_b64': im_withoutbg_b64
             }
             return create_response(data=prediction_data)
