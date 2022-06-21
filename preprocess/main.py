@@ -16,7 +16,6 @@ from PIL import Image, ImageEnhance
 from plantcv import plantcv as pcv
 import numpy as np
 import cv2 as cv
-from tabnanny import verbose
 current_dir = path.dirname(path.abspath(getsourcefile(lambda: 0)))
 sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
 
