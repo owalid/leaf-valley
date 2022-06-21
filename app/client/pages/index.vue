@@ -21,6 +21,12 @@
         />
       </v-col>
       <v-col>
+        <v-switch
+          v-model="shouldRemoveBg"
+          label="Remove background ?"
+        />
+      </v-col>
+      <v-col>
         <v-btn
           :disabled="processingPrediction"
           @click="getPredictions"
@@ -50,6 +56,7 @@ export default {
   },
   data() {
     return {
+      shouldRemoveBg: false,
       modelSelected: null,
       rawFiles: [],
       b64Files: null,
@@ -63,7 +70,7 @@ export default {
       const result = [];
 
       this.b64Files.forEach(b64file => {
-        result.push({ model_name: this.modelSelected, img: b64file })
+        result.push({ model_name: this.modelSelected, img: b64file, should_remove_bg: this.shouldRemoveBg })
       });
       return result;
     }
