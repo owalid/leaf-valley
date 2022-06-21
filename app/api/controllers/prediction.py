@@ -36,7 +36,7 @@ class PredictionController:
     
    
     
-    def predict(b64img, model_name):
+    def predict(b64img, model_name, should_remove_bg):
         
         # protect to LFI and RFI attacks
         model_name = path.basename(model_name)
@@ -70,7 +70,12 @@ class PredictionController:
             im_withoutbg_b64 = ''
             
             # call remove background function
-            _, new_img = remove_bg(image_np)
+            if should_remove_bg:
+                _, new_img = remove_bg(image_np)
+            else:
+                new_img = image_np
+                
+            new_img = cv.cvtColor(new_img, cv.COLOR_BGR2RGB)
             new_img = cv.resize(new_img, tuple(model.layers[0].get_output_at(0).get_shape().as_list()[1:-1]))
             
             # get prediction labels

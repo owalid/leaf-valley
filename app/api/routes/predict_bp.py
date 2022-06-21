@@ -16,9 +16,10 @@ def get_prediction():
     if data:
         img = data.get('img')
         model_name = data.get('model_name')
+        should_remove_bg = data.get('should_remove_bg')
 
         if img and model_name:
-            return PredictionController.predict(img, model_name)
+            return PredictionController.predict(img, model_name, should_remove_bg)
         return create_response(data={'error': 'Incorrect body'}, status=500)
     else:
         return create_response(data={'error': 'Incorrect body'}, status=500)
