@@ -44,12 +44,15 @@
       </v-row>
 
       <!-- Result -->
-      <v-img
-        v-else
-        contain
-        :src="`data:image/png;base64,${result.im_withoutbg_b64}`"
-        class="img-prediction"
-      />
+      <div v-else>
+        <v-img
+          contain
+          :src="`data:image/png;base64,${result.im_withoutbg_b64}`"
+          class="img-prediction"
+        />
+        <p>Prediction: {{ result.prediction }}</p>
+        <p>Score: {{ result.score }}</p>
+      </div>
     </v-col>
   </v-row>
 </template>
@@ -86,7 +89,7 @@ export default {
     state() {
       if (!this.result || 'error' in this.result) {
         return 'ERROR'
-      } else if (this.result && 'prediction' in this.result && 'accuracy' in this.result && 'im_withoutbg_b64' in this.result) {
+      } else if (this.result && 'prediction' in this.result && 'score' in this.result && 'im_withoutbg_b64' in this.result) {
         return 'SUCCESS'
       } else {
         return 'LOADING'

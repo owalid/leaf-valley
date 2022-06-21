@@ -92,9 +92,8 @@ export default {
     try {
       this.results.push({ indexPayload, source_img: payload.img });
       const request = await this.$axios.post('/models/predict', payload);
+      const prediction = request.data.result;
 
-
-      const { prediction } = request.data;
       this.results.forEach((result, indexResult) => {
         if (result.indexPayload === indexPayload) {
           this.results[indexResult] = { ...this.results[indexResult], ...prediction };
