@@ -1,27 +1,27 @@
 '''
   CLI used to preprocess the data and get features and classes.
 '''
-import concurrent.futures
-from itertools import repeat
-from tqdm import tqdm
-import random
 import os
-from tabnanny import verbose
-import cv2 as cv
-import numpy as np
-from plantcv import plantcv as pcv
-from PIL import Image, ImageEnhance
-import pandas as pd
-import argparse as ap
-from argparse import RawTextHelpFormatter
-
+import sys
+import random
+from itertools import repeat
+import concurrent.futures
+from tqdm import tqdm
+import os.path as path
 from inspect import getsourcefile
-import os.path as path, sys
-current_dir = path.dirname(path.abspath(getsourcefile(lambda:0)))
+from argparse import RawTextHelpFormatter
+import argparse as ap
+import pandas as pd
+from PIL import Image, ImageEnhance
+from plantcv import plantcv as pcv
+import numpy as np
+import cv2 as cv
+current_dir = path.dirname(path.abspath(getsourcefile(lambda: 0)))
 sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
-from utilities.utils import crop_resize_image, safe_open_w, get_df, get_canny_img, get_gabor_img, store_dataset, update_data_dict, bgrtogray
-from utilities.extract_features import get_pyfeats_features, get_lpb_histogram, get_hue_moment, get_haralick, get_hsv_histogram, get_lab_histogram, get_graycoprops, get_lab_img, get_hsv_img
+
 from utilities.remove_background_functions import remove_bg
+from utilities.extract_features import get_pyfeats_features, get_lpb_histogram, get_hue_moment, get_haralick, get_hsv_histogram, get_lab_histogram, get_graycoprops, get_lab_img, get_hsv_img
+from utilities.utils import crop_resize_image, safe_open_w, get_df, get_canny_img, get_gabor_img, store_dataset, update_data_dict, bgrtogray
 
 pcv.params.debug = ''
 debug = ''
@@ -46,9 +46,12 @@ CV_NORMALIZE_TYPE = {
     'NORM_MINMAX': cv.NORM_MINMAX
 }
 
+
 def local_print(msg):
     if VERBOSE:
         print(msg)
+
+
 def get_data_used(data_used, df, type_output):
 
     if type_output == HEALTHY_NOT_HEALTHY:
@@ -64,10 +67,10 @@ def get_data_used(data_used, df, type_output):
 
 
 def get_df_filtered(df, type_output):
-    
+
     if type_output == ALL:
         return df
-    
+
     df = df.loc[(df['specie'] != 'background_without_leaves')]
 
     if type_output == ALL:
@@ -85,6 +88,7 @@ def get_df_filtered(df, type_output):
             list(df_filtred.specie.values))]
         return pd.concat([df_others_specie, df_filtred])
 
+
 def generate_img(path_img, type_img, size_img, cropped_img, normalize_img, normalized_type):
     bgr_img, _, _ = pcv.readimage(path_img, mode='bgr')
     rgb_img = cv.cvtColor(bgr_img, cv.COLOR_BGR2RGB)
@@ -96,7 +100,7 @@ def generate_img(path_img, type_img, size_img, cropped_img, normalize_img, norma
     pill_img = enhancer.enhance(2)
     array_img = np.array(pill_img)
     array_img = cv.resize(array_img, size_img)
-    
+
     if type_img == 'canny':
         edges = pcv.canny_edge_detect(array_img)
         pill_img = Image.fromarray(edges)
@@ -107,7 +111,8 @@ def generate_img(path_img, type_img, size_img, cropped_img, normalize_img, norma
         gabor_img = get_gabor_img(array_img)
         pill_img = Image.fromarray(gabor_img)
     if normalize_img:
-        array_img = cv.normalize(array_img, None, alpha=0, beta=1, norm_type=normalized_type, dtype=cv.CV_32F)
+        array_img = cv.normalize(
+            array_img, None, alpha=0, beta=1, norm_type=normalized_type, dtype=cv.CV_32F)
 
     return pill_img, array_img, bgr_img
 
@@ -124,7 +129,7 @@ def generate_img_without_bg(path_img, type_img, size_img, cropped_img, normalize
     pill_img = enhancer.enhance(2)
     array_img = np.array(pill_img)
     array_img = cv.resize(array_img, size_img)
-    
+
     if type_img == 'canny':
         edges = pcv.canny_edge_detect(array_img)
         pill_img = Image.fromarray(edges)
@@ -135,9 +140,11 @@ def generate_img_without_bg(path_img, type_img, size_img, cropped_img, normalize
         gabor_img = get_gabor_img(array_img)
         pill_img = Image.fromarray(gabor_img)
     if normalize_img:
-        array_img = cv.normalize(array_img, None, alpha=0, beta=1, norm_type=normalized_type, dtype=cv.CV_32F)
+        array_img = cv.normalize(
+            array_img, None, alpha=0, beta=1, norm_type=normalized_type, dtype=cv.CV_32F)
 
     return pill_img, array_img, bgr_img, mask
+
 
 def multiprocess_worker(specie_directory, df_filtred, data_used, type_output, src_directory, dest_path, size_img, crop_img, normalize_img, normalize_type, type_img, should_remove_bg, answers_type_features, write_img):
     current_df = df_filtred.loc[specie_directory]
@@ -145,7 +152,8 @@ def multiprocess_worker(specie_directory, df_filtred, data_used, type_output, sr
     disease = current_df.disease
     specie = current_df.specie
     data = dict()
-    current_data_used = data_used if not isinstance(data_used, dict) else data_used['healthy' if healthy else 'not_healthy']
+    current_data_used = data_used if not isinstance(
+        data_used, dict) else data_used['healthy' if healthy else 'not_healthy']
 
     if type_output == HEALTHY_NOT_HEALTHY:
         class_name = 'healthy' if healthy else 'not_healthy'
@@ -155,43 +163,46 @@ def multiprocess_worker(specie_directory, df_filtred, data_used, type_output, sr
         class_name = f"{specie}_{disease}"
     else:
         class_name = specie
-    
-    if current_data_used == -1 or current_df.number_img <= current_data_used:
-        number_img = current_df.number_img
-        indexes = list(range(1, current_df.number_img+1))
-    else:
-        number_img = current_data_used
-        indexes = random.sample(list(range(1, current_df.number_img)), number_img) # Get alls indexes with random without repetition.
-        
+
+    img_lst = os.listdir(os.path.join(src_directory, specie_directory))
+    img_lst = random.sample(img_lst, len(img_lst)
+                            if (current_data_used == -1) | (current_data_used > len(img_lst)) else current_data_used)
+
     local_print(f"\n[+] index {specie_directory}")
     local_print(f"[+] Start generate specie: {specie}")
-    local_print(f"[+] Number of images: {number_img}")
+    local_print(f"[+] Number of images: {len(img_lst)}")
 
-    for index in tqdm(indexes, ncols=100) if VERBOSE else indexes:
-        path_img = os.path.join(src_directory, specie_directory, f"image ({index}).JPG")
-        
+    for file in tqdm(img_lst, ncols=100) if VERBOSE else img_lst:
+        path_img = os.path.join(
+            src_directory, specie_directory, file)
+
         if should_remove_bg:
-            pill_masked_img, masked_img, raw_img, mask = generate_img_without_bg(path_img, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
+            pill_masked_img, masked_img, raw_img, mask = generate_img_without_bg(
+                path_img, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
         else:
-            pill_masked_img, masked_img, raw_img = generate_img(path_img, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
-        file_path = os.path.join(dest_path, class_name, f"{specie}-{disease}-{index}.jpg")
-        specie_index = f"{specie}_{disease}_{index}"
+            pill_masked_img, masked_img, raw_img = generate_img(
+                path_img, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
+        file_path = os.path.join(
+            dest_path, class_name, f"{specie}-{disease}-{file}")
+        specie_index = f"{specie}_{disease}_{file}"
         data = update_data_dict(data, 'classes', class_name)
-        
+
         # FEATURES DEEP LEARNING
         if 'rgb' in answers_type_features or len(answers_type_features) == 0:
             data = update_data_dict(data, 'rgb_img', masked_img)
         if 'gabor' in answers_type_features:
-            data = update_data_dict(data, 'gabor_img', get_gabor_img(masked_img))
+            data = update_data_dict(
+                data, 'gabor_img', get_gabor_img(masked_img))
         if 'gray' in answers_type_features:
             data = update_data_dict(data, 'gray_img', bgrtogray(masked_img))
         if 'canny' in answers_type_features:
-            data = update_data_dict(data, 'canny_img', get_canny_img(masked_img))
+            data = update_data_dict(
+                data, 'canny_img', get_canny_img(masked_img))
         if 'lab' in answers_type_features:
             data = update_data_dict(data, 'lab',  get_lab_img(masked_img))
         if 'hsv' in answers_type_features:
             data = update_data_dict(data, 'hsv',  get_hsv_img(masked_img))
-            
+
         # FEATURES MACHINE LEARNING
         if 'graycoprops' in answers_type_features:
             features = get_graycoprops(masked_img)
@@ -220,8 +231,9 @@ def multiprocess_worker(specie_directory, df_filtred, data_used, type_output, sr
         if 'pyfeats' in answers_type_features and should_remove_bg:
             pyfeats_features = get_pyfeats_features(raw_img, mask)
             for feature in pyfeats_features:
-                data = update_data_dict(data, feature, pyfeats_features[feature])
-                
+                data = update_data_dict(
+                    data, feature, pyfeats_features[feature])
+
         if write_img:
             with safe_open_w(file_path) as f:
                 pill_masked_img.save(f)
@@ -231,29 +243,45 @@ def multiprocess_worker(specie_directory, df_filtred, data_used, type_output, sr
 # MAIN
 if __name__ == '__main__':
     parser = ap.ArgumentParser(formatter_class=RawTextHelpFormatter)
-    parser.add_argument("-a", "--augmented", required=False, action='store_true', default=False, help='Use directory augmented')
-    parser.add_argument("-rmbg", "--remove-bg", required=False, action='store_true', default=False, help='Remove background before preprocess')
-    parser.add_argument("-src", "--src-directory", required=False, type=str, default='', help='Directory source who can find images. default (data/{augmented})')
-    parser.add_argument("-wi", "--write-img", required=False, action='store_true', default=False, help='Write images (png) in the new directory')
-    parser.add_argument("-crop", "--crop-img", required=False, action='store_true', default=False, help='Remove padding around leaf')
-    parser.add_argument("-nor", "--normalize-img", required=False, action='store_true', default=False, help='Normalize images, you can specify the normalization type with the option -nortype')
-    parser.add_argument("-nortype", "--normalize-type", required=False, type=str, default='NORM_MINMAX', help='Normalize images features with cv.normalize (Default: NORM_MINMAX) \nTypes: https://vovkos.github.io/doxyrest-showcase/opencv/sphinx_rtd_theme/enum_cv_NormTypes.html')
-    parser.add_argument("-c", "--classification", required=False, type=str, default="ALL", help='Classification type: HEALTHY_NOT_HEALTHY, ONLY_HEALTHY, NOT_HEALTHY, ALL (default)')
-    parser.add_argument("-n", "--number-img", required=False, type=int, default=1000, help='Number of images to use per class to select maximum of all classes use -1. (default 1000)')
-    parser.add_argument("-rt", "--result-type", required=False, type=str, default="GRAY", help='Type of result image for DP: GRAY, GABOR, CANNY, RGB. (default: GRAY)')
-    parser.add_argument("-dst", "--destination", required=False, type=str, default='', help='Path to save the data. (default: data/preprocess)')
-    parser.add_argument("-f", "--features", required=False, type=str, help='Features to extract separate by ","\nExample: -f=graycoprops,lpb_histogram,hue_moment\nList of features:\n   - For DP: rgb,gray,canny,gabor,lab,hsv\n   - For ML: graycoprops,lpb_histogram,hue_moment,haralick,histogram_hsv,histogram_lab,pyfeats')
-    parser.add_argument("-s", "--size", required=False, type=int, default=256, help='Size of images. (default 256x256)')
-    parser.add_argument("-v", "--verbose", required=False, action='store_true', default=False, help='Verbose')
+    parser.add_argument("-a", "--augmented", required=False,
+                        action='store_true', default=False, help='Use directory augmented')
+    parser.add_argument("-rmbg", "--remove-bg", required=False, action='store_true',
+                        default=False, help='Remove background before preprocess')
+    parser.add_argument("-src", "--src-directory", required=False, type=str, default='',
+                        help='Directory source who can find images. default (data/{augmented})')
+    parser.add_argument("-wi", "--write-img", required=False, action='store_true',
+                        default=False, help='Write images (png) in the new directory')
+    parser.add_argument("-crop", "--crop-img", required=False,
+                        action='store_true', default=False, help='Remove padding around leaf')
+    parser.add_argument("-nor", "--normalize-img", required=False, action='store_true', default=False,
+                        help='Normalize images, you can specify the normalization type with the option -nortype')
+    parser.add_argument("-nortype", "--normalize-type", required=False, type=str, default='NORM_MINMAX',
+                        help='Normalize images features with cv.normalize (Default: NORM_MINMAX) \nTypes: https://vovkos.github.io/doxyrest-showcase/opencv/sphinx_rtd_theme/enum_cv_NormTypes.html')
+    parser.add_argument("-c", "--classification", required=False, type=str, default="ALL",
+                        help='Classification type: HEALTHY_NOT_HEALTHY, ONLY_HEALTHY, NOT_HEALTHY, ALL (default)')
+    parser.add_argument("-n", "--number-img", required=False, type=int, default=1000,
+                        help='Number of images to use per class to select maximum of all classes use -1. (default 1000)')
+    parser.add_argument("-rt", "--result-type", required=False, type=str, default="GRAY",
+                        help='Type of result image for DP: GRAY, GABOR, CANNY, RGB. (default: GRAY)')
+    parser.add_argument("-dst", "--destination", required=False, type=str,
+                        default='', help='Path to save the data. (default: data/preprocess)')
+    parser.add_argument("-f", "--features", required=False, type=str,
+                        help='Features to extract separate by ","\nExample: -f=graycoprops,lpb_histogram,hue_moment\nList of features:\n   - For DP: rgb,gray,canny,gabor,lab,hsv\n   - For ML: graycoprops,lpb_histogram,hue_moment,haralick,histogram_hsv,histogram_lab,pyfeats')
+    parser.add_argument("-s", "--size", required=False, type=int,
+                        default=256, help='Size of images. (default 256x256)')
+    parser.add_argument("-v", "--verbose", required=False,
+                        action='store_true', default=False, help='Verbose')
     args = parser.parse_args()
     print(args)
-    
+
     random.seed(42)
     normalize_type = args.normalize_type
-    normalize_type = 'NORM_MINMAX' if normalize_type not in CV_NORMALIZE_TYPE.keys() else normalize_type
-    
+    normalize_type = 'NORM_MINMAX' if normalize_type not in CV_NORMALIZE_TYPE.keys(
+    ) else normalize_type
+
     res_augmented = 'augmentation' if args.augmented else 'no_augmentation'
-    src_directory = os.path.join(args.src_directory, res_augmented) if args.src_directory != '' else f"data/{res_augmented}"
+    src_directory = os.path.join(
+        args.src_directory, res_augmented) if args.src_directory != '' else f"data/{res_augmented}"
     df = get_df(src_directory)
     type_output = args.classification
     should_remove_bg = args.remove_bg
@@ -269,7 +297,7 @@ if __name__ == '__main__':
 
     data_used = args.number_img
     type_img = args.result_type.lower()
-    
+
     if args.destination == '' and args.src_directory != '':
         dest_path = f"{args.src_directory}/preprocess/{type_output}/{res_augmented}"
     elif args.destination != '':
@@ -277,14 +305,17 @@ if __name__ == '__main__':
     else:
         dest_path = f'data/preprocess/{type_output}/{res_augmented}'
 
-    if not os.path.exists(dest_path): # Create a dest_path if not exist. 
+    if not os.path.exists(dest_path):  # Create a dest_path if not exist.
         os.makedirs(dest_path)
         print("The new directory is created!")
-        
-    answers_type_features = args.features.replace(' ', '').split(',') if args.features != None else []
-    answers_type_features = ['graycoprops', 'lpb_histogram', 'hue_moment', 'haralick', 'histogram_hsv', 'histogram_lab', 'pyfeats'] if len(answers_type_features) == 0 else answers_type_features
-    
-    size_img = (args.size, args.size) if args.size > 0 else DEFAULT_FINAL_IMG_SIZE
+
+    answers_type_features = args.features.replace(
+        ' ', '').split(',') if args.features != None else []
+    answers_type_features = ['graycoprops', 'lpb_histogram', 'hue_moment', 'haralick', 'histogram_hsv',
+                             'histogram_lab', 'pyfeats'] if len(answers_type_features) == 0 else answers_type_features
+
+    size_img = (
+        args.size, args.size) if args.size > 0 else DEFAULT_FINAL_IMG_SIZE
     VERBOSE = args.verbose
     series = []
     local_print('\n')
@@ -296,33 +327,37 @@ if __name__ == '__main__':
     local_print(f"[+] path: {dest_path}")
     if normalize_img:
         local_print(f"[+] Normalized type: cv.{normalize_type}")
-        
+
     if len(answers_type_features) > 0:
         local_print(f"[+] answers_type_features: {answers_type_features}")
     data = dict()
     local_print("=====================================================")
-    
+
     with concurrent.futures.ProcessPoolExecutor() as executor:
         if VERBOSE:
-            results = list(tqdm(executor.map(multiprocess_worker, indexes_species, repeat(df_filtred), repeat(data_used), repeat(type_output), repeat(src_directory), repeat(dest_path), repeat(size_img), repeat(crop_img), repeat(normalize_img), repeat(normalize_type), repeat(type_img), repeat(should_remove_bg), repeat(answers_type_features), repeat(write_img)), total=len(indexes_species)))
+            results = list(tqdm(executor.map(multiprocess_worker, indexes_species, repeat(df_filtred), repeat(data_used), repeat(type_output), repeat(src_directory), repeat(dest_path), repeat(size_img), repeat(
+                crop_img), repeat(normalize_img), repeat(normalize_type), repeat(type_img), repeat(should_remove_bg), repeat(answers_type_features), repeat(write_img)), total=len(indexes_species)))
         else:
-            results = list(executor.map(multiprocess_worker, indexes_species, repeat(df_filtred), repeat(data_used), repeat(type_output), repeat(src_directory), repeat(dest_path), repeat(size_img), repeat(crop_img), repeat(normalize_img), repeat(normalize_type), repeat(type_img), repeat(should_remove_bg), repeat(answers_type_features), repeat(write_img)))
-            
+            results = list(executor.map(multiprocess_worker, indexes_species, repeat(df_filtred), repeat(data_used), repeat(type_output), repeat(src_directory), repeat(dest_path), repeat(
+                size_img), repeat(crop_img), repeat(normalize_img), repeat(normalize_type), repeat(type_img), repeat(should_remove_bg), repeat(answers_type_features), repeat(write_img)))
+
     data = dict()
     for result in results:
         for key, value in result.items():
             if key not in data.keys():
-                data[key] = value if type(value) == list or type(value) == np.ndarray or type(value) == pd.DataFrame else [value]
+                data[key] = value if type(value) == list or type(
+                    value) == np.ndarray or type(value) == pd.DataFrame else [value]
             else:
                 data[key] += value
-    if VERBOSE:            
+    if VERBOSE:
         for key in data.keys():
             print(f"[+] {key}: have len: {len(data[key])}")
-                
+
     local_print(f"Total of images processed: {len(data['classes'])}")
     local_print(f"[+] Generate hdf5 file")
     prefix_data = 'all' if int(data_used) == -1 else str(data_used)
-    path_hdf = os.path.join(dest_path, 'export', f"data_{type_output.lower()}_{prefix_data}_{'_'.join(answers_type_features)}.h5")
+    path_hdf = os.path.join(
+        dest_path, 'export', f"data_{type_output.lower()}_{prefix_data}_{'_'.join(answers_type_features)}.h5")
     os.makedirs(os.path.dirname(path_hdf), exist_ok=True)
     store_dataset(path_hdf, data, VERBOSE)
     local_print(f"[+] h5 file save at {path_hdf}")
