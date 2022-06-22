@@ -51,6 +51,9 @@ def images_augmentation_process(path_in, path_out, num_of_samples, NByCls=-1):
         img_lst = rd.sample(img_lst, len(img_lst) if (NByCls==-1)|(NByCls>len(img_lst)) else NByCls)
         rd.shuffle(img_lst)
 
+        if VERBOSE:
+            print(f'Copy {"all" if NByCls==-1 else NByCls} images from {path_in} to {path_out}')
+            
         for f in img_lst:
             shutil.copy(os.path.join(path_in,f),os.path.join(path_out,d))
 
