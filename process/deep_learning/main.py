@@ -129,7 +129,7 @@ def get_tensorboard_callbacks(model_name, x_valid, y_valid, le, dest_logs):
     callbacks = [
         tensorboard_cb,
         ConfusionMatrixCallback(x_valid, y_valid, le, file_writer)
-        # ClassificationReportCallback(x_valid, y_valid, le, file_writer)
+        ClassificationReportCallback(x_valid, y_valid, le, file_writer)
         # ImagesPredictionsCallback(x_valid, y_valid, le, file_writer)
     ]
     return callbacks
