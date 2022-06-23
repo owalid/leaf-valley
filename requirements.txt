@@ -4,3 +4,4 @@ pyfeats
 mahotas
 plantcv
 augmentor
+difpy

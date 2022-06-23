@@ -47,6 +47,26 @@ optional arguments:
   -v, --verbose         Verbose
 ```
 
+## Image augmentation
+
+```
+usage: image_augmentation.py [-h] [-src SRC_DIRECTORY] [-dst DST_DIRECTORY] [-ncls NUMBER_IMG_BY_CLASS] [-naug NUMBER_IMG_AUGMENTATION] [-dup] [-v]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -src SRC_DIRECTORY, --src-directory SRC_DIRECTORY
+                        Source of the directory where the images to augment are located. default (data/no_augmentation)
+  -dst DST_DIRECTORY, --dst-directory DST_DIRECTORY
+                        Source of the directory where the images to augment will be stored. default (data/tmp)
+  -ncls NUMBER_IMG_BY_CLASS, --number-img-by-class NUMBER_IMG_BY_CLASS
+                        Number of images to use per class to select maximum of all classes use -1. (default -1)
+  -naug NUMBER_IMG_AUGMENTATION, --number-img-augmentation NUMBER_IMG_AUGMENTATION
+                        Total number of augmented images, including original images. (default 3000)
+  -dup, --remove-duplicate
+                        Remove duplicate images created by the augmentaion process
+  -v, --verbose         Verbose
+```
+
 ## Deep Learning process
 
 ```

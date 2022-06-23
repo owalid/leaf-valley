@@ -1,8 +1,6 @@
 ### `Image augmentation`
 
 import os
-import sys
-from datetime import datetime as dt 
 import shutil
 import random as rd
 import argparse as ap
@@ -10,8 +8,13 @@ from tqdm import tqdm
 import concurrent.futures
 from itertools import repeat
 import Augmentor
-# from difPy import dif
+from difPy import dif
+from datetime import datetime as dt 
 
+
+def local_print(msg):
+    if VERBOSE:
+        print(msg)
 
 def images_augmentation_pipline(dir, num_of_samples):
     try:
@@ -28,19 +31,17 @@ def images_augmentation_pipline(dir, num_of_samples):
 
         p.sample(num_of_samples - len(os.listdir(dir)))
 
-        # # Rename files
-        # for f in os.listdir(dir):
-        #     os.rename(os.path.join(dir,f), os.path.join(dir,f.split('-')[-1]))
-
         # Remove duplicate images
-        # search = dif(dir, similarity='high', delete=True, silent_del=True)
+        if remove_duplicate:
+            search = dif(dir, similarity='high', delete=True, silent_del=True)
+            local_print(search.result)
 
         return False
     except Exception as e:
         return e
 
 def images_augmentation_process(path_in, path_out, num_of_samples, NByCls=-1):
-    for d in plantes:
+    for d in plants:
         if os.path.exists(os.path.join(path_out,d)):
             shutil.rmtree(os.path.join(path_out,d))
         os.makedirs(os.path.join(path_out,d))
@@ -51,30 +52,26 @@ def images_augmentation_process(path_in, path_out, num_of_samples, NByCls=-1):
         img_lst = rd.sample(img_lst, len(img_lst) if (NByCls==-1)|(NByCls>len(img_lst)) else NByCls)
         rd.shuffle(img_lst)
 
-        if VERBOSE:
-            print(f'Copy {"all" if NByCls==-1 else NByCls} images from {path_in} to {path_out}')
-            
+        local_print(f'Copy {"all" if NByCls==-1 else NByCls} images from {os.path.join(path_in,d)}\t\tto ==> {os.path.join(path_out,d)}')      
         for f in img_lst:
             shutil.copy(os.path.join(path_in,f),os.path.join(path_out,d))
 
 
     # Images augmentation
     start = dt.now()
-    if VERBOSE:
-        print('Images augmentation stared at : ', start)
+    local_print('Images augmentation stared at : {start}')
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
         if VERBOSE:
-            result = list(tqdm(executor.map(images_augmentation_pipline, [os.path.join(path_out,d) for d in plantes], repeat(num_of_samples)), total=len(plantes)))
+            result = list(tqdm(executor.map(images_augmentation_pipline, [os.path.join(path_out,d) for d in plants], repeat(num_of_samples)), total=len(plants)))
         else:
-            result = executor.map(images_augmentation_pipline, [os.path.join(path_out,d) for d in plantes], repeat(num_of_samples))
+            result = executor.map(images_augmentation_pipline, [os.path.join(path_out,d) for d in plants], repeat(num_of_samples))
 
     for r in result:
         if r!=False:
             print(r)
         
-    if VERBOSE:
-        print(f'\n============\nImages Augmtentation took {dt.now()-start} ================')
+    local_print(f'\n============\nImages Augmtentation took {dt.now()-start} ================')
 
 if __name__ == '__main__':
     parser = ap.ArgumentParser(formatter_class=ap.RawTextHelpFormatter)
@@ -86,18 +83,23 @@ if __name__ == '__main__':
                         help='Number of images to use per class to select maximum of all classes use -1. (default -1)')
     parser.add_argument("-naug", "--number-img-augmentation", required=False, type=int, default=3000,
                         help='Total number of augmented images, including original images. (default 3000)')
+    parser.add_argument("-dup", "--remove-duplicate", required=False,
+                        action='store_true', default=False, help='Remove duplicate images created by the augmentaion process')
     parser.add_argument("-v", "--verbose", required=False,
                         action='store_true', default=False, help='Verbose')
     args = parser.parse_args()
+
     VERBOSE = args.verbose
+    remove_duplicate = args.remove_duplicate
 
     print("\n=====================================================")
     print(f"[+] Data input directory  : {args.src_directory}")
     print(f"[+] Data output directory : {args.dst_directory}")
     print(f"[+] Total number of output images : {args.number_img_augmentation}")
     print(f"[+] Number of images by class for the input : {args.number_img_by_class}")
+    print(f"[+] Remove duplicate images created by the augmentation process : {args.remove_duplicate}")
     print(f"[+] VERBOSE: {VERBOSE}")
 
-    plantes = [d for d in os.listdir(args.src_directory) if (os.path.isdir(os.path.join(args.src_directory,d))) and (d!='Background_without_leaves')]
+    plants = [d for d in os.listdir(args.src_directory) if (os.path.isdir(os.path.join(args.src_directory,d))) and (d!='Background_without_leaves')]
 
     images_augmentation_process(args.src_directory, args.dst_directory, args.number_img_augmentation, args.number_img_by_class)
