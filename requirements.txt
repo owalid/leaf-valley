@@ -3,3 +3,5 @@ opencv-python
 pyfeats
 mahotas
 plantcv
+augmentor
+difpy
