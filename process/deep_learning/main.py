@@ -10,7 +10,7 @@ from models import base_models
 from metrics import recall_m, precision_m, f1_m
 import h5py
 import json
-from tensorflow.keras.optimizers import RMSprop, Adam, SGD, Adadelta, Nadam
+from tensorflow.keras.optimizers import RMSprop, Adam, SGD, Adadelta, NAdam
 
 # Tensorflow
 import tensorflow as tf
@@ -39,7 +39,7 @@ optimizers = {
     'RMSPROP': RMSprop,
     'SGD': SGD,
     'ADADELTA': Adadelta,
-    'NADAM': Nadam
+    'NADAM': NAdam
 }
 
 def local_print(msg):
@@ -128,7 +128,7 @@ def get_tensorboard_callbacks(model_name, x_valid, y_valid, le, dest_logs):
     file_writer = tf.summary.create_file_writer(logdir + '/cm')
     callbacks = [
         tensorboard_cb,
-        ConfusionMatrixCallback(x_valid, y_valid, le, file_writer)
+        ConfusionMatrixCallback(x_valid, y_valid, le, file_writer),
         ClassificationReportCallback(x_valid, y_valid, le, file_writer)
         # ImagesPredictionsCallback(x_valid, y_valid, le, file_writer)
     ]
