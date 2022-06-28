@@ -94,7 +94,7 @@ def run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num
         should_train = False if model_name.endswith('_PRETRAINED') else True
         model_name_key = model_name if should_train else model_name.replace('_PRETRAINED', '')
         
-        if base_models[model_name_key]['is_hugging_face']: # if is hugging face model
+        if 'is_hugging_face' in base_models[model_name_key].keys() and base_models[model_name_key]['is_hugging_face']: # if is hugging face model
             model_id = base_models[model_name_key]['model_id']
             current_model = get_huggingface_model(input_shape, num_classes, model_id)
         elif base_models[model_name_key]['preprocess_input'] is None: # if is not pretrained model
