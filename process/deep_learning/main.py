@@ -13,7 +13,7 @@ import json
 from tensorflow.keras.optimizers import RMSprop, Adam, SGD, Adadelta, Nadam
 
 # hugging face
-from transformers import TFViTModel
+from transformers import TFViTModel, ViTFeatureExtractor
 
 # Tensorflow
 import tensorflow as tf
@@ -51,17 +51,15 @@ def local_print(msg):
         
 def get_huggingface_model(input_shape, num_classes, model_id):
     base_model = TFViTModel.from_pretrained(model_id)
-    print("input_shape:", input_shape)
-    inputs = tfl.Input(shape=input_shape)
-    x = inputs
-    x = base_model.vit(x)
-    x = tfl.GlobalAveragePooling2D()(x)
-    x = tfl.Dense(512, activation='relu')(x)
-    x = tfl.Dropout(0.5)(x)
+    shape_channel_first = (input_shape[-1], input_shape[0], input_shape[1])
+    pixel_values = tfl.Input(shape=input_shape, name='pixel_values', dtype='float32')
+    x = pixel_values
+    x = tfl.Reshape(shape_channel_first)(x)
+    x = base_model.vit(x)[0]
     
     prediction_layer = tfl.Dense(num_classes, activation='softmax', name='outputs')
-    outputs = prediction_layer(x)
-    model = tf.keras.Model(inputs, outputs)
+    outputs = prediction_layer(x[:, 0, :])
+    model = tf.keras.Model(pixel_values, outputs)
     
     return model
 

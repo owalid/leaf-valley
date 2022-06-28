@@ -266,5 +266,35 @@ base_models = {
         'model_id': 'google/vit-base-patch16-224-in21k',
         'is_hugging_face': True,
         'preprocess_input': None
+    },
+    'GOOGLE/VIT-BASE-PATCH32': {
+        'model_id': 'google/vit-base-patch32-384',
+        'is_hugging_face': True,
+        'preprocess_input': None
+    },
+    'GOOGLE/VIT-LARGE-PATCH16': {
+        'model_id': 'google/vit-large-patch16-224',
+        'is_hugging_face': True,
+        'preprocess_input': None
+    },
+    'GOOGLE/VIT-LARGE-PATCH32': {
+        'model_id': 'google/vit-large-patch32-224-in21k',
+        'is_hugging_face': True,
+        'preprocess_input': None
+    },
+    'FACEBOOK/CONVNEXT-BASE': {
+        'model_id': 'facebook/convnext-base-224-22k-1k',
+        'is_hugging_face': True,
+        'preprocess_input': None
+    },
+    'FACEBOOK/CONVNEXT-LARGE': {
+        'model_id': 'facebook/convnext-large-224',
+        'is_hugging_face': True,
+        'preprocess_input': None
+    },
+    'FACEBOOK/CONVNEXT-XLARGE': {
+        'model_id': 'facebook/convnext-xlarge-224-22k-1k',
+        'is_hugging_face': True,
+        'preprocess_input': None
     }
 }
