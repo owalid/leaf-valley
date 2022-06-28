@@ -262,4 +262,9 @@ base_models = {
         'base': hsv_process,
         'preprocess_input': None
     },
+    'GOOGLE/VIT-BASE-PATCH16': {
+        'model_id': 'google/vit-base-patch16-224-in21k',
+        'is_hugging_face': True,
+        'preprocess_input': None
+    }
 }

@@ -12,6 +12,9 @@ import h5py
 import json
 from tensorflow.keras.optimizers import RMSprop, Adam, SGD, Adadelta, Nadam
 
+# hugging face
+from transformers import TFViTModel
+
 # Tensorflow
 import tensorflow as tf
 import tensorflow.keras.layers as tfl
@@ -45,8 +48,24 @@ optimizers = {
 def local_print(msg):
     if VERBOSE:
         print(msg)
+        
+def get_huggingface_model(input_shape, num_classes, model_id):
+    base_model = TFViTModel.from_pretrained(model_id)
+    print("input_shape:", input_shape)
+    inputs = tfl.Input(shape=input_shape)
+    x = inputs
+    x = base_model.vit(x)
+    x = tfl.GlobalAveragePooling2D()(x)
+    x = tfl.Dense(512, activation='relu')(x)
+    x = tfl.Dropout(0.5)(x)
+    
+    prediction_layer = tfl.Dense(num_classes, activation='softmax', name='outputs')
+    outputs = prediction_layer(x)
+    model = tf.keras.Model(inputs, outputs)
+    
+    return model
 
-def get_model(input_shape, num_classes, model_name, should_train):
+def get_keras_model(input_shape, num_classes, model_name, should_train):
     base_model = base_models[model_name]
     preprocess_input = base_model['preprocess_input']
 
@@ -60,7 +79,7 @@ def get_model(input_shape, num_classes, model_name, should_train):
     inputs = tf.keras.Input(shape=input_shape)
     x = inputs
     x = preprocess_input(x)
-    x = base_model(x, training=False)
+    x = base_model(x)
     x = tfl.GlobalAveragePooling2D()(x)
     x = tfl.Dense(512, activation='relu')(x)
     x = tfl.Dropout(0.5)(x)
@@ -77,10 +96,13 @@ def run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num
         should_train = False if model_name.endswith('_PRETRAINED') else True
         model_name_key = model_name if should_train else model_name.replace('_PRETRAINED', '')
         
-        if base_models[model_name_key]['preprocess_input'] is None: # if is not pretrained model
+        if base_models[model_name_key]['is_hugging_face']: # if is hugging face model
+            model_id = base_models[model_name_key]['model_id']
+            current_model = get_huggingface_model(input_shape, num_classes, model_id)
+        elif base_models[model_name_key]['preprocess_input'] is None: # if is not pretrained model
             current_model = base_models[model_name_key]['base'](input_shape, num_classes)
         else:
-            current_model = get_model(input_shape, num_classes, model_name_key, should_train)  # get pretrained model
+            current_model = get_keras_model(input_shape, num_classes, model_name_key, should_train)  # get pretrained model
         local_print("==========================================================")
         local_print(f"[+] Current model: {model_name}")
         
@@ -254,7 +276,7 @@ if __name__ == '__main__':
     model_names = [model_name for model_name in model_names if model_name in models_availaibles] # delete not in base_models
 
     if len(model_names) == 0:
-        local_print(f"[-] No model selected, select one of the following:\n{', '.join(models_availaibles)}")
+        local_print(f"[-] No model selected, select one of the following:\n{models_availaibles}")
         exit(3)
 
     local_print(f"[+] MODELS: {','.join(model_names)}")

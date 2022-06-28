@@ -5,3 +5,4 @@ mahotas
 plantcv
 augmentor
 difpy
+transformers
