@@ -17,7 +17,6 @@ class ConfusionMatrixCallback(CustomCallBack):
         test_pred = self.le.inverse_transform(np.argmax(test_pred, axis=-1))
         test_true = self.le.inverse_transform(np.argmax(self.y_valid, axis=-1))
         cm = confusion_matrix(test_true, test_pred)
-        print(self.le.classes_)
         con_mat_df = pd.DataFrame(cm, index=self.le.classes_, columns=self.le.classes_)
         figure = plt.figure(figsize=(10, 10))
         sns.heatmap(con_mat_df, annot=True,cmap=plt.cm.Blues)

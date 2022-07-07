@@ -206,7 +206,48 @@ def lab_process(input_shape, num_classes):
     
     model = common_model_hsv_lab(lab_model, inputs, num_classes)
     return model
+
+def lab_inceptionv3_process(input_shape, num_classes):
+    '''
+        Inspiration: https://github.com/joaopauloschuler/two-path-noise-lab-plant-disease
+    '''
+    inputs = tf.keras.Input(shape=input_shape)
     
+    # layer copies channels from channel_start the number of channels given in channel_count.
+    l_input = CopyChannels(0,1)(inputs)
+    ab_input = CopyChannels(1,2)(inputs)
+    
+    # L processing
+    l_proc = tfl.Conv2D(filters=256, kernel_size=(11,11), strides=(1,1), padding="same")(l_input)
+    l_proc = tfl.Conv2D(filters=128, kernel_size=(5,5), strides=(1,1), padding="same")(l_input)
+    l_proc = tfl.Conv2D(filters=96, kernel_size=(3,3), strides=(1,1), padding="same")(l_input)
+    l_proc = tfl.MaxPooling2D()(l_proc)
+
+    # AB processing
+    ab_proc = tfl.Conv2D(filters=256, kernel_size=(11,11), strides=(1,1), padding="same")(ab_input)
+    ab_proc = tfl.Conv2D(filters=128, kernel_size=(5,5), strides=(1,1), padding="same")(ab_input)
+    ab_proc = tfl.Conv2D(filters=96, kernel_size=(3,3), strides=(1,1), padding="same")(ab_input)
+    ab_proc = tfl.MaxPooling2D()(ab_proc)
+
+    # LAB concatenation
+    lab_model = tfl.concatenate([l_proc, ab_proc])
+    lab_model = tfl.Conv2D(filters=32, kernel_size=(3,3), strides=(1,1), padding="same")(lab_model)
+    lab_model = tfl.Conv2D(filters=64, kernel_size=(3,3), strides=(1,1), padding="same")(lab_model)
+    # lab_model = tfl.MaxPooling2D()(lab_model)
+    
+    inception_v3_model = tf.keras.applications.InceptionV3(input_shape=input_shape, include_top=False)
+    inception_v3_model.trainable = False
+    lab_model = inception_v3_model(lab_model)
+    
+    lab_model = tfl.GlobalAveragePooling2D()(lab_model)
+    lab_model = tfl.Dense(512, activation='relu')(lab_model)
+    lab_model = tfl.Dropout(0.5)(lab_model)
+    prediction_layer = tfl.Dense(num_classes, activation='softmax')
+    outputs = prediction_layer(lab_model)
+    model = tf.keras.Model(inputs, outputs)
+    print(model.summary())
+    
+    return model
     
 
 base_models = {
@@ -221,6 +262,10 @@ base_models = {
     'RESNET50': {
         'base': tf.keras.applications.ResNet50,
         'preprocess_input': tf.keras.applications.resnet50.preprocess_input
+    },
+    'CONVNEXT': {
+        'base': tf.keras.applications.convnext,
+        'preprocess_input': tf.keras.applications.convnext.preprocess_input
     },
     'RESNET50V2': {
         'base': tf.keras.applications.ResNet50V2,
@@ -256,6 +301,10 @@ base_models = {
     },
     'LAB_PROCESS': {
         'base': lab_process,
+        'preprocess_input': None
+    },
+    'LAB_INCEPTIONV3_PROCESS': {
+        'base': lab_inceptionv3_process,
         'preprocess_input': None
     },
     'HSV_PROCESS': {

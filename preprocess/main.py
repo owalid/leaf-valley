@@ -235,7 +235,7 @@ def multiprocess_worker(specie_directory, df_filtred, data_used, type_output, sr
                     data, feature, pyfeats_features[feature])
 
         if write_img:
-            with safe_open_w(file_path) as f:
+            with open_w(file_path) as f:
                 pill_masked_img.save(f)
     return data
 
