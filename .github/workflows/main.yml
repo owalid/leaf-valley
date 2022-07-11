@@ -13,7 +13,7 @@ jobs:
 
       - name: Install dependecies
         working-directory: ./app/client
-        run: npm ci
+        run: npm i
 
       - name: Run ESLint
         working-directory: ./app/client
