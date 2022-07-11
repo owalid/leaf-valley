@@ -3,6 +3,8 @@ import os
 from flask import Flask
 from flask_cors import CORS
 
+ENV = os.environ.get("FLASK_ENV", "dev")
+
 def create_app(test_config=None):
     """
     The flask application factory. To run the app somewhere else you can:
@@ -30,4 +32,5 @@ def create_app(test_config=None):
 app = create_app()
 
 if __name__ == '__main__':
-  app.run(host='127.0.0.1', debug=True)
+    port = 5000 if ENV != "prod" else 80
+    app.run(host='0.0.0.0', debug=True, port=port)
