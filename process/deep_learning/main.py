@@ -88,7 +88,7 @@ def get_keras_model(input_shape, num_classes, model_name, should_train):
 
     return model
 
-def run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num_classes, batch_size, le, dest_logs, epochs, dest_models, should_save_model, optimizer, base_learning_rate):
+def run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num_classes, batch_size, le, dest_logs, epochs, dest_models, should_save_model, optimizer, base_learning_rate, options_dataset):
     keras_verbose = 1 if VERBOSE else 0
     for model_name in model_names:
         should_train = False if model_name.endswith('_PRETRAINED') else True
@@ -129,7 +129,7 @@ def run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num
         local_print(f"[+] Fitting model {model_name}...")
         current_model.fit(x_train, y_train, verbose=keras_verbose, validation_data=(x_valid, y_valid), epochs=epochs, callbacks=callbacks, batch_size=batch_size)
         if should_save_model:
-            save_model_ext(current_model, f"{dest_models}/{model_name}.h5", le=le)
+            save_model_ext(current_model, f"{dest_models}/{model_name}.h5", le=le, options_dataset=options_dataset)
             
         local_print(f"[+] Model trained for {epochs} epochs")
         local_print(f"[+] Model summary: {current_model.summary()}")
@@ -155,13 +155,15 @@ def get_tensorboard_callbacks(model_name, x_valid, y_valid, le, dest_logs):
     return callbacks
 
 
-def save_model_ext(model, filepath, overwrite=True, le=None):
+def save_model_ext(model, filepath, overwrite=True, le=None, options_dataset=None):
     # https://stackoverflow.com/questions/44310448/attaching-class-labels-to-a-keras-model
     save_model(model, filepath, overwrite)
+    f = h5py.File(filepath, mode='a')
+    if options_dataset is not None:
+        f.attrs['options_dataset'] = options_dataset
     if le is not None:
-        f = h5py.File(filepath, mode='a')
         f.attrs['class_names'] = json.dumps(list(le.classes_))
-        f.close()
+    f.close()
         
 def extract_features(hf):
     '''
@@ -173,7 +175,7 @@ def extract_features(hf):
     x = None
     
     for key in hf.keys():
-        if key != 'classes':
+        if key != 'classes' and key != 'options':
             local_print(f"[+] Add {key} feature in X.")
             if len(np.array(hf[key]).shape) != 4:
                 print(f"[-] Feature {key} have not 4 dim")
@@ -285,7 +287,8 @@ if __name__ == '__main__':
     if 'classes' not in hf.keys():
         print('[-] Dataset does not contain classes')
         exit(4)
-    
+        
+    options_dataset = hf['options'] if ('options' in hf.keys) else None
     X, y = extract_features(hf)
     local_print(f"[+] X shape: {X.shape}")
     local_print(f"[+] y shape: {y.shape}")
@@ -311,7 +314,7 @@ if __name__ == '__main__':
     local_print(f"[+] X_valid.shape: {x_valid.shape} | y_valid.shape: {y_valid.shape}")
     
     # Run all models according to model_names arg
-    run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num_classes, batch_size, le, dest_logs, epochs, dest_models, should_save_model, optimizer, base_learning_rate)
+    run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num_classes, batch_size, le, dest_logs, epochs, dest_models, should_save_model, optimizer, base_learning_rate, options_dataset)
  
     if launch_tensorboard:
         print("[+] Run tensorboard")

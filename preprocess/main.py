@@ -21,7 +21,7 @@ sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
 
 from utilities.remove_background_functions import remove_bg
 from utilities.extract_features import get_pyfeats_features, get_lpb_histogram, get_hue_moment, get_haralick, get_hsv_histogram, get_lab_histogram, get_graycoprops, get_lab_img, get_hsv_img
-from utilities.utils import crop_resize_image, safe_open_w, get_df, get_canny_img, get_gabor_img, store_dataset, update_data_dict, bgrtogray
+from utilities.utils import crop_resize_image, safe_open_w, get_df, get_canny_img, get_gabor_img, store_dataset, update_data_dict, bgrtogray, CV_NORMALIZE_TYPE
 
 pcv.params.debug = ''
 debug = ''
@@ -33,18 +33,6 @@ HEALTHY_NOT_HEALTHY = 'HEALTHY_NOT_HEALTHY'
 ONLY_HEALTHY = 'ONLY_HEALTHY'
 NOT_HEALTHY = 'NOT_HEALTHY'
 ALL = 'ALL'
-
-CV_NORMALIZE_TYPE = {
-    'NORM_INF': cv.NORM_INF,
-    'NORM_L1': cv.NORM_L1,
-    'NORM_L2': cv.NORM_L2,
-    'NORM_L2SQR': cv.NORM_L2SQR,
-    'NORM_HAMMING': cv.NORM_HAMMING,
-    'NORM_HAMMING2': cv.NORM_HAMMING2,
-    'NORM_TYPE_MASK': cv.NORM_TYPE_MASK,
-    'NORM_RELATIVE': cv.NORM_RELATIVE,
-    'NORM_MINMAX': cv.NORM_MINMAX
-}
 
 
 def local_print(msg):
@@ -349,6 +337,14 @@ if __name__ == '__main__':
                     value) == np.ndarray or type(value) == pd.DataFrame else [value]
             else:
                 data[key] += value
+
+    data['options'] = {
+        'normalize_type': normalize_type,
+        'size_img': size_img,
+        'should_remove_bg': should_remove_bg,
+        'crop_img': crop_img
+    }
+    
     if VERBOSE:
         for key in data.keys():
             print(f"[+] {key}: have len: {len(data[key])}")

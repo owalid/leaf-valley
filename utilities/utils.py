@@ -7,6 +7,36 @@ from multiprocessing.pool import ThreadPool
 from plantcv import plantcv as pcv
 import h5py
 
+CV_NORMALIZE_TYPE = {
+    'NORM_INF': cv.NORM_INF,
+    'NORM_L1': cv.NORM_L1,
+    'NORM_L2': cv.NORM_L2,
+    'NORM_L2SQR': cv.NORM_L2SQR,
+    'NORM_HAMMING': cv.NORM_HAMMING,
+    'NORM_HAMMING2': cv.NORM_HAMMING2,
+    'NORM_TYPE_MASK': cv.NORM_TYPE_MASK,
+    'NORM_RELATIVE': cv.NORM_RELATIVE,
+    'NORM_MINMAX': cv.NORM_MINMAX
+}
+
+
+def preprocess_prediction(img, options):
+  '''
+    Preprocess image before prediction
+  '''
+  
+  if 'normalize_type' in options.keys() and options['normalize_type'] and isinstance(options['normalize_type'], str):
+    img = cv.normalize(img, None, alpha=0, beta=1, norm_type=CV_NORMALIZE_TYPE[options['normalize_type']], dtype=cv.CV_32F)
+
+  if 'size_img' in options.keys() and options['size_img'] is not None and isinstance(options['size_img'], tuple):
+    img = cv.resize(img, options['size_img'])
+
+  if 'crop_img' in options.keys() and options['crop_img']:
+    img = crop_resize_image(img, img)
+    
+  return img
+  
+
 def chunks(arr, chunk_size):
   '''
     Split array into chunks

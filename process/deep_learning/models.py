@@ -1,8 +1,6 @@
 import tensorflow as tf
 import tensorflow.keras.layers as tfl
 
-
-
 class CopyChannels(tf.keras.layers.Layer):
     """
     This layer copies channels from channel_start the number of channels given in channel_count.
