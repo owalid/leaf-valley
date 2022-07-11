@@ -1,26 +1,11 @@
 name: Deploy to heroku.
 
 # Run workflow on every push to master branch.
-on: ['push', 'pull_request']
+on: ['push']
 
 # Your workflows jobs.
 jobs:
-  js-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Install dependecies
-        working-directory: ./app/client
-        run: npm i
-
-      - name: Run ESLint
-        working-directory: ./app/client
-        run: npm run lint
-
   deploy:
-    needs: js-lint
     runs-on: ubuntu-latest
     steps:
       # Check-out your repository.

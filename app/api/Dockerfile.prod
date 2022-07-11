@@ -5,7 +5,7 @@ COPY . /home/api
 WORKDIR /home/api
 
 RUN apt-get update -y
-RUN pip install -U --upgrade pip wheel setuptools
+RUN pip install -U --upgrade pip
 RUN pip install -r /home/api/requirements.txt
 ENV FLASK_ENV prod
 
