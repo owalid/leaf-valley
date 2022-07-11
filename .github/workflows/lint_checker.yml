@@ -1,43 +1,43 @@
-name: Lint checker
+# name: Lint checker
 
-on:
-  pull_request:
-    paths:
-      - 'app/client/**'
-      - 'app/api/**'
-jobs:
-  get-dir-changed:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: dorny/paths-filter@v2
-        id: changes
-        with:
-          filters: |
-            client:
-              - 'app/client/**'
-            api:
-              - 'app/api/**'
+# on:
+#   pull_request:
+#     paths:
+#       - 'app/client/**'
+#       - 'app/api/**'
+# jobs:
+#   get-dir-changed:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: dorny/paths-filter@v2
+#         id: changes
+#         with:
+#           filters: |
+#             client:
+#               - 'app/client/**'
+#             api:
+#               - 'app/api/**'
 
-  js-lint:
-    if: steps.changes.outputs.client == true
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+#   js-lint:
+#     if: steps.changes.outputs.client == true
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v2
 
-      - name: Install dependecies
-        working-directory: ./app/client
-        run: yarn install --immutable --immutable-cache --check-cache
+#       - name: Install dependecies
+#         working-directory: ./app/client
+#         run: yarn install --immutable --immutable-cache --check-cache
 
-      - name: Run ESLint
-        working-directory: ./app/client
-        run: yarn run lint
-  py-lint:
-    if: steps.changes.outputs.api == true
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+#       - name: Run ESLint
+#         working-directory: ./app/client
+#         run: yarn run lint
+#   py-lint:
+#     if: steps.changes.outputs.api == true
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v2
 
-      - name: hello world
-        run: echo "hello world"
+#       - name: hello world
+#         run: echo "hello world"
