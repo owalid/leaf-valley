@@ -146,7 +146,7 @@ def get_tensorboard_callbacks(model_name, x_valid, y_valid, le, dest_logs):
     tensorboard_cb = tf.keras.callbacks.TensorBoard(log_dir=logdir, write_graph=True, write_images=True, histogram_freq=1)
     
     ''' Callbacks '''
-    file_writer = tf.summary.create_file_writer(logdir + '/images')
+    file_writer = tf.summary.create_file_writer(logdir + '/imgs')
     callbacks = [
         tensorboard_cb,
         ConfusionMatrixCallback(x_valid, y_valid, le, file_writer),
@@ -161,7 +161,7 @@ def save_model_ext(model, filepath, overwrite=True, le=None, options_dataset=Non
     save_model(model, filepath, overwrite)
     f = h5py.File(filepath, mode='a')
     if options_dataset is not None:
-        f.attrs['options_dataset'] = options_dataset
+        f.attrs['options_dataset'] = json.loads(options_dataset[0])
     if le is not None:
         f.attrs['class_names'] = json.dumps(list(le.classes_))
     f.close()
@@ -176,7 +176,7 @@ def extract_features(hf):
     x = None
     
     for key in hf.keys():
-        if key != 'classes' and key != 'options':
+        if key != 'classes' and key != 'options_dataset':
             local_print(f"[+] Add {key} feature in X.")
             if len(np.array(hf[key]).shape) != 4:
                 print(f"[-] Feature {key} have not 4 dim")
