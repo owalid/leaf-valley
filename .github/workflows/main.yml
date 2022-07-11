@@ -13,9 +13,12 @@ jobs:
 
       - name: Go to client app directory
         run: cd app/client
+      
+      - name: (debug) Pwd 
+        run: pwd
 
       - name: Install dependecies
-        run: npm ci
+        run: npm i
 
       - name: Run ESLint
         run: npm run lint
