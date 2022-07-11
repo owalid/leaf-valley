@@ -1,0 +1,11 @@
+FROM node:17.2-alpine
+
+RUN mkdir -p /home/app
+COPY . /home/app
+WORKDIR /home/app
+
+ENV NODE_OPTIONS --openssl-legacy-provider
+RUN npm install
+RUN npm run build
+
+CMD ["npm", "start"]

@@ -1,4 +1,4 @@
-FROM python:3.8.12-slim-buster
+FROM python:3.8.12-alpine
 
 ENV PORT '5000'
 
@@ -6,10 +6,10 @@ RUN mkdir -p /home/api
 COPY . /home/api
 WORKDIR /home/api
 
-RUN apt-get update
-RUN apt-get install -y gcc python3-dev musl-dev libpq-dev
+RUN apk update
+RUN apk add gcc python3-dev musl-dev libpq-dev curl
 RUN pip install --upgrade pip
-# RUN pip install --upgrade setuptools wheel cython
-RUN pip install -r config/requirements.txt
+RUN pip install --upgrade setuptools
+RUN pip install -r /home/api/requirements.txt
 
 EXPOSE 5000

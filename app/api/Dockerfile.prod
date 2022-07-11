@@ -1,0 +1,12 @@
+FROM python:3.8.12-slim-buster
+
+RUN mkdir -p /home/api
+COPY . /home/api
+WORKDIR /home/api
+
+RUN apt-get update -y
+RUN pip install -U --upgrade pip wheel setuptools
+RUN pip install -r /home/api/requirements.txt
+ENV FLASK_ENV prod
+
+CMD ["gunicorn", "main:app"]
