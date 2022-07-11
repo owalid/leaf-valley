@@ -5,10 +5,9 @@ import Vuetify, {
   VContainer,
   VProgressLinear,
   VProgressCircular,
-  VImg
+  VImg,
 } from 'vuetify/lib'
 import '@fortawesome/fontawesome-free/css/all.css' // Ensure you are using css-loader
-
 
 Vue.use(Vuetify, {
   components: {
@@ -17,14 +16,14 @@ Vue.use(Vuetify, {
     VContainer,
     VProgressLinear,
     VProgressCircular,
-    VImg
+    VImg,
   },
   icons: {
-    iconfont: 'fa'
+    iconfont: 'fa',
   },
   options: {
-    minifyTheme (css) {
+    minifyTheme(css) {
       return css.replace(/[\s|\r\n|\r|\n]/g, '')
-    }
-  }
+    },
+  },
 })

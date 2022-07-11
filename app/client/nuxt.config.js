@@ -9,21 +9,16 @@ export default {
       { charset: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       { hid: 'description', name: 'description', content: '' },
-      { name: 'format-detection', content: 'telephone=no' }
+      { name: 'format-detection', content: 'telephone=no' },
     ],
-    link: [
-      { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
-    ]
+    link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],
   },
 
   // Global CSS: https://go.nuxtjs.dev/config-css
-  css: [
-  ],
+  css: [],
 
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
-  plugins: [
-    '~/plugins/vuetify'
-  ],
+  plugins: ['~/plugins/vuetify'],
 
   // Auto import components: https://go.nuxtjs.dev/config-components
   components: true,
@@ -47,7 +42,6 @@ export default {
     '@nuxtjs/proxy',
   ],
 
-
   proxy: {
     '/api': {
       target: process.env.NUXT_BASE_API_URL || 'http://127.0.0.1:5000',
@@ -66,8 +60,8 @@ export default {
   // PWA module configuration: https://go.nuxtjs.dev/pwa
   pwa: {
     manifest: {
-      lang: 'en'
-    }
+      lang: 'en',
+    },
   },
 
   // Vuetify module configuration: https://go.nuxtjs.dev/config-vuetify
@@ -85,10 +79,10 @@ export default {
           info: colors.teal.lighten1,
           warning: colors.amber.base,
           error: colors.deepOrange.accent4,
-          success: colors.green.accent3
-        }
-      }
-    }
+          success: colors.green.accent3,
+        },
+      },
+    },
   },
 
   // Build Configuration: https://go.nuxtjs.dev/config-build
@@ -98,7 +92,7 @@ export default {
     standalone: true,
     ignoreOrder: false,
     filenames: {
-      chunk: ({ isDev }) => (isDev ? '[name].js' : '[id].[contenthash].js')
+      chunk: ({ isDev }) => (isDev ? '[name].js' : '[id].[contenthash].js'),
     },
     html: {
       minify: {
@@ -112,8 +106,8 @@ export default {
         trimCustomFragments: true,
         useShortDoctype: true,
         preserveLineBreaks: false,
-        collapseWhitespace: true
-      }
+        collapseWhitespace: true,
+      },
     },
     optimization: {
       splitChunks: {
@@ -130,7 +124,7 @@ export default {
             name: 'styles',
             test: /\.(css|vue)$/,
             chunks: 'all',
-            enforce: true
+            enforce: true,
           },
           defaultVendors: {
             test: /[\\/]node_modules[\\/]/,
@@ -142,9 +136,9 @@ export default {
             priority: -20,
             reuseExistingChunk: true,
           },
-        }
-      }
+        },
+      },
     },
-    extend (config, ctx) {},
-  }
+    extend(config, ctx) {},
+  },
 }
