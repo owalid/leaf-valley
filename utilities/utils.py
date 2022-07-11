@@ -6,6 +6,7 @@ import numpy as np
 from multiprocessing.pool import ThreadPool
 from plantcv import plantcv as pcv
 import h5py
+import json
 
 CV_NORMALIZE_TYPE = {
     'NORM_INF': cv.NORM_INF,
@@ -70,11 +71,11 @@ def get_dataset(path):
   hf = h5py.File(path, 'r')
   return hf
   
-def store_dataset(path, dict, verbose):
+def store_dataset(path, src_dict, verbose):
   '''
     Store dataset in h5py file
     path: path of h5py file
-    dict: dictionary to store
+    src_dict: dictionary to store
   '''
   print(F"PATH: {path}")
   h = h5py.File(path, 'w')
@@ -84,37 +85,42 @@ def store_dataset(path, dict, verbose):
     
 
   # Saves labels
-  for col in dict.keys():
-    col_array = np.array(dict[col])
-    shape_array = np.shape(col_array)
-    
-    first_element = col_array[0]
-    
-    while is_array(first_element):  # If array, keep going
-      first_element = first_element[0]
+  for col in src_dict.keys():
+    if isinstance(src_dict[col], dict):
+      str_json = json.dumps(src_dict[col])
+      h.create_dataset(col, (1,), h5py.string_dtype('utf-8'), data=[str_json])
+    else:
+      col_array = np.array(src_dict[col])
+      shape_array = np.shape(col_array)
+      
+      
+      first_element = col_array[0]
+      
+      while is_array(first_element):  # If array, keep going
+        first_element = first_element[0]
 
-    # Select the correct type for h5py file
-    if type(first_element) is float or type(first_element) is np.float64 or type(first_element) is np.float32: # If float
-      col_type = h5py.h5t.IEEE_F32BE
-      col_type_str = "h5py.h5t.IEEE_F32BE"
-    elif type(first_element) is bool or type(first_element) is np.uint8:
-      col_array.astype(np.uint8)
-      col_type = h5py.h5t.STD_U8BE
-      col_type_str = "h5py.h5t.STD_U8BE"
-    elif type(first_element) is int or type(first_element) is np.int64 or type(first_element) is np.int32: # If int or int64
-      col_type = h5py.h5t.STD_I32BE
-      col_type_str = "h5py.h5t.STD_I32BE"
-    elif type(first_element) is np.str_ or type(first_element) is str: # If string or np.str
-      col_type = h5py.string_dtype('utf-8')
-      col_type_str = "h5py.string_dtype('utf-8')"
+      # Select the correct type for h5py file
+      if type(first_element) is float or type(first_element) is np.float64 or type(first_element) is np.float32: # If float
+        col_type = h5py.h5t.IEEE_F32BE
+        col_type_str = "h5py.h5t.IEEE_F32BE"
+      elif type(first_element) is bool or type(first_element) is np.uint8:
+        col_array.astype(np.uint8)
+        col_type = h5py.h5t.STD_U8BE
+        col_type_str = "h5py.h5t.STD_U8BE"
+      elif type(first_element) is int or type(first_element) is np.int64 or type(first_element) is np.int32: # If int or int64
+        col_type = h5py.h5t.STD_I32BE
+        col_type_str = "h5py.h5t.STD_I32BE"
+      elif type(first_element) is np.str_ or type(first_element) is str: # If string or np.str
+        col_type = h5py.string_dtype('utf-8')
+        col_type_str = "h5py.string_dtype('utf-8')"
+        
+      if verbose:
+        print(f"[+] Column: {col} - Type: {col_type_str} - Shape: {shape_array}")
       
-    if verbose:
-      print(f"[+] Column: {col} - Type: {col_type_str} - Shape: {shape_array}")
-    
-    col_array = np.array(col_array, dtype=col_type)
-      
-    # Create the dataset
-    h.create_dataset(col, shape_array, col_type, data=col_array)
+      col_array = np.array(col_array, dtype=col_type)
+        
+      # Create the dataset
+      h.create_dataset(col, shape_array, col_type, data=col_array)
 
 def replace_text(text, lst, rep=' '):
     '''

@@ -338,7 +338,7 @@ if __name__ == '__main__':
             else:
                 data[key] += value
 
-    data['options'] = {
+    data['options_dataset'] = {
         'normalize_type': normalize_type,
         'size_img': size_img,
         'should_remove_bg': should_remove_bg,

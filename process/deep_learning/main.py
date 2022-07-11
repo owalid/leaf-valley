@@ -137,15 +137,16 @@ def run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num
         local_print("==========================================================\n\n")
 
 def get_tensorboard_callbacks(model_name, x_valid, y_valid, le, dest_logs):
+    shape_img = x_valid.shape[1:-1]
+    shape_img_str = f"{shape_img[0]}x{shape_img[1]}"
     base_dir = dest_logs
-    os.system(f'rm -rf {base_dir}/{model_name}')
-    logdir = f"{base_dir}/{model_name}/{datetime.now().strftime('%Y%m%d')}"
+    logdir = f"{base_dir}/{model_name}_{shape_img_str}/{datetime.now().strftime('%Y%m%d')}"
     
     # Define the basic TensorBoard callback.
     tensorboard_cb = tf.keras.callbacks.TensorBoard(log_dir=logdir, write_graph=True, write_images=True, histogram_freq=1)
     
     ''' Callbacks '''
-    file_writer = tf.summary.create_file_writer(logdir + '/cm')
+    file_writer = tf.summary.create_file_writer(logdir + '/images')
     callbacks = [
         tensorboard_cb,
         ConfusionMatrixCallback(x_valid, y_valid, le, file_writer),
@@ -288,7 +289,7 @@ if __name__ == '__main__':
         print('[-] Dataset does not contain classes')
         exit(4)
         
-    options_dataset = hf['options'] if ('options' in hf.keys()) else None
+    options_dataset = hf['options_dataset'] if ('options_dataset' in hf.keys()) else None
     X, y = extract_features(hf)
     local_print(f"[+] X shape: {X.shape}")
     local_print(f"[+] y shape: {y.shape}")
