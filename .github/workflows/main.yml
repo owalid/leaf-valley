@@ -11,16 +11,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Go to client app directory
-        run: cd app/client
-      
-      - name: (debug) Pwd 
-        run: pwd
-
       - name: Install dependecies
-        run: npm i
+        working-directory: ./app/client
+        run: npm ci
 
       - name: Run ESLint
+        working-directory: ./app/client
         run: npm run lint
 
   deploy:
