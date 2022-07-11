@@ -465,10 +465,22 @@ base_models = {
         'base': tf.keras.applications.ResNet50,
         'preprocess_input': tf.keras.applications.resnet50.preprocess_input
     },
-    # 'CONVNEXT': {
-    #     'base': tf.keras.applications.convnext,
-    #     'preprocess_input': tf.keras.applications.convnext.preprocess_input
-    # },
+    'CONVNEXTTINY': {
+        'base': tf.keras.applications.ConvNeXtTiny,
+        'preprocess_input': tf.keras.applications.convnext.preprocess_input
+    },
+    'CONVNEXTSMALL': {
+        'base': tf.keras.applications.ConvNeXtSmall,
+        'preprocess_input': tf.keras.applications.convnext.preprocess_input
+    },
+    'CONVNEXTBASE': {
+        'base': tf.keras.applications.ConvNeXtBase,
+        'preprocess_input': tf.keras.applications.convnext.preprocess_input
+    },
+    'CONVNEXTLARGE': {
+        'base': tf.keras.applications.ConvNeXtLarge,
+        'preprocess_input': tf.keras.applications.convnext.preprocess_input
+    },
     'RESNET50V2': {
         'base': tf.keras.applications.ResNet50V2,
         'preprocess_input': tf.keras.applications.resnet_v2.preprocess_input

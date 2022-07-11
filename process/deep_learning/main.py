@@ -288,7 +288,7 @@ if __name__ == '__main__':
         print('[-] Dataset does not contain classes')
         exit(4)
         
-    options_dataset = hf['options'] if ('options' in hf.keys) else None
+    options_dataset = hf['options'] if ('options' in hf.keys()) else None
     X, y = extract_features(hf)
     local_print(f"[+] X shape: {X.shape}")
     local_print(f"[+] y shape: {y.shape}")
