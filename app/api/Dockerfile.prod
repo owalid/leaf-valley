@@ -4,9 +4,9 @@ RUN mkdir -p /home/api
 COPY . /home/api
 WORKDIR /home/api
 
-RUN apt get update -y
-RUN apt get install python3-opencv -y
-RUN apt install libgl1-mesa-glx -y
+RUN apt-get update -y
+RUN apt-get install python3-opencv -y
+RUN apt-get install libgl1-mesa-glx -y
 RUN pip install -U --upgrade pip
 RUN pip install -r /home/api/requirements.txt
 ENV FLASK_ENV prod
