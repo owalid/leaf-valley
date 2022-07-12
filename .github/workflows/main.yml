@@ -1,7 +1,9 @@
 name: Deploy to heroku.
 
 # Run workflow on every push to master branch.
-on: ['push']
+on: 
+  push:
+    branches: [main]
 
 # Your workflows jobs.
 jobs:
@@ -12,6 +14,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      # We need to do that because docker build can't copy parent directory inside a docker.
       - name: Copy utilities in api folder
         run: cp -r utilities/ app/api/
 
