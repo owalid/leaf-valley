@@ -4,17 +4,24 @@
 
 ```
 analysis/
+app/ -> web part
+  api/
+  client/
 data/ -> Data sources
   augmentation/ -> Data augmented
   no_augmentation/ -> Data not augmented
 preprocess/
+process/
 utilities/
 ```
 
 ## Preprocess dataset
 
+
+This program allows you to preprocess the images, extract data and make a dataset in h5 format.
+
 ```
-usage: main.py [-h] [-a] [-rmbg] [-src SRC_DIRECTORY] [-wi] [-crop] [-nor] [-nortype NORMALIZE_TYPE] [-c CLASSIFICATION] [-n NUMBER_IMG] [-rt RESULT_TYPE] [-dst DESTINATION] [-f FEATURES] [-s SIZE] [-v]
+usage: python preprocess/main.py [-h] [-a] [-rmbg] [-src SRC_DIRECTORY] [-wi] [-crop] [-nor] [-nortype NORMALIZE_TYPE] [-c CLASSIFICATION] [-n NUMBER_IMG] [-rt RESULT_TYPE] [-dst DESTINATION] [-f FEATURES] [-s SIZE] [-v]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -49,8 +56,12 @@ optional arguments:
 
 ## Image augmentation
 
+
+This program allows you to augment the images, and output this augmented images in the new directory.
+
+
 ```
-usage: image_augmentation.py [-h] [-src SRC_DIRECTORY] [-dst DST_DIRECTORY] [-ncls NUMBER_IMG_BY_CLASS] [-naug NUMBER_IMG_AUGMENTATION] [-dup] [-v]
+usage: python preprocess/image_augmentation.py [-h] [-src SRC_DIRECTORY] [-dst DST_DIRECTORY] [-ncls NUMBER_IMG_BY_CLASS] [-naug NUMBER_IMG_AUGMENTATION] [-dup] [-v]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -68,6 +79,10 @@ optional arguments:
 ```
 
 ## Deep Learning process
+
+
+This program allows to train a deep learning model with the data preprocessed
+
 
 ```
 python process/deep_learning/main.py -h
@@ -164,12 +179,13 @@ docker compose up
 ### Start api
 ```
 cd app/api
+pip install -r requirements.txt
 python run.py
 ```
 
 ### Start client
 ```
 cd app/client/
-yarn # install dependencies
+yarn
 yarn dev
 ```
