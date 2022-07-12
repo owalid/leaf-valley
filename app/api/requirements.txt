@@ -7,3 +7,4 @@ tensorflow==2.8.0
 opencv-python
 plantcv
 gunicorn
+opencv-python
