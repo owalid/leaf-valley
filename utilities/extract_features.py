@@ -15,7 +15,8 @@ from inspect import getsourcefile
 import os.path as path, sys
 current_dir = path.dirname(path.abspath(getsourcefile(lambda:0)))
 sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
-from utilities.utils import bgrtogray
+from utilities.images_conversions import bgrtogray
+
 
 def get_pyfeats_features(raw_bgr_img, mask):
     f = bgrtogray(raw_bgr_img)
@@ -452,3 +453,28 @@ def get_graycoprops(img):
     result = {f"graycomatrix-{index}": features[index] for index in range(len(features))}
 
     return result
+
+
+def get_gabor_img(img):
+    '''
+      Get gabor image
+      img: numpy array
+    '''
+
+    filters = []
+    ksize = 31
+    for theta in np.arange(0, np.pi, np.pi / 16):
+        kern = cv.getGaborKernel(
+            (ksize, ksize), 3.5, theta, 10.0, 0.5, 0, ktype=cv.CV_32F)
+        kern /= 1.5*kern.sum()
+        filters.append(kern)
+
+    accum = np.zeros_like(img)
+
+    def f(kern):
+        return cv.filter2D(img, cv.CV_8UC3, kern)
+    pool = ThreadPool(processes=8)
+    for fimg in pool.imap_unordered(f, filters):
+        np.maximum(accum, fimg, accum)
+
+    return accum

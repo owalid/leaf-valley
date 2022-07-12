@@ -20,8 +20,9 @@ current_dir = path.dirname(path.abspath(getsourcefile(lambda: 0)))
 sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
 
 from utilities.remove_background_functions import remove_bg
-from utilities.extract_features import get_pyfeats_features, get_lpb_histogram, get_hue_moment, get_haralick, get_hsv_histogram, get_lab_histogram, get_graycoprops, get_lab_img, get_hsv_img
-from utilities.utils import crop_resize_image, safe_open_w, get_df, get_canny_img, get_gabor_img, store_dataset, update_data_dict, bgrtogray, CV_NORMALIZE_TYPE
+from utilities.prepare_features import prepare_features, update_features_dict
+from utilities.extract_features import get_gabor_img
+from utilities.utils import crop_resize_image, safe_open_w, get_df, store_dataset, CV_NORMALIZE_TYPE
 
 pcv.params.debug = ''
 debug = ''
@@ -163,7 +164,8 @@ def multiprocess_worker(specie_directory, df_filtred, data_used, type_output, sr
     for file in tqdm(img_lst, ncols=100) if VERBOSE else img_lst:
         path_img = os.path.join(
             src_directory, specie_directory, file)
-
+        
+        mask = None
         if should_remove_bg:
             pill_masked_img, masked_img, raw_img, mask = generate_img_without_bg(
                 path_img, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
@@ -173,55 +175,10 @@ def multiprocess_worker(specie_directory, df_filtred, data_used, type_output, sr
         file_path = os.path.join(
             dest_path, class_name, f"{specie}-{disease}-{file}")
         specie_index = f"{specie}_{disease}_{file}"
-        data = update_data_dict(data, 'classes', class_name)
-
-        # FEATURES DEEP LEARNING
-        if 'rgb' in answers_type_features or len(answers_type_features) == 0:
-            data = update_data_dict(data, 'rgb_img', masked_img)
-        if 'gabor' in answers_type_features:
-            data = update_data_dict(
-                data, 'gabor_img', get_gabor_img(masked_img))
-        if 'gray' in answers_type_features:
-            data = update_data_dict(data, 'gray_img', bgrtogray(masked_img))
-        if 'canny' in answers_type_features:
-            data = update_data_dict(
-                data, 'canny_img', get_canny_img(masked_img))
-        if 'lab' in answers_type_features:
-            data = update_data_dict(data, 'lab',  get_lab_img(masked_img))
-        if 'hsv' in answers_type_features:
-            data = update_data_dict(data, 'hsv',  get_hsv_img(masked_img))
-
-        # FEATURES MACHINE LEARNING
-        if 'graycoprops' in answers_type_features:
-            features = get_graycoprops(masked_img)
-            for feature in features:
-                data = update_data_dict(data, feature, features[feature])
-        if 'lpb_histogram' in answers_type_features:
-            features = get_lpb_histogram(masked_img)
-            for feature in features:
-                data = update_data_dict(data, feature, features[feature])
-        if 'hue_moment' in answers_type_features:
-            features = get_hue_moment(masked_img)
-            for feature in features:
-                data = update_data_dict(data, feature, features[feature])
-        if 'haralick' in answers_type_features:
-            features = get_haralick(masked_img)
-            for feature in features:
-                data = update_data_dict(data, feature, features[feature])
-        if 'histogram_hsv' in answers_type_features:
-            features = get_hsv_histogram(masked_img)
-            for feature in features:
-                data = update_data_dict(data, feature, features[feature])
-        if 'histogram_lab' in answers_type_features:
-            features = get_lab_histogram(masked_img)
-            for feature in features:
-                data = update_data_dict(data, feature, features[feature])
-        if 'pyfeats' in answers_type_features and should_remove_bg:
-            pyfeats_features = get_pyfeats_features(raw_img, mask)
-            for feature in pyfeats_features:
-                data = update_data_dict(
-                    data, feature, pyfeats_features[feature])
-
+        
+        data = update_features_dict(data, 'classes', class_name)
+        data = prepare_features(data, raw_img, answers_type_features, masked_img=masked_img, mask=mask)
+        
         if write_img:
             with safe_open_w(file_path) as f:
                 pill_masked_img.save(f)
@@ -339,10 +296,11 @@ if __name__ == '__main__':
                 data[key] += value
 
     data['options_dataset'] = {
-        'normalize_type': normalize_type,
+        'normalize_type': normalize_type if (normalize_img) else None,
         'size_img': size_img,
         'should_remove_bg': should_remove_bg,
-        'crop_img': crop_img
+        'crop_img': crop_img,
+        'features': answers_type_features,
     }
     
     if VERBOSE:

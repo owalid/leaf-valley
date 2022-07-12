@@ -4,9 +4,20 @@ import pandas as pd
 import cv2 as cv
 import numpy as np
 from multiprocessing.pool import ThreadPool
+
 from plantcv import plantcv as pcv
 import h5py
 import json
+
+import os.path as path
+import sys
+from inspect import getsourcefile
+current_dir = path.dirname(path.abspath(getsourcefile(lambda:0)))
+current_dir = current_dir[:current_dir.rfind(path.sep)]
+sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
+from utilities.prepare_features import prepare_features
+from utilities.remove_background_functions import remove_bg
+from utilities.images_conversions import rgbtobgr
 
 CV_NORMALIZE_TYPE = {
     'NORM_INF': cv.NORM_INF,
@@ -20,11 +31,11 @@ CV_NORMALIZE_TYPE = {
     'NORM_MINMAX': cv.NORM_MINMAX
 }
 
-
 def preprocess_prediction(img, options):
   '''
     Preprocess image before prediction
   '''
+  mask, masked_img = (None, None)
   
   if 'normalize_type' in options.keys() and options['normalize_type'] and isinstance(options['normalize_type'], str):
     img = cv.normalize(img, None, alpha=0, beta=1, norm_type=CV_NORMALIZE_TYPE[options['normalize_type']], dtype=cv.CV_32F)
@@ -34,6 +45,15 @@ def preprocess_prediction(img, options):
 
   if 'crop_img' in options.keys() and options['crop_img']:
     img = crop_resize_image(img, img)
+  
+  if 'should_remove_bg' in options.keys() and options['should_remove_bg']:
+    bgr_img = rgbtobgr(img)
+    mask, masked_img = remove_bg(bgr_img)
+    
+  if ('features' in options.keys() and options['features'] is not None) or (options['features'] and len(options['features']) == 1 and options['features'][0] != 'rgb'):
+    data = {}
+    is_deep_learning_feature = ['rgb', 'lab', 'hsv', 'canny', 'gray', 'gabor'] in options['features'] and len(options['features']) == 1
+    img = prepare_features(data, img, options['features'], masked_img=masked_img, mask=mask, is_deep_learning_features=is_deep_learning_feature)
     
   return img
   
@@ -48,14 +68,7 @@ def chunks(arr, chunk_size):
       list of chunks
   '''
   return [arr[i:i+chunk_size] for i in range(0, len(arr), chunk_size)]
-  
-    
-  
-def update_data_dict(data_dict, key, value):
-  if key not in data_dict:
-    data_dict[key] = []
-  data_dict[key].append(value)
-  return data_dict
+
 
 def is_array(x):
   '''
@@ -148,30 +161,6 @@ def crop_resize_image(img_masked, img_to_resize):
 
     return cv.resize(img_to_resize[x1:x2+1, y1:y2+1, ], img_masked.shape, interpolation=cv.INTER_CUBIC)
 
-def bgrtogray(img):
-  '''
-    Convert BGR to Gray
-    img: numpy array
-  '''
-  return cv.cvtColor(np.array(img, dtype='uint8'), cv.COLOR_BGR2GRAY)
-
-def bgrtorgb(img):
-    '''
-      Convert BGR to RGB
-      img: numpy array
-    '''
-    return cv.cvtColor(np.array(img, dtype='uint8'), cv.COLOR_BGR2RGB)
-
-
-def blur_img(img, k):
-    '''
-      Blur image
-      img: numpy array
-      k: kernel size
-    '''
-    return cv.blur(img.copy(), k)
-
-
 def safe_open_w(path):
     '''
       Open "path" for writing, creating any parent directories as needed.
@@ -189,31 +178,6 @@ def get_canny_img(img, sigma=1.5):
     '''
 
     return pcv.canny_edge_detect(img, sigma=sigma)
-
-
-def get_gabor_img(img):
-    '''
-      Get gabor image
-      img: numpy array
-    '''
-
-    filters = []
-    ksize = 31
-    for theta in np.arange(0, np.pi, np.pi / 16):
-        kern = cv.getGaborKernel(
-            (ksize, ksize), 3.5, theta, 10.0, 0.5, 0, ktype=cv.CV_32F)
-        kern /= 1.5*kern.sum()
-        filters.append(kern)
-
-    accum = np.zeros_like(img)
-
-    def f(kern):
-        return cv.filter2D(img, cv.CV_8UC3, kern)
-    pool = ThreadPool(processes=8)
-    for fimg in pool.imap_unordered(f, filters):
-        np.maximum(accum, fimg, accum)
-
-    return accum
 
 
 def kmean_img(img, k_n):
