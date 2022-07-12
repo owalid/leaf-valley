@@ -173,3 +173,14 @@ def get_df(path='data/augmentation'):
             '_')[-1].replace(')', '')
         df.loc[name_folder].healthy = name_splited[-1] == 'healthy'
     return df
+
+def set_plants_dict(df):
+    d = {}
+    for specie in ['All']+sorted(df.specie.unique()):
+        d[specie] = {}
+        d[specie] = list(sorted(df.loc[((df.specie==specie)|(specie=='All'))].disease.unique()))
+        if len(d[specie])>1:
+            d[specie] = ['All']+d[specie]
+
+    return d
+

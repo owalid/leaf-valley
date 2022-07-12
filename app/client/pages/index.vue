@@ -29,6 +29,7 @@
         </v-btn>
       </v-col>
     </v-row>
+
     <v-row v-for="result in results" :key="result.indexPayload">
       <render-prediction-result :result="result" />
     </v-row>
@@ -40,10 +41,10 @@ import RenderPredictionResult from '~/components/RenderPredictionResult'
 
 export default {
   name: 'IndexPage',
-  components: { RenderPredictionResult },
+  components: { RenderPredictionResult},
   async asyncData({ $axios }) {
-    const res = await $axios.get('/models/')
-    const { result } = res.data
+    const res = await $axios.post('/models/', {'md_grp': 'DP'})
+    const {result} = res.data
     return {
       models: result.models,
     }
@@ -131,14 +132,10 @@ export default {
       this.processingPrediction = true
 
       // Post to server each images in parallel
-      await Promise.all(
-        this.payloads.map((payload, indexPayload) =>
-          this.sendPostAndAddToResults(payload, indexPayload)
-        )
-      )
-      this.processingPrediction = false
+      await Promise.all(this.payloads.map((payload, indexPayload) => this.sendPostAndAddToResults(payload, indexPayload)));
+      this.processingPrediction = false;
     },
-  },
+  }
 }
 </script>
 <style lang="scss" scoped>

@@ -1,0 +1,221 @@
+<template>
+  <div class="pa-2">
+
+    <v-card width="300">
+      <v-col>
+        <div class="text-subtitle-1 mb-1">Species : {{ result.img_species }} </div>
+        <div class="text-caption text-truncate">Desease : {{ result.img_desease }} </div>
+        <div class="text-caption">Img Num : {{ result.img_num }} </div>
+      </v-col>
+      <v-row class="ma-1" align="center">
+        <v-img 
+          contain 
+          :src="`data:image/png;base64,${result.rgb_img}`" 
+          class="ml-auto img-prediction" 
+          width="130"
+          height="130" />
+        <v-img 
+          contain 
+          :src="`data:image/png;base64,${result.masked_img}`" 
+          class="ml-auto img-prediction" 
+          width="130"
+          height="130" />
+      </v-row>
+      <v-col v-if="isDLModel">
+        <div class="text-subtitle-1 mb-1">===&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DP classification&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===
+        </div>
+        <div class="text-caption">Class predicted : <span :class="colorDPMatching">{{ result.dl_prediction.class }}</span></div>
+        <div class="text-caption">Score : <span :class="colorDPScore">{{ result.dl_prediction.score }}</span></div>
+      </v-col>
+      <v-col v-if="isMLModel">
+        <div class="text-subtitle-1 mb-1">===&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ML classification&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===
+        </div>
+        <div class="text-caption">Class predicted : <span :class="colorMLMatching">{{ result.ml_prediction.class }}</span></div>
+        <div class="text-caption">Score : <span :class="colorMLScore">{{ result.ml_prediction.score }}</span></div>
+      </v-col>
+
+      <v-row v-if="addCommentFlag" justify="end" class="ma-2 pb-3">
+        <v-btn style="font-size:8px; height: 24px;" :disabled="(result.img_num===null)" @click="addCommentClick">
+          Add comment
+        </v-btn>
+      </v-row>
+      <v-row v-else>
+        <v-col>
+          <v-textarea v-model="commentText" :label="labelFunc" filled :success-messages="msg_success" :error-messages="msg_error"></v-textarea>
+          <v-row v-if="showCommentFlag" justify="end" class="ma-2 pb-0">
+            <v-btn class="mr-1" color="green lighten-1 px-2" style="font-size:8px; height: 24px;"  @click="insertCommentClick">Submit</v-btn>
+            <v-btn class="ml-1" color="red lighten-1 px-2" style="font-size:8px; height: 24px;" @click="cancelCommentClick">Cancel
+            </v-btn>
+          </v-row>
+          <v-row v-else justify="end" class="ma-2 pb-0">
+            <v-btn class="mr-1" color="green lighten-1 px-2" style="font-size:8px; height: 24px;"  @click="updateCommentClick">Update</v-btn>
+            <v-btn class="ml-1" color="red lighten-1 px-2" style="font-size:8px; height: 24px;" @click="deleteCommentClick">Delete</v-btn>
+          </v-row>
+        </v-col>
+      </v-row>
+
+    </v-card>
+  </div>
+</template>
+
+
+<script>
+export default {
+  name: "DisplayImagesAndPrediction",
+  props: {
+    result: {
+      type: Object,
+      required: true
+    }
+  },
+  data() {
+    return {
+      showCommentFlag: (this.result.comment === ''),
+      addCommentFlag: (this.result.comment === ''),
+      commentText: this.result.comment,
+      msg_error : [],
+      msg_success : []
+    }
+  },
+  computed: {
+    colorDPMatching() {
+      if (Object.keys(this.result).includes('dl_prediction')){
+      return (!this.result.img_num)? 'white--text': (this.result.dl_prediction.matching) ? 'green--text text--lighten-2' : 'red--text text--lighten-2'
+      } else {return 'white--text'}
+    },
+    colorDPScore(){
+      if (Object.keys(this.result).includes('dl_prediction')){
+        const val = this.result.dl_prediction.score
+        return ((val < 50) || (!this.result.img_num)) ? 'white--text' : (val < 70) ? 'lime--text text--accent-1' :  (val < 90) ? 'light-green--text text--accent-2' : 'green--text text--accent-4'
+      } else {return 'white--text'}
+    },
+    colorMLMatching() {
+      if (Object.keys(this.result).includes('ml_prediction')){
+        return (!this.result.img_num)? 'white--text': (this.result.ml_prediction.matching) ? 'green--text text--lighten-2' : 'red--text text--lighten-2'
+      } else {return 'white--text'}
+    },
+    colorMLScore(){
+      if (Object.keys(this.result).includes('ml_prediction')){
+        const val = this.result.ml_prediction.score
+        return ((val < 50) || (!this.result.img_num)) ? 'white--text' : (val < 70) ? 'lime--text text--accent-1' :  (val < 90) ? 'light-green--text text--accent-2' : 'green--text text--accent-4'
+      } else {return 'white--text'}
+    },
+    linearProgressProps() {
+      if (this.state === "LOADING") {
+        return {
+          stream: true,
+          'buffer-value': 0,
+          reverse: true,
+          color: "green darken-1"
+        };
+      } else if (this.state === "ERROR") {
+        return {
+          value: 100,
+          color: "red darken-2"
+        };
+      } else {
+        return {
+          value: 100,
+          color: "green darken-1"
+        };
+      }
+    },
+    state() {
+      if (!this.result || 'error' in this.result) {
+        return 'ERROR'
+      } else if (this.result && 'img_name' in this.result && 'rgb_img' in this.result && 'masked_img' in this.result) {
+        return 'SUCCESS'
+      } else {
+        return 'LOADING'
+      }
+    },
+    isDLModel() {
+      return (Object.keys(this.result).includes('dl_prediction'))
+    },
+    isMLModel() {
+      return (Object.keys(this.result).includes('ml_prediction'))
+
+    },
+    labelFunc(){
+      if (this.commentText === ''){
+        return 'Add comment'
+      } else {
+        return ''
+        }
+    },
+    matchingFunc(){
+      return "color:" + this.result.dl_prediction.matching
+    }
+  },
+  methods: {
+    addCommentClick() {
+      this.addCommentFlag = false
+      this.showCommentFlag = true
+    },
+    insertCommentClick() {
+      this.addCommentFlag = false
+      this.showCommentFlag = false
+      this.processComment('insert')
+    },
+    updateCommentClick() {
+      this.processComment('update')
+    },
+    deleteCommentClick() {
+      this.processComment('delete')
+      this.addCommentFlag = true
+      this.commentText = ''
+    },
+    cancelCommentClick() {
+      this.addCommentFlag = true
+    },
+
+
+    async processComment(method) {
+      const payload = {method, comment: {species: this.result.img_species, desease: this.result.img_desease, img_num: this.result.img_num, comment: this.commentText}}
+      await this.$axios.post('/models/comment', payload);
+      try {
+        this.msg_success = ['Done with success']
+      } catch (error) {
+        this.msg_error = ['Done with error']
+      } finally {
+        setInterval(() => {
+        this.msg_success = []
+        this.msg_success = []
+        }, 3000)
+      }
+    }
+  },
+}
+</script>
+<style lang="scss" scoped>
+.img-prediction {
+  max-width: 200px;
+  height: 200px;
+}
+
+@media (max-width: 768px) {
+  .img-prediction {
+    max-width: 100px;
+    height: 100px;
+  }
+}
+
+@media (max-width: 576px) {
+  .img-prediction {
+    max-width: 70px;
+    height: 70px;
+  }
+
+  .progress-prediction {
+    width: 10px;
+  }
+}
+
+.message-error {
+  max-width: 150px;
+}
+
+.icon-error {
+  width: 150px;
+}
+</style>
