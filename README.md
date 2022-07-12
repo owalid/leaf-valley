@@ -1,18 +1,26 @@
-# Vic 2 i
+# Leaf valley
 
 ## Directories
 
 ```
-analysis/
+analysis/ -> data analysis in jupiter notebook
 app/ -> web part
   api/
   client/
 data/ -> Data sources
   augmentation/ -> Data augmented
   no_augmentation/ -> Data not augmented
-preprocess/
-process/
-utilities/
+preprocess/ -> scripts for preprocessing
+process/ -> scripts for training
+utilities/ -> global utilities functions
+```
+
+## Setup and installation
+
+This script installs the dependencies for the project and the [dataset](https://data.mendeley.com/datasets/tywbtsjrjv/1).
+
+```
+./setup.sh
 ```
 
 ## Preprocess dataset

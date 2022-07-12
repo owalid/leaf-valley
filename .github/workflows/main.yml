@@ -20,7 +20,7 @@ jobs:
           heroku_app_name: ${{ secrets.HEROKU_APP_NAME_API }}
           dockerfile_directory: ./app/api
           dockerfile_name: Dockerfile.prod
-          docker_options: "--no-cache"
+          docker_options: "--no-cache -f"
           process_type: web
 
       - name: Deploy client
