@@ -1,8 +1,13 @@
 FROM python:3.8.12-slim
 
 RUN mkdir -p /home/api
-COPY . /home/api
-COPY ../../utilities /utilities
+RUN mkdir -p /utilities
+COPY utilities /utilities/
+
+COPY . /home/api/
+# delete utilities folder
+RUN rm -rf /home/api/utilities
+
 WORKDIR /home/api
 
 RUN apt-get update -y
