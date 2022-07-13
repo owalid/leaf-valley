@@ -88,7 +88,7 @@ def get_keras_model(input_shape, num_classes, model_name, should_train):
 
     return model
 
-def run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num_classes, batch_size, le, dest_logs, epochs, dest_models, should_save_model, optimizer, base_learning_rate, options_dataset):
+def run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num_classes, batch_size, le, dest_logs, epochs, dest_models, should_save_model, optimizer, base_learning_rate, options_dataset, early_stop):
     keras_verbose = 1 if VERBOSE else 0
     for model_name in model_names:
         should_train = False if model_name.endswith('_PRETRAINED') else True
@@ -105,7 +105,8 @@ def run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num
         local_print(f"[+] Current model: {model_name}")
         
         callbacks = get_tensorboard_callbacks(model_name, x_valid, y_valid, le, dest_logs)
-        
+        if early_stop is not None:
+            callbacks.append(tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3))
         local_print(f"[+] Compile model {model_name}...")
         
         current_model.compile(optimizer=optimizer(learning_rate=base_learning_rate),
@@ -221,6 +222,7 @@ if __name__ == '__main__':
     parser = ap.ArgumentParser(formatter_class=RawTextHelpFormatter)
     parser.add_argument("-p", "--path-dataset", required=False, type=str, default='data/deep_learning/export/data_all_20_gray.h5', help='Path of your dataset (h5 file)')
     parser.add_argument("-lt", "--launch-tensorboard", required=False, action='store_true', default=False, help='Launch tensorboard after fitting')
+    parser.add_argument("-es", "--early-stop", required=False, action='store_true', default=False, help='Early stop after fitting')
     parser.add_argument("-b", "--batch-size", required=False, type=int, default=32, help='Batch size')
     parser.add_argument("-lr", "--learning-rate", required=False, type=float, default=0.001, help='Learning rate (default 0.001)')
     parser.add_argument("-opt", "--optimizer", required=False, type=str, default="Adam", help=f'Optimizer (default adam). Available: {optimizers.keys()}')
@@ -243,6 +245,7 @@ if __name__ == '__main__':
     should_save_model = args.save_model
     dest_models = args.dest_models
     dest_logs = args.dest_logs
+    early_stop = args.early_stop
     
     VERBOSE = args.verbose
     
@@ -315,7 +318,7 @@ if __name__ == '__main__':
     local_print(f"[+] X_valid.shape: {x_valid.shape} | y_valid.shape: {y_valid.shape}")
     
     # Run all models according to model_names arg
-    run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num_classes, batch_size, le, dest_logs, epochs, dest_models, should_save_model, optimizer, base_learning_rate, options_dataset)
+    run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num_classes, batch_size, le, dest_logs, epochs, dest_models, should_save_model, optimizer, base_learning_rate, options_dataset, early_stop)
  
     if launch_tensorboard:
         print("[+] Run tensorboard")
