@@ -17,7 +17,7 @@ current_dir = current_dir[:current_dir.rfind(path.sep)]
 sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
 from utilities.prepare_features import prepare_features
 from utilities.remove_background_functions import remove_bg
-from utilities.images_conversions import rgbtobgr
+from utilities.image_transformation import rgbtobgr
 
 CV_NORMALIZE_TYPE = {
     'NORM_INF': cv.NORM_INF,
@@ -31,29 +31,30 @@ CV_NORMALIZE_TYPE = {
     'NORM_MINMAX': cv.NORM_MINMAX
 }
 
-def preprocess_prediction(img, options):
+def safe_get_item(dictionary, key, default=None):
+    '''
+      Get item from dictionary
+      dictionary: dictionary
+    '''
+    return dictionary[key] if key in dictionary else default
+
+def preprocess_pipeline_prediction(rgb_img, options):
   '''
     Preprocess image before prediction
   '''
-  mask, masked_img = (None, None)
   
-  if 'normalize_type' in options.keys() and options['normalize_type'] and isinstance(options['normalize_type'], str):
-    img = cv.normalize(img, None, alpha=0, beta=1, norm_type=CV_NORMALIZE_TYPE[options['normalize_type']], dtype=cv.CV_32F)
+  normalize_type = None
+  if 'normalize_type' in options.keys() and options['normalize_type'] and isinstance(options['normalize_type'], str) and options['normalize_type'] in CV_NORMALIZE_TYPE.keys():
+    normalize_type = CV_NORMALIZE_TYPE[options['normalize_type']]
 
-  if 'size_img' in options.keys() and options['size_img'] is not None and isinstance(options['size_img'], tuple):
-    img = cv.resize(img, options['size_img'])
-
-  if 'crop_img' in options.keys() and options['crop_img']:
-    img = crop_resize_image(img, img)
-  
-  if 'should_remove_bg' in options.keys() and options['should_remove_bg']:
-    bgr_img = rgbtobgr(img)
-    mask, masked_img = remove_bg(bgr_img)
-    
-  if ('features' in options.keys() and options['features'] is not None) or (options['features'] and len(options['features']) == 1 and options['features'][0] != 'rgb'):
-    data = {}
-    is_deep_learning_feature = ['rgb', 'lab', 'hsv', 'canny', 'gray', 'gabor'] in options['features'] and len(options['features']) == 1
-    img = prepare_features(data, img, options['features'], masked_img=masked_img, mask=mask, is_deep_learning_features=is_deep_learning_feature)
+  norm_type = safe_get_item(options, 'normalize_type', None)
+  norm_type = CV_NORMALIZE_TYPE[norm_type] if norm_type is not None else None
+  data = {}
+  img = prepare_features(data, rgb_img, safe_get_item(options,'features',{}), safe_get_item(options, 'should_remove_bg'),
+                        size_img=safe_get_item(options, 'size_img', None),\
+                        normalize_type=normalize_type,\
+                        crop_img=safe_get_item(options, 'crop_img', False),\
+                        is_deep_learning_features=safe_get_item(options, 'crop_img', False))
     
   return img
   
@@ -143,60 +144,12 @@ def replace_text(text, lst, rep=' '):
         text = text.replace(l, rep)
     return text
 
-
-def crop_resize_image(img_masked, img_to_resize):
-    '''
-      Crop and resize image of leaf to delete padding arround leaf.
-
-      img_masked: numpy array
-      img_to_resize: numpy array
-      return numpy array
-    '''
-    arr = 1*(img_masked.sum(axis=1) > 0)
-    x1 = list(arr).index(1)
-    x2 = len(arr) - list(arr)[::-1].index(1)
-    arr = 1*(img_masked.sum(axis=0) > 0)
-    y1 = list(arr).index(1)
-    y2 = len(arr) - list(arr)[::-1].index(1)
-
-    return cv.resize(img_to_resize[x1:x2+1, y1:y2+1, ], img_masked.shape, interpolation=cv.INTER_CUBIC)
-
 def safe_open_w(path):
     '''
       Open "path" for writing, creating any parent directories as needed.
     '''
     os.makedirs(os.path.dirname(path), exist_ok=True)
     return open(path, 'w')
-
-
-def get_canny_img(img, sigma=1.5):
-    '''
-      Get canny image
-      img: numpy array
-      sigma: sigma of gaussian
-      return numpy array
-    '''
-
-    return pcv.canny_edge_detect(img, sigma=sigma)
-
-
-def kmean_img(img, k_n):
-    '''
-      K-mean clustering image
-
-      img: numpy array
-      k_n: number of clusters
-      return: numpy array
-    '''
-    Z = img.reshape((-1, 3))
-    Z = np.float32(Z)
-    criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 10, 1)
-    K = k_n
-    ret, label, center = cv.kmeans(
-        Z, K, None, criteria, 50, cv.KMEANS_RANDOM_CENTERS)
-    center = np.uint8(center)
-    res = center[label.flatten()]
-    return res.reshape((img.shape))
 
 
 def get_df(path='data/augmentation'):

@@ -22,7 +22,8 @@ sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
 from utilities.remove_background_functions import remove_bg
 from utilities.prepare_features import prepare_features, update_features_dict
 from utilities.extract_features import get_gabor_img
-from utilities.utils import crop_resize_image, safe_open_w, get_df, store_dataset, CV_NORMALIZE_TYPE
+from utilities.image_transformation import crop_resize_image
+from utilities.utils import safe_open_w, get_df, store_dataset, CV_NORMALIZE_TYPE
 
 pcv.params.debug = ''
 debug = ''
@@ -78,63 +79,6 @@ def get_df_filtered(df, type_output):
         return pd.concat([df_others_specie, df_filtred])
 
 
-def generate_img(path_img, type_img, size_img, cropped_img, normalize_img, normalized_type):
-    bgr_img, _, _ = pcv.readimage(path_img, mode='bgr')
-    rgb_img = cv.cvtColor(bgr_img, cv.COLOR_BGR2RGB)
-
-    if cropped_img == True:
-        rgb_img = crop_resize_image(rgb_img, rgb_img)
-    im = Image.fromarray(rgb_img)
-    enhancer = ImageEnhance.Sharpness(im)
-    pill_img = enhancer.enhance(2)
-    array_img = np.array(pill_img)
-    array_img = cv.resize(array_img, size_img)
-
-    if type_img == 'canny':
-        edges = pcv.canny_edge_detect(array_img)
-        pill_img = Image.fromarray(edges)
-    elif type_img == 'gray':
-        gray_img = cv.cvtColor(array_img, cv.COLOR_BGR2GRAY)
-        pill_img = Image.fromarray(gray_img)
-    elif type_img == 'gabor':
-        gabor_img = get_gabor_img(array_img)
-        pill_img = Image.fromarray(gabor_img)
-    if normalize_img:
-        array_img = cv.normalize(
-            array_img, None, alpha=0, beta=1, norm_type=normalized_type, dtype=cv.CV_32F)
-
-    return pill_img, array_img, bgr_img
-
-
-def generate_img_without_bg(path_img, type_img, size_img, cropped_img, normalize_img, normalized_type):
-    bgr_img, _, _ = pcv.readimage(path_img, mode='bgr')
-    mask, new_img = remove_bg(bgr_img)
-
-    if cropped_img == True:
-        new_img = crop_resize_image(new_img, new_img)
-
-    im = Image.fromarray(new_img)
-    enhancer = ImageEnhance.Sharpness(im)
-    pill_img = enhancer.enhance(2)
-    array_img = np.array(pill_img)
-    array_img = cv.resize(array_img, size_img)
-
-    if type_img == 'canny':
-        edges = pcv.canny_edge_detect(array_img)
-        pill_img = Image.fromarray(edges)
-    elif type_img == 'gray':
-        gray_img = cv.cvtColor(array_img, cv.COLOR_BGR2GRAY)
-        pill_img = Image.fromarray(gray_img)
-    elif type_img == 'gabor':
-        gabor_img = get_gabor_img(array_img)
-        pill_img = Image.fromarray(gabor_img)
-    if normalize_img:
-        array_img = cv.normalize(
-            array_img, None, alpha=0, beta=1, norm_type=normalized_type, dtype=cv.CV_32F)
-
-    return pill_img, array_img, bgr_img, mask
-
-
 def multiprocess_worker(specie_directory, df_filtred, data_used, type_output, src_directory, dest_path, size_img, crop_img, normalize_img, normalize_type, type_img, should_remove_bg, answers_type_features, write_img):
     current_df = df_filtred.loc[specie_directory]
     healthy = current_df.healthy
@@ -162,26 +106,17 @@ def multiprocess_worker(specie_directory, df_filtred, data_used, type_output, sr
     local_print(f"[+] Number of images: {len(img_lst)}")
 
     for file in tqdm(img_lst, ncols=100) if VERBOSE else img_lst:
-        path_img = os.path.join(
-            src_directory, specie_directory, file)
-        
-        mask = None
-        if should_remove_bg:
-            pill_masked_img, masked_img, raw_img, mask = generate_img_without_bg(
-                path_img, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
-        else:
-            pill_masked_img, masked_img, raw_img = generate_img(
-                path_img, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
+        path_img = os.path.join(src_directory, specie_directory, file)
         file_path = os.path.join(
             dest_path, class_name, f"{specie}-{disease}-{file}")
-        specie_index = f"{specie}_{disease}_{file}"
         
+        rgb_img, _, _ = pcv.readimage(path_img, mode='rgb')
         data = update_features_dict(data, 'classes', class_name)
-        data = prepare_features(data, raw_img, answers_type_features, masked_img=masked_img, mask=mask)
+        data, pill_img = prepare_features(data, rgb_img, answers_type_features, should_remove_bg, size_img=size_img, normalize_type=normalize_type, crop_img=crop_img, type_img=type_img)
         
-        if write_img:
+        if write_img and pill_img:
             with safe_open_w(file_path) as f:
-                pill_masked_img.save(f)
+                pill_img.save(f)
     return data
 
 
@@ -223,6 +158,8 @@ if __name__ == '__main__':
     normalize_type = args.normalize_type
     normalize_type = 'NORM_MINMAX' if normalize_type not in CV_NORMALIZE_TYPE.keys(
     ) else normalize_type
+    if normalize_type:
+        normalize_type = CV_NORMALIZE_TYPE[normalize_type]
 
     res_augmented = 'augmentation' if args.augmented else 'no_augmentation'
     src_directory = os.path.join(

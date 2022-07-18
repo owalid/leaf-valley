@@ -162,7 +162,10 @@ def save_model_ext(model, filepath, overwrite=True, le=None, options_dataset=Non
     save_model(model, filepath, overwrite)
     f = h5py.File(filepath, mode='a')
     if options_dataset is not None:
-        f.attrs['options_dataset'] = options_dataset[0]
+        # Add is_deep_learning_features in options dataset
+        options_dataset = json.loads(options_dataset[0])
+        options_dataset['is_deep_learning_features'] = True
+        f.attrs['options_dataset'] = json.dumps(options_dataset)
     if le is not None:
         f.attrs['class_names'] = json.dumps(list(le.classes_))
     f.close()

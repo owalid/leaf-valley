@@ -4,6 +4,7 @@ Theses functions is used in cli to select the features.
 '''
 
 import sys
+import plantcv as pcv
 import numpy as np
 import cv2 as cv
 import pyfeats as pf
@@ -15,7 +16,7 @@ from inspect import getsourcefile
 import os.path as path, sys
 current_dir = path.dirname(path.abspath(getsourcefile(lambda:0)))
 sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
-from utilities.images_conversions import bgrtogray
+from utilities.image_transformation import bgrtogray
 
 
 def get_pyfeats_features(raw_bgr_img, mask):
@@ -454,6 +455,15 @@ def get_graycoprops(img):
 
     return result
 
+def get_canny_img(img, sigma=1.5):
+    '''
+      Get canny image
+      img: numpy array
+      sigma: sigma of gaussian
+      return numpy array
+    '''
+
+    return pcv.canny_edge_detect(img, sigma=sigma)
 
 def get_gabor_img(img):
     '''
