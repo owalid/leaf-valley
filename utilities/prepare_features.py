@@ -1,10 +1,12 @@
+import sys
 import os.path as path
+import numpy as np
+
 import cv2 as cv
 import plantcv as pcv
-from PIL import Image, ImageEnhance
-import numpy as np
-import sys
 from inspect import getsourcefile
+from PIL import Image, ImageEnhance
+
 current_dir = path.dirname(path.abspath(getsourcefile(lambda:0)))
 sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
 

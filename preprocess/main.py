@@ -4,25 +4,21 @@
 import os
 import sys
 import random
-from itertools import repeat
-import concurrent.futures
 from tqdm import tqdm
-import os.path as path
-from inspect import getsourcefile
-from argparse import RawTextHelpFormatter
 import argparse as ap
-import pandas as pd
-from PIL import Image, ImageEnhance
-from plantcv import plantcv as pcv
-import numpy as np
-import cv2 as cv
-current_dir = path.dirname(path.abspath(getsourcefile(lambda: 0)))
-sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
+from inspect import getsourcefile
 
-from utilities.remove_background_functions import remove_bg
+import numpy as np
+import pandas as pd
+from plantcv import plantcv as pcv
+
+import concurrent.futures
+from itertools import repeat
+
+current_dir = os.path.dirname(os.path.abspath(getsourcefile(lambda: 0)))
+sys.path.insert(0, current_dir[:current_dir.rfind(os.path.sep)])
+
 from utilities.prepare_features import prepare_features, update_features_dict
-from utilities.extract_features import get_gabor_img
-from utilities.image_transformation import crop_resize_image
 from utilities.utils import safe_open_w, get_df, store_dataset, CV_NORMALIZE_TYPE
 
 pcv.params.debug = ''
@@ -114,6 +110,8 @@ def multiprocess_worker(specie_directory, df_filtred, data_used, type_output, sr
         data = update_features_dict(data, 'classes', class_name)
         data, pill_img = prepare_features(data, rgb_img, answers_type_features, should_remove_bg, size_img=size_img, normalize_type=normalize_type, crop_img=crop_img, type_img=type_img)
         
+        print('answers_type_features : ', answers_type_features)
+
         if write_img and pill_img:
             with safe_open_w(file_path) as f:
                 pill_img.save(f)
@@ -122,7 +120,7 @@ def multiprocess_worker(specie_directory, df_filtred, data_used, type_output, sr
 
 # MAIN
 if __name__ == '__main__':
-    parser = ap.ArgumentParser(formatter_class=RawTextHelpFormatter)
+    parser = ap.ArgumentParser(formatter_class=ap.RawTextHelpFormatter)
     parser.add_argument("-a", "--augmented", required=False,
                         action='store_true', default=False, help='Use directory augmented')
     parser.add_argument("-rmbg", "--remove-bg", required=False, action='store_true',
