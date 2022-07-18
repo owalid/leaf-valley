@@ -35,6 +35,8 @@ from utilities.utils import get_df, set_plants_dict, update_data_dict
 from utilities.remove_background_functions import remove_bg
 from utilities.extract_features import get_pyfeats_features, get_lpb_histogram, get_hue_moment, get_haralick, get_hsv_histogram, get_lab_histogram, get_graycoprops, get_lab_img, get_hsv_img
 
+from datetime import datetime as dt
+from tqdm import tqdm
 
 warnings.filterwarnings("ignore")
 
@@ -74,14 +76,14 @@ class PredictionController:
         
         return masked_img
 
-    def ml_predict(img, mask, masked_img, model_dict, species, desease):       
-        # Get ML model components
-        model   = model_dict['ml_model']
-        le      = model_dict['ml_label_encoder']
-        md_feat = model_dict['ml_features']
-        scaler  = model_dict['ml_scaler']
-        
-        classes = list(le.classes_)
+    def get_ml_features(f, path):      
+        # # Image processing
+        bgr_img, _, _ = pcv.readimage(os.path.join(path,f), mode='bgr')
+        bgr_img = cv.resize(np.array(bgr_img), (256,256))
+        rgb_img = cv.cvtColor(bgr_img, cv.COLOR_BGR2RGB)
+        bgr_img = cv.cvtColor(bgr_img, cv.COLOR_BGR2RGB)
+        mask, _ = remove_bg(bgr_img)
+        masked_img = PredictionController.generate_img_without_bg(mask, bgr_img)
 
         # FEATURES MACHINE LEARNING
         data = {}
@@ -103,35 +105,51 @@ class PredictionController:
         features = get_lab_histogram(masked_img)
         for feature in features:
             data = update_data_dict(data, feature, features[feature])
-        pyfeats_features = get_pyfeats_features(img, mask)
+        pyfeats_features = get_pyfeats_features(rgb_img, mask)
         for feature in pyfeats_features:
             data = update_data_dict(data, feature, pyfeats_features[feature])
 
-        df_features = pd.DataFrame.from_dict(data)
+        df = pd.DataFrame.from_dict(data)
+        df.index = [f]
+
+        return df
+
+
+    def ml_predict(model_dict, df_features):       
+        # Get ML model components
+        model   = model_dict['ml_model']
+        le      = model_dict['ml_label_encoder']
+        md_feat = model_dict['ml_features']
+        scaler  = model_dict['ml_scaler']
+        
+        classes = list(le.classes_)
+
 
         # Data Normalization
         df_features[md_feat] = scaler.transform(df_features[md_feat]).astype(np.float32)
 
         # get prediction labels
         preds = model.predict(df_features[md_feat])
-        proba = model.predict_proba(df_features[md_feat])[0][preds[0]]
+        print(preds)
+        prediction_label = le.inverse_transform(preds)
+        print(prediction_label)
+        proba = model.predict_proba(df_features[md_feat]).max(axis=1).tolist()
+        print(proba)
 
-        prediction_label = le.inverse_transform(preds)[0]
-
-        # prediction matching
-        if len(classes) == 2:
-            if ((prediction_label == 'healthy') and (desease =='healthy')) or ((prediction_label == 'not healthy') and (desease !='healthy')):
-                matching = True
-            else:
-                matching = False
-        else:
-            matching = (prediction_label.lower() == f'{species}_{desease}'.lower())
+        # # prediction matching
+        # if len(classes) == 2:
+        #     if ((prediction_label == 'healthy') and (desease =='healthy')) or ((prediction_label == 'not healthy') and (desease !='healthy')):
+        #         matching = True
+        #     else:
+        #         matching = False
+        # else:
+        #     matching = (prediction_label.lower() == f'{species}_{desease}'.lower())
                     
-        return {
-            'class': prediction_label,
-            'score': f'{100*float(proba):.2f}',
-            'matching': matching,
-        }
+        # return {
+        #     'class': prediction_label,
+        #     'score': f'{100*float(proba):.2f}',
+        #     'matching': 0, #matching,
+        # }
      
 
     def dp_predict(img, model, class_names, species, desease):      
@@ -190,8 +208,8 @@ class PredictionController:
 
         # Get ML classification
         ml_predict_output = None
-        if ml_model:
-            ml_predict_output = PredictionController.ml_predict(bgr_img, mask, masked_img, ml_model_dict, img_dict['img_species'], img_dict['img_desease'])
+        # if ml_model:
+        #     ml_predict_output = PredictionController.ml_predict(bgr_img, mask, masked_img, ml_model_dict, img_dict['img_species'], img_dict['img_desease'])
 
         # convert numpy array image to base64
         _, rgb_img = cv.imencode('.jpg', bgr_img)
@@ -254,7 +272,13 @@ class PredictionController:
         
             model_path = f'../../data/models_saved/{ml_model}.joblib'
             if os.path.exists(model_path):
+                df_features = pd.concat(list(tqdm(current_app._executor.map(PredictionController.get_ml_features,folders, repeat(data_dir)), total=len(folders))))
+                current_app._executor.shutdown()
+                print('Start loading ml model at :', dt.now())
                 ml_model_dict = joblib.load(model_path)
+                print('end features ml model at :', dt.now())
+                PredictionController.ml_predict(ml_model_dict, df_features)
+                print('end ml model at :', dt.now())
             else:
                 return {'error': f'{ml_model} model not found'}   
 
@@ -289,7 +313,7 @@ class PredictionController:
         
         # with concurrent.futures.ProcessPoolExecutor() as executor:
         # results = current_app._executor.map(PredictionController.multiprocess_worker, folders, data_dir), repeat(comments), repeat(models[dp_model]), repeat(class_names), repeat(ml_model), repeat(ml_model_dict))
-        current_model = models[dp_model]
+        # current_model = models[dp_model]
         # current_model=None
         # results = current_app._pool.map(PredictionController.multiprocess_worker, (folders, data_dir, comments, current_model, class_names, ml_model, ml_model_dict))
         # results = current_app._pool.map(PredictionController.multiprocess_worker, [folders, data_dir, comments, current_model, class_names, ml_model, ml_model_dict])
@@ -307,13 +331,17 @@ class PredictionController:
         # print(results)
 
         # results = parmap.starmap(PredictionController.multiprocess_worker, zip(folders), data_dir, comments, current_model, class_names, ml_model, ml_model_dict)
+        print('start of multitreading : ', dt.now())
 
-        results = current_app._pool.starmap(PredictionController.multiprocess_worker, zip(folders, repeat(data_dir), repeat(comments), repeat(models[dp_model] if dp_model else None), repeat(class_names), repeat(ml_model), repeat(ml_model_dict)))
-        print(results)
+        # results = current_app._pool.starmap(PredictionController.multiprocess_worker, zip(folders, repeat(data_dir), repeat(comments), repeat(models[dp_model] if dp_model else None), repeat(class_names), repeat(ml_model), repeat(ml_model_dict)))
+        # results = current_app._executor.map(PredictionController.multiprocess_worker,folders, repeat(data_dir), repeat(comments), repeat(models[dp_model] if dp_model else None), repeat(class_names), repeat(ml_model), repeat(ml_model_dict))
 
         output = []
-        for r in results:
-            output.append(r)
+        # for r in list(tqdm(current_app._executor.map(PredictionController.multiprocess_worker,folders, repeat(data_dir), repeat(comments), repeat(models[dp_model] if dp_model else None), repeat(class_names), repeat(ml_model), repeat(ml_model_dict)), total=len(folders))):
+        #     output.append(r)
+
+        print('end of mulßtitreading : ', dt.now(), 'lenght of results : ', len(output))
+        # current_app._executor.shutdown()
 
         return create_response(data={str(k): v for k, v in enumerate(output)})
 
@@ -355,7 +383,9 @@ class PredictionController:
         
             model_path = f'../../data/models_saved/{ml_model}.joblib'
             if os.path.exists(model_path):
+                print('strat loading ml model at :', dt.now())
                 ml_model_dict = joblib.load(model_path)
+                print('end loading ml model at :', dt.now())
             else:
                 return {'error': f'{ml_model} model not found'}   
 
@@ -374,6 +404,7 @@ class PredictionController:
         
             model_path = f'../../data/models_saved/{dp_model}.h5'
             if os.path.exists(model_path):
+                print('strat loading dp model at :', dt.now())
                 custom_objects={'recall_m': recall_m, 'precision_m': precision_m, 'f1_m': f1_m}
                 models[dp_model] = load_model(model_path, custom_objects)
                 f = h5py.File(model_path, mode='r')
@@ -385,6 +416,7 @@ class PredictionController:
                 else:
                     f.close()
                     return create_response(data={'error': 'Error don\'t have classes for classification.'}, status=500)
+                print('end loading dp model at :', dt.now())
             else:
                 return {'error': f'{dp_model} model not found'}   
  

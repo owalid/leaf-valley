@@ -36,4 +36,5 @@ app = create_app()
 
 if __name__ == '__main__':
     port = 5000 if ENV != "prod" else 80
+    app._executor = concurrent.futures.ProcessPoolExecutor(max_workers=os.cpu_count())
     app.run(host='0.0.0.0', debug=True, port=port)
