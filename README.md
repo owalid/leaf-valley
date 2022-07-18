@@ -71,7 +71,7 @@ optional arguments:
 
 ```
 python process/deep_learning/main.py -h
-usage: main.py [-h] [-p PATH_DATASET] [-lt] [-b BATCH_SIZE] [-e EPOCHS] [-m MODELS] [-s] [-dst-l DEST_LOGS] [-dst-m DEST_MODELS] [-v]
+usage: process/deep_learning/main.py [-h] [-p PATH_DATASET] [-lt] [-es] [-b BATCH_SIZE] [-lr LEARNING_RATE] [-opt OPTIMIZER] [-e EPOCHS] [-m MODELS] [-s] [-dst-l DEST_LOGS] [-dst-m DEST_MODELS] [-v]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -79,14 +79,19 @@ optional arguments:
                         Path of your dataset (h5 file)
   -lt, --launch-tensorboard
                         Launch tensorboard after fitting
+  -es, --early-stop     Early stop after fitting
   -b BATCH_SIZE, --batch-size BATCH_SIZE
                         Batch size
+  -lr LEARNING_RATE, --learning-rate LEARNING_RATE
+                        Learning rate (default 0.001)
+  -opt OPTIMIZER, --optimizer OPTIMIZER
+                        Optimizer (default adam). Available: dict_keys(['ADAM', 'RMSPROP', 'SGD', 'ADADELTA', 'NADAM'])
   -e EPOCHS, --epochs EPOCHS
                         Epoch
   -m MODELS, --models MODELS
                         Select model(s), if grid search is enabled, you can select multiple models separate by ",". example -m=vgg19,resnet50. By default is select all models.
                         Models availables:
-                        VGG16,VGG16_PRETRAINED,VGG19,VGG19_PRETRAINED,RESNET50,RESNET50_PRETRAINED,RESNET50V2,RESNET50V2_PRETRAINED,INCEPTIONRESNETV2,INCEPTIONRESNETV2_PRETRAINED,INCEPTIONV3,INCEPTIONV3_PRETRAINED,EFFICIENTNETB0,EFFICIENTNETB0_PRETRAINED,EFFICIENTNETB7,EFFICIENTNETB7_PRETRAINED,XCEPTION,XCEPTION_PRETRAINED,CLASSIC_CNN,ALEXNET,LAB_PROCESS,HSV_PROCESS.
+                        VGG16,VGG16_PRETRAINED,VGG19,VGG19_PRETRAINED,RESNET50,RESNET50_PRETRAINED,CONVNEXTTINY,CONVNEXTTINY_PRETRAINED,CONVNEXTSMALL,CONVNEXTSMALL_PRETRAINED,CONVNEXTBASE,CONVNEXTBASE_PRETRAINED,CONVNEXTLARGE,CONVNEXTLARGE_PRETRAINED,RESNET50V2,RESNET50V2_PRETRAINED,INCEPTIONRESNETV2,INCEPTIONRESNETV2_PRETRAINED,INCEPTIONV3,INCEPTIONV3_PRETRAINED,EFFICIENTNETB0,EFFICIENTNETB0_PRETRAINED,EFFICIENTNETB7,EFFICIENTNETB7_PRETRAINED,XCEPTION,XCEPTION_PRETRAINED,CLASSIC_CNN,ALEXNET,LAB_PROCESS,LAB_INCEPTIONV3_PROCESS,HSV_PROCESS,GOOGLE/VIT-BASE-PATCH16,GOOGLE/VIT-BASE-PATCH32,GOOGLE/VIT-LARGE-PATCH16,GOOGLE/VIT-LARGE-PATCH32,FACEBOOK/CONVNEXT-BASE,FACEBOOK/CONVNEXT-LARGE,FACEBOOK/CONVNEXT-XLARGE.
   -s, --save-model      Save model
   -dst-l DEST_LOGS, --dest-logs DEST_LOGS
                         Destination for tensorboard logs. (default logs/tensorboard)
@@ -94,6 +99,56 @@ optional arguments:
                         Destination for model if save model is enabled
   -v, --verbose         Verbose
 ```
+
+<details>
+  <summary><strong>Deep learning models availables:</strong></summary>
+<br>
+<h6>VGG</h6>
+
+  - <small>VGG16</small>
+  - <small>VGG19</small>
+<h6>ResNet</h6>
+
+  - <small>RESNET50</small>
+
+<h6>Convnext</h6>
+
+  - <small>CONVNEXTTINY</small>
+  - <small>CONVNEXTSMALL</small>
+  - <small>CONVNEXTBASE</small>
+  - <small>CONVNEXTLARGE</small>
+
+<h6>ResNet & Inception & Xception</h6>
+
+  - <small>RESNET50V2</small>
+  - <small>INCEPTIONRESNETV2</small>
+  - <small>INCEPTIONV3</small>
+  - <small>XCEPTION</small>
+
+<h6>EfficientNet</h6>
+
+  - <small>EFFICIENTNETB0</small>
+  - <small>EFFICIENTNETB7</small>
+
+<h6>Transformers</h6>
+
+  - <small>GOOGLE/VIT-BASE-PATCH16</small>
+  - <small>GOOGLE/VIT-BASE-PATCH32</small>
+  - <small>GOOGLE/VIT-LARGE-PATCH16</small>
+  - <small>GOOGLE/VIT-LARGE-PATCH32</small>
+  - <small>FACEBOOK/CONVNEXT-BASE</small>
+  - <small>FACEBOOK/CONVNEXT-LARGE</small>
+  - <small>FACEBOOK/CONVNEXT-XLARGE</small>
+
+
+<h6>Homemade models</h6>
+
+  - <small>CLASSIC_CNN</small>
+  - <small>ALEXNET</small>
+  - <small>LAB_PROCESS</small>
+  - <small>LAB_INCEPTIONV3_PROCESS</small>
+  - <small>HSV_PROCESS</small>
+</details>
 
 # Web part
 
