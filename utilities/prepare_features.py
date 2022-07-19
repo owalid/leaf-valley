@@ -21,14 +21,14 @@ def update_features_dict(data_dict, key, value):
   data_dict[key].append(value)
   return data_dict
 
-def prepare_features(data, rgb_img, features, should_remove_bg, size_img=None, normalize_type=False, crop_img=False, type_img='rgb', is_deep_learning_features=False):
+def prepare_features(data, rgb_img, target_features, should_remove_bg, size_img=None, normalize_type=False, crop_img=False, type_img='rgb', is_deep_learning_features=False):
   '''
     Preprocess image before prediction and trainning.
     
     Parameters:
       - data: dictionary to store features (type: dictionary)
       - rgb_img: image to apply features (type: numpy.ndarray)
-      - features: list of features to apply (type: list)
+      - target_features: list of features to apply (type: list)
       - should_remove_bg: should remove background (type: boolean)
       - size_img: size of image (type: tuple)
       - normalize_type: normalization type from opencv (type: int)
@@ -78,62 +78,62 @@ def prepare_features(data, rgb_img, features, should_remove_bg, size_img=None, n
   # ==== Extract feature ====
   
   # FEATURES DEEP LEARNING
-  if 'rgb' in features:
+  if 'rgb' in target_features:
       data = update_features_dict(data, 'rgb_img', rgb_img)
-  if 'gabor' in features:
+  if 'gabor' in target_features:
       if is_deep_learning_features:
         return get_gabor_img(rgb_img)
       
       data = update_features_dict(
           data, 'gabor_img', get_gabor_img(rgb_img))
-  if 'gray' in features:
+  if 'gray' in target_features:
       if is_deep_learning_features:
         return bgrtogray(rgb_img)
       
       data = update_features_dict(data, 'gray_img', bgrtogray(rgb_img))
-  if 'canny' in features:
+  if 'canny' in target_features:
       if is_deep_learning_features:
         return get_canny_img(rgb_img)
       
       data = update_features_dict(
           data, 'canny_img', get_canny_img(rgb_img))
-  if 'lab' in features:
+  if 'lab' in target_features:
       if is_deep_learning_features:
         return get_lab_img(rgb_img)
       
       data = update_features_dict(data, 'lab',  get_lab_img(rgb_img))
-  if 'hsv' in features:
+  if 'hsv' in target_features:
       if is_deep_learning_features:
         return get_hsv_img(rgb_img)
       
       data = update_features_dict(data, 'hsv',  get_hsv_img(rgb_img))
 
   # FEATURES MACHINE LEARNING
-  if 'graycoprops' in features:
+  if 'graycoprops' in target_features:
       features = get_graycoprops(rgb_img)
       for feature in features:
           data = update_features_dict(data, feature, features[feature])
-  if 'lpb_histogram' in features:
+  if 'lpb_histogram' in target_features:
       features = get_lpb_histogram(rgb_img)
       for feature in features:
           data = update_features_dict(data, feature, features[feature])
-  if 'hue_moment' in features:
+  if 'hue_moment' in target_features:
       features = get_hue_moment(rgb_img)
       for feature in features:
           data = update_features_dict(data, feature, features[feature])
-  if 'haralick' in features:
+  if 'haralick' in target_features:
       features = get_haralick(rgb_img)
       for feature in features:
           data = update_features_dict(data, feature, features[feature])
-  if 'histogram_hsv' in features:
+  if 'histogram_hsv' in target_features:
       features = get_hsv_histogram(rgb_img)
       for feature in features:
           data = update_features_dict(data, feature, features[feature])
-  if 'histogram_lab' in features:
+  if 'histogram_lab' in target_features:
       features = get_lab_histogram(rgb_img)
       for feature in features:
           data = update_features_dict(data, feature, features[feature])
-  if 'pyfeats' in features and rgb_img:
+  if 'pyfeats' in target_features and rgb_img:
       if mask is None:
         mask, rgb_img = remove_bg(rgb_img)
         
