@@ -160,8 +160,7 @@ if __name__ == '__main__':
         normalize_type = CV_NORMALIZE_TYPE[normalize_type]
 
     res_augmented = 'augmentation' if args.augmented else 'no_augmentation'
-    src_directory = os.path.join(
-        args.src_directory, res_augmented) if args.src_directory != '' else f"data/{res_augmented}"
+    src_directory = args.src_directory if args.src_directory != '' else f"data/{res_augmented}"
     df = get_df(src_directory)
     type_output = args.classification
     should_remove_bg = args.remove_bg
