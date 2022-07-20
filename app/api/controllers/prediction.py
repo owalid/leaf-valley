@@ -51,7 +51,7 @@ class PredictionController:
         models_dir_exist = os.path.isdir(models_dir_path)
         all_models = []
         if models_dir_exist:
-            all_models = [f.split(".")[-2] for f in os.listdir(models_dir_path) if f'{md_grp}_' in f and ((f.split(".")[-1] == 'h5') or (f.split(".")[-1] == 'joblib'))]
+            all_models = [f.split(".")[0] for f in os.listdir(models_dir_path) if f'{md_grp}_' in f and ((f.split(".")[-1] == 'h5') or ((f.split(".")[-2] == 'pkl') and (f.split(".")[-1] == 'z')))]
             all_models.sort()
         return create_response(data={'models': all_models})
 
@@ -66,7 +66,6 @@ class PredictionController:
         classes.sort()
         return create_response(data={'classes': classes})
 
-
     def generate_img_without_bg(mask, raw_img):
         im = Image.fromarray(raw_img)
         enhancer = ImageEnhance.Sharpness(im)
@@ -76,9 +75,10 @@ class PredictionController:
         
         return masked_img
 
-    def get_ml_features(f, path):      
+    def get_ml_features(f, path, bgr_img=None):      
         # # Image processing
-        bgr_img, _, _ = pcv.readimage(os.path.join(path,f), mode='bgr')
+        if bgr_img is None:
+            bgr_img, _, _ = pcv.readimage(os.path.join(path,f), mode='bgr')
         bgr_img = cv.resize(np.array(bgr_img), (256,256))
         rgb_img = cv.cvtColor(bgr_img, cv.COLOR_BGR2RGB)
         bgr_img = cv.cvtColor(bgr_img, cv.COLOR_BGR2RGB)
@@ -105,7 +105,7 @@ class PredictionController:
         features = get_lab_histogram(masked_img)
         for feature in features:
             data = update_data_dict(data, feature, features[feature])
-        pyfeats_features = get_pyfeats_features(rgb_img, mask)
+        pyfeats_features = get_pyfeats_features(bgr_img, mask)
         for feature in pyfeats_features:
             data = update_data_dict(data, feature, pyfeats_features[feature])
 
@@ -124,112 +124,109 @@ class PredictionController:
         
         classes = list(le.classes_)
 
-
         # Data Normalization
         df_features[md_feat] = scaler.transform(df_features[md_feat]).astype(np.float32)
 
+        df = pd.DataFrame(index=df_features.index)
         # get prediction labels
-        preds = model.predict(df_features[md_feat])
-        print(preds)
-        prediction_label = le.inverse_transform(preds)
-        print(prediction_label)
-        proba = model.predict_proba(df_features[md_feat]).max(axis=1).tolist()
-        print(proba)
+        df['preds'] = model.predict(df_features[md_feat])
+        df['prediction_label'] = le.inverse_transform(df['preds'])
+        df['proba'] = model.predict_proba(df_features[md_feat]).max(axis=1).tolist()
 
-        # # prediction matching
-        # if len(classes) == 2:
-        #     if ((prediction_label == 'healthy') and (desease =='healthy')) or ((prediction_label == 'not healthy') and (desease !='healthy')):
-        #         matching = True
-        #     else:
-        #         matching = False
-        # else:
-        #     matching = (prediction_label.lower() == f'{species}_{desease}'.lower())
-                    
-        # return {
-        #     'class': prediction_label,
-        #     'score': f'{100*float(proba):.2f}',
-        #     'matching': 0, #matching,
-        # }
-     
+        df['species'] = df.index.to_series().apply(lambda f: f.split('___')[0])
+        df['desease'] = df.index.to_series().apply(lambda f: f.split('___')[1].split('/')[0])
+        df['img_num'] = df.index.to_series().apply(lambda f: f.split('(')[-1].split(')')[0])
 
-    def dp_predict(img, model, class_names, species, desease):      
+        # prediction matching
+        if len(classes) == 2:
+            df['matching'] = df.apply(lambda r: ((r['prediction_label'] == 'healthy') and (r['desease'] =='healthy')) or ((r['prediction_label'] == 'not healthy') and (r['desease'] !='healthy')), axis=1)
+        else:
+            df['matching'] = df.apply(lambda r: (r['prediction_label'].lower() == f"{r['species']}_{r['desease']}".lower()), axis=1)
+            
+        return df
+
+    def dp_predict(model, class_names, folders=[], data_dir='', images=None):        
+        for f in folders:
+            bgr_img, _, _ = pcv.readimage(os.path.join(data_dir,f), mode='bgr')
+            img = cv.cvtColor(cv.resize(np.array(bgr_img), (256,256)), cv.COLOR_BGR2RGB)
             img = cv.resize(np.array(img), tuple(model.layers[0].get_output_at(0).get_shape().as_list()[1:-1]))
             img = cv.normalize(img, None, alpha=0, beta=1, norm_type=cv.NORM_MINMAX, dtype=cv.CV_32F)
+            images = np.array(img[tf.newaxis, ...]) if images is None else np.concatenate((images, np.array(img[tf.newaxis, ...])), axis=0) 
+
+        # get prediction labels
+        df = pd.DataFrame(index=folders)
+        y = model.predict(images)
+
+        df['prediction_label'] = [class_names[le] for le in np.argmax(y, axis=1)]
+        df['proba'] = y.max(axis=1)
+
+        df['species'] = df.index.to_series().apply(lambda f: f.split('___')[0])
+        df['desease'] = df.index.to_series().apply(lambda f: f.split('___')[1].split('/')[0])
+        df['img_num'] = df.index.to_series().apply(lambda f: f.split('(')[-1].split(')')[0])
+
+        # prediction matching
+        if len(class_names) == 2:
+            df['matching'] = df.apply(lambda r: ((r['prediction_label'] == 'healthy') and (r['desease'] =='healthy')) or ((r['prediction_label'] == 'not healthy') and (r['desease'] !='healthy')), axis=1)
+        else:
+            df['matching'] = df.apply(lambda r: (r['prediction_label'].lower() == f"{r['species']}_{r['desease']}".lower()), axis=1)
+
+        return df
+
+    def process_images(folders, data_dir, comments, ml_df, dp_df):
+
+        output = []
+        for f in folders:
+            img_dict = {}
+            img_dict['img_species'] = f.split('___')[0]
+            img_dict['img_desease'] = f.split('___')[1].split('/')[0]
+            img_dict['img_num'] = f.split('(')[-1].split(')')[0]
+
+            # add comment if it exits
+            img_dict['comment'] = ''
+            if len(comments)>0:
+                cmt = [x for x in comments if (x['species'] == img_dict['img_species']) and (x['desease'] == img_dict['img_desease']) and (x['img_num'] == img_dict['img_num'])]
+                if len(cmt)>0:
+                    img_dict['comment'] = cmt[0]['comment']
             
-            # get prediction labels
-            y = model.predict(img[tf.newaxis, ...])
-            label_encoded = np.argmax(y, axis=-1)[0]
-            prediction_label = class_names[label_encoded]
-            prediction_accuracy = str(y.max())
+            # # Image processing
+            bgr_img, _, _ = pcv.readimage(os.path.join(data_dir,f), mode='bgr')
+            bgr_img = cv.resize(np.array(bgr_img), (256,256))
+            rgb_img = cv.cvtColor(bgr_img, cv.COLOR_BGR2RGB)
+            _, masked_img = remove_bg(bgr_img)
+            # masked_img = PredictionController.generate_img_without_bg(mask, masked_img)
 
-            # prediction matching
-            if len(class_names) == 2:
-                if ((prediction_label == 'healthy') and (desease =='healthy')) or ((prediction_label == 'not_healthy') and (desease !='healthy')):
-                    matching = True
-                else:
-                    matching = False
-            else:
-                matching = (prediction_label.lower() == f'{species}_{desease}'.lower())
-                        
-            return {
-                'class': prediction_label,
-                'score': f'{100*float(prediction_accuracy):.2f}',
-                'matching': matching,
-            }
+            # convert numpy array image to base64
+            _, rgb_img = cv.imencode('.jpg', bgr_img)
+            rgb_img = base64.b64encode(rgb_img).decode('utf-8')
+            _, masked_img = cv.imencode('.jpg', masked_img)
+            masked_img = base64.b64encode(masked_img).decode('utf-8')
+
+            # add images to the dictionary
+            img_dict['rgb_img'] = rgb_img
+            img_dict['masked_img'] = masked_img
+
+            del bgr_img, rgb_img, masked_img
+
+            if ml_df is not None:
+                df = ml_df.loc[((ml_df.species==img_dict['img_species']) & (ml_df.desease==img_dict['img_desease']) & (ml_df.img_num==img_dict['img_num']))]
+                img_dict['ml_prediction'] = {
+                    'class': df['prediction_label'].squeeze(),
+                    'score': f'{100*float(df["proba"].squeeze()):.2f}',
+                    'matching': bool(df['matching'].squeeze()),                    
+                }
+
+            if dp_df is not None:
+                df = dp_df.loc[(dp_df.species==img_dict['img_species']) & (dp_df.desease==img_dict['img_desease']) & (dp_df.img_num==img_dict['img_num'])]
+                img_dict['dl_prediction'] = {
+                    'class': df['prediction_label'].squeeze(),
+                    'score': f'{100*float(df["proba"].squeeze()):.2f}',
+                    'matching': bool(df['matching'].squeeze()),                    
+                }        
+
+            output.append(img_dict)
+
+        return output              
    
-    def multiprocess_worker(f, data_dir, comments, dp_model, class_names, ml_model, ml_model_dict):
-        img_dict = {}
-        img_dict['img_species'] = f.split('___')[0]
-        img_dict['img_desease'] = f.split('___')[1].split('/')[0]
-        img_dict['img_num'] = f.split('(')[-1].split(')')[0]
-
-        # add comment if it exits
-        img_dict['comment'] = ''
-        if len(comments)>0:
-            cmt = [x for x in comments if (x['species'] == img_dict['img_species']) and (x['desease'] == img_dict['img_desease']) and (x['img_num'] == img_dict['img_num'])]
-            if len(cmt)>0:
-                img_dict['comment'] = cmt[0]['comment']
-        
-        # # Image processing
-        bgr_img, _, _ = pcv.readimage(os.path.join(data_dir,f), mode='bgr')
-        bgr_img = cv.resize(np.array(bgr_img), (256,256))
-        rgb_img = cv.cvtColor(bgr_img, cv.COLOR_BGR2RGB)
-        bgr_img = cv.cvtColor(bgr_img, cv.COLOR_BGR2RGB)
-        mask, _ = remove_bg(bgr_img)
-        masked_img = PredictionController.generate_img_without_bg(mask, bgr_img)
-
-
-        # Get DP prediction
-        dp_predict_output = None
-        if dp_model:
-            dp_predict_output = PredictionController.dp_predict(rgb_img, dp_model, class_names, img_dict['img_species'], img_dict['img_desease'])
-            if 'error' in dp_predict_output.keys():
-                return create_response(data=dp_predict_output, status=500)
-
-        # Get ML classification
-        ml_predict_output = None
-        # if ml_model:
-        #     ml_predict_output = PredictionController.ml_predict(bgr_img, mask, masked_img, ml_model_dict, img_dict['img_species'], img_dict['img_desease'])
-
-        # convert numpy array image to base64
-        _, rgb_img = cv.imencode('.jpg', bgr_img)
-        rgb_img = base64.b64encode(rgb_img).decode('utf-8')
-        _, masked_img = cv.imencode('.jpg', masked_img)
-        masked_img = base64.b64encode(masked_img).decode('utf-8')
-
-        # add images to the dictionary
-        img_dict['rgb_img'] = rgb_img
-        img_dict['masked_img'] = masked_img
-        
-        if dp_predict_output:
-            img_dict['dl_prediction'] = dp_predict_output
-        if ml_predict_output:
-            img_dict['ml_prediction'] = ml_predict_output
-
-        del bgr_img, rgb_img, masked_img
-
-        return img_dict 
-
     def get_randomimag(nb_img, species, desease, ml_model, dp_model):
         global models, class_names
 
@@ -258,8 +255,7 @@ class PredictionController:
             with open(comment_filename, "w") as js_f:
                 json.dump(comments, js_f)
 
-        # Load ML model
-        ml_model_dict = None
+        # ML model Processing
         if ml_model:
             # protect to LFI and RFI attacks
             ml_model = path.basename(ml_model)
@@ -270,21 +266,18 @@ class PredictionController:
                 ml_model.find('.') != -1:
                 return {'error': 'Incorrect model name don\'t try to hack us.'}
         
-            model_path = f'../../data/models_saved/{ml_model}.joblib'
+            model_path = f'../../data/models_saved/{ml_model}.pkl.z'
             if os.path.exists(model_path):
+                print('Info : Start ML model processing at :', dt.now())
                 df_features = pd.concat(list(tqdm(current_app._executor.map(PredictionController.get_ml_features,folders, repeat(data_dir)), total=len(folders))))
-                current_app._executor.shutdown()
-                print('Start loading ml model at :', dt.now())
+                # current_app._executor.shutdown()
                 ml_model_dict = joblib.load(model_path)
-                print('end features ml model at :', dt.now())
-                PredictionController.ml_predict(ml_model_dict, df_features)
-                print('end ml model at :', dt.now())
+                ml_df = PredictionController.ml_predict(ml_model_dict, df_features)
+                print('Info : End ML model proessing at :', dt.now())
             else:
                 return {'error': f'{ml_model} model not found'}   
 
-        # Load ML model
-        class_names = None
-        models[dp_model] = None
+        # Load DP model
         if dp_model:
             # protect to LFI and RFI attacks
             dp_model = path.basename(dp_model)
@@ -297,51 +290,24 @@ class PredictionController:
         
             model_path = f'../../data/models_saved/{dp_model}.h5'
             if os.path.exists(model_path):
+                print('Info : Start DP model processing at :', dt.now())
                 custom_objects={'recall_m': recall_m, 'precision_m': precision_m, 'f1_m': f1_m}
                 models[dp_model] = load_model(model_path, custom_objects)
                 f = h5py.File(model_path, mode='r')
-                class_names_raw = None
                 if 'class_names' in f.attrs and len(f.attrs['class_names']) > 0:
                     class_names_raw = f.attrs.get('class_names')
                     class_names = json.loads(class_names_raw)
                     f.close()
+                    dp_df = PredictionController.dp_predict(models[dp_model], class_names, folders=folders, data_dir=data_dir)
+                    print('Info : End DP model proessing at :', dt.now())
                 else:
                     f.close()
                     return create_response(data={'error': 'Error don\'t have classes for classification.'}, status=500)
             else:
                 return {'error': f'{dp_model} model not found'}   
-        
-        # with concurrent.futures.ProcessPoolExecutor() as executor:
-        # results = current_app._executor.map(PredictionController.multiprocess_worker, folders, data_dir), repeat(comments), repeat(models[dp_model]), repeat(class_names), repeat(ml_model), repeat(ml_model_dict))
-        # current_model = models[dp_model]
-        # current_model=None
-        # results = current_app._pool.map(PredictionController.multiprocess_worker, (folders, data_dir, comments, current_model, class_names, ml_model, ml_model_dict))
-        # results = current_app._pool.map(PredictionController.multiprocess_worker, [folders, data_dir, comments, current_model, class_names, ml_model, ml_model_dict])
-        # results = current_app._pool.map(PredictionController.multiprocess_worker, [folders, repeat(data_dir), repeat(comments), repeat(current_model), repeat(class_names), repeat(ml_model), repeat(ml_model_dict)])
-        # def proc(f):
-        #     results_proc = []
-        #     # for f in folders:
-        #     results_proc.append(PredictionController.multiprocess_worker(f, data_dir, comments, models[dp_model], class_names, ml_model, ml_model_dict))
-        #     return results_proc
 
-        # pp = [current_app._pool.apply_async(proc(f)) for f in folders]
-        # results = [p.get() for p in pp]
-        # # p.start()
-        # # results = p.get()
-        # print(results)
-
-        # results = parmap.starmap(PredictionController.multiprocess_worker, zip(folders), data_dir, comments, current_model, class_names, ml_model, ml_model_dict)
-        print('start of multitreading : ', dt.now())
-
-        # results = current_app._pool.starmap(PredictionController.multiprocess_worker, zip(folders, repeat(data_dir), repeat(comments), repeat(models[dp_model] if dp_model else None), repeat(class_names), repeat(ml_model), repeat(ml_model_dict)))
-        # results = current_app._executor.map(PredictionController.multiprocess_worker,folders, repeat(data_dir), repeat(comments), repeat(models[dp_model] if dp_model else None), repeat(class_names), repeat(ml_model), repeat(ml_model_dict))
-
-        output = []
-        # for r in list(tqdm(current_app._executor.map(PredictionController.multiprocess_worker,folders, repeat(data_dir), repeat(comments), repeat(models[dp_model] if dp_model else None), repeat(class_names), repeat(ml_model), repeat(ml_model_dict)), total=len(folders))):
-        #     output.append(r)
-
-        print('end of mulßtitreading : ', dt.now(), 'lenght of results : ', len(output))
-        # current_app._executor.shutdown()
+        # Load Images and comments if exists
+        output = PredictionController.process_images(folders, data_dir, comments, ml_df if ml_model else None, dp_df if dp_model else None)
 
         return create_response(data={str(k): v for k, v in enumerate(output)})
 
