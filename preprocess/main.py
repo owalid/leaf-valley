@@ -109,8 +109,6 @@ def multiprocess_worker(specie_directory, df_filtred, data_used, type_output, sr
         rgb_img, _, _ = pcv.readimage(path_img, mode='rgb')
         data = update_features_dict(data, 'classes', class_name)
         data, pill_img = prepare_features(data, rgb_img, answers_type_features, should_remove_bg, size_img=size_img, normalize_type=normalize_type, crop_img=crop_img, type_img=type_img)
-        
-        print('answers_type_features : ', answers_type_features)
 
         if write_img and pill_img:
             with safe_open_w(file_path) as f:
