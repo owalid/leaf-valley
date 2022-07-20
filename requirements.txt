@@ -5,3 +5,5 @@ mahotas
 plantcv
 augmentor
 difpy
+transformers
+tf-nightly==2.10.0.dev20220711 # for convnext models

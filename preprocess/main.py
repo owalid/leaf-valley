@@ -4,24 +4,22 @@
 import os
 import sys
 import random
-from itertools import repeat
-import concurrent.futures
 from tqdm import tqdm
-import os.path as path
-from inspect import getsourcefile
-from argparse import RawTextHelpFormatter
 import argparse as ap
-import pandas as pd
-from PIL import Image, ImageEnhance
-from plantcv import plantcv as pcv
-import numpy as np
-import cv2 as cv
-current_dir = path.dirname(path.abspath(getsourcefile(lambda: 0)))
-sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
+from inspect import getsourcefile
 
-from utilities.remove_background_functions import remove_bg
-from utilities.extract_features import get_pyfeats_features, get_lpb_histogram, get_hue_moment, get_haralick, get_hsv_histogram, get_lab_histogram, get_graycoprops, get_lab_img, get_hsv_img
-from utilities.utils import crop_resize_image, safe_open_w, get_df, get_canny_img, get_gabor_img, store_dataset, update_data_dict, bgrtogray
+import numpy as np
+import pandas as pd
+from plantcv import plantcv as pcv
+
+import concurrent.futures
+from itertools import repeat
+
+current_dir = os.path.dirname(os.path.abspath(getsourcefile(lambda: 0)))
+sys.path.insert(0, current_dir[:current_dir.rfind(os.path.sep)])
+
+from utilities.prepare_features import prepare_features, update_features_dict
+from utilities.utils import safe_open_w, get_df, store_dataset, CV_NORMALIZE_TYPE
 
 pcv.params.debug = ''
 debug = ''
@@ -33,18 +31,6 @@ HEALTHY_NOT_HEALTHY = 'HEALTHY_NOT_HEALTHY'
 ONLY_HEALTHY = 'ONLY_HEALTHY'
 NOT_HEALTHY = 'NOT_HEALTHY'
 ALL = 'ALL'
-
-CV_NORMALIZE_TYPE = {
-    'NORM_INF': cv.NORM_INF,
-    'NORM_L1': cv.NORM_L1,
-    'NORM_L2': cv.NORM_L2,
-    'NORM_L2SQR': cv.NORM_L2SQR,
-    'NORM_HAMMING': cv.NORM_HAMMING,
-    'NORM_HAMMING2': cv.NORM_HAMMING2,
-    'NORM_TYPE_MASK': cv.NORM_TYPE_MASK,
-    'NORM_RELATIVE': cv.NORM_RELATIVE,
-    'NORM_MINMAX': cv.NORM_MINMAX
-}
 
 
 def local_print(msg):
@@ -89,63 +75,6 @@ def get_df_filtered(df, type_output):
         return pd.concat([df_others_specie, df_filtred])
 
 
-def generate_img(path_img, type_img, size_img, cropped_img, normalize_img, normalized_type):
-    bgr_img, _, _ = pcv.readimage(path_img, mode='bgr')
-    rgb_img = cv.cvtColor(bgr_img, cv.COLOR_BGR2RGB)
-
-    if cropped_img == True:
-        rgb_img = crop_resize_image(rgb_img, rgb_img)
-    im = Image.fromarray(rgb_img)
-    enhancer = ImageEnhance.Sharpness(im)
-    pill_img = enhancer.enhance(2)
-    array_img = np.array(pill_img)
-    array_img = cv.resize(array_img, size_img)
-
-    if type_img == 'canny':
-        edges = pcv.canny_edge_detect(array_img)
-        pill_img = Image.fromarray(edges)
-    elif type_img == 'gray':
-        gray_img = cv.cvtColor(array_img, cv.COLOR_BGR2GRAY)
-        pill_img = Image.fromarray(gray_img)
-    elif type_img == 'gabor':
-        gabor_img = get_gabor_img(array_img)
-        pill_img = Image.fromarray(gabor_img)
-    if normalize_img:
-        array_img = cv.normalize(
-            array_img, None, alpha=0, beta=1, norm_type=normalized_type, dtype=cv.CV_32F)
-
-    return pill_img, array_img, bgr_img
-
-
-def generate_img_without_bg(path_img, type_img, size_img, cropped_img, normalize_img, normalized_type):
-    bgr_img, _, _ = pcv.readimage(path_img, mode='bgr')
-    mask, new_img = remove_bg(bgr_img)
-
-    if cropped_img == True:
-        new_img = crop_resize_image(new_img, new_img)
-
-    im = Image.fromarray(new_img)
-    enhancer = ImageEnhance.Sharpness(im)
-    pill_img = enhancer.enhance(2)
-    array_img = np.array(pill_img)
-    array_img = cv.resize(array_img, size_img)
-
-    if type_img == 'canny':
-        edges = pcv.canny_edge_detect(array_img)
-        pill_img = Image.fromarray(edges)
-    elif type_img == 'gray':
-        gray_img = cv.cvtColor(array_img, cv.COLOR_BGR2GRAY)
-        pill_img = Image.fromarray(gray_img)
-    elif type_img == 'gabor':
-        gabor_img = get_gabor_img(array_img)
-        pill_img = Image.fromarray(gabor_img)
-    if normalize_img:
-        array_img = cv.normalize(
-            array_img, None, alpha=0, beta=1, norm_type=normalized_type, dtype=cv.CV_32F)
-
-    return pill_img, array_img, bgr_img, mask
-
-
 def multiprocess_worker(specie_directory, df_filtred, data_used, type_output, src_directory, dest_path, size_img, crop_img, normalize_img, normalize_type, type_img, should_remove_bg, answers_type_features, write_img):
     current_df = df_filtred.loc[specie_directory]
     healthy = current_df.healthy
@@ -173,76 +102,23 @@ def multiprocess_worker(specie_directory, df_filtred, data_used, type_output, sr
     local_print(f"[+] Number of images: {len(img_lst)}")
 
     for file in tqdm(img_lst, ncols=100) if VERBOSE else img_lst:
-        path_img = os.path.join(
-            src_directory, specie_directory, file)
-
-        if should_remove_bg:
-            pill_masked_img, masked_img, raw_img, mask = generate_img_without_bg(
-                path_img, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
-        else:
-            pill_masked_img, masked_img, raw_img = generate_img(
-                path_img, type_img, size_img, crop_img, normalize_img, CV_NORMALIZE_TYPE[normalize_type])
+        path_img = os.path.join(src_directory, specie_directory, file)
         file_path = os.path.join(
             dest_path, class_name, f"{specie}-{disease}-{file}")
-        specie_index = f"{specie}_{disease}_{file}"
-        data = update_data_dict(data, 'classes', class_name)
+        
+        rgb_img, _, _ = pcv.readimage(path_img, mode='rgb')
+        data = update_features_dict(data, 'classes', class_name)
+        data, pill_img = prepare_features(data, rgb_img, answers_type_features, should_remove_bg, size_img=size_img, normalize_type=normalize_type, crop_img=crop_img, type_img=type_img)
 
-        # FEATURES DEEP LEARNING
-        if 'rgb' in answers_type_features or len(answers_type_features) == 0:
-            data = update_data_dict(data, 'rgb_img', masked_img)
-        if 'gabor' in answers_type_features:
-            data = update_data_dict(
-                data, 'gabor_img', get_gabor_img(masked_img))
-        if 'gray' in answers_type_features:
-            data = update_data_dict(data, 'gray_img', bgrtogray(masked_img))
-        if 'canny' in answers_type_features:
-            data = update_data_dict(
-                data, 'canny_img', get_canny_img(masked_img))
-        if 'lab' in answers_type_features:
-            data = update_data_dict(data, 'lab',  get_lab_img(masked_img))
-        if 'hsv' in answers_type_features:
-            data = update_data_dict(data, 'hsv',  get_hsv_img(masked_img))
-
-        # FEATURES MACHINE LEARNING
-        if 'graycoprops' in answers_type_features:
-            features = get_graycoprops(masked_img)
-            for feature in features:
-                data = update_data_dict(data, feature, features[feature])
-        if 'lpb_histogram' in answers_type_features:
-            features = get_lpb_histogram(masked_img)
-            for feature in features:
-                data = update_data_dict(data, feature, features[feature])
-        if 'hue_moment' in answers_type_features:
-            features = get_hue_moment(masked_img)
-            for feature in features:
-                data = update_data_dict(data, feature, features[feature])
-        if 'haralick' in answers_type_features:
-            features = get_haralick(masked_img)
-            for feature in features:
-                data = update_data_dict(data, feature, features[feature])
-        if 'histogram_hsv' in answers_type_features:
-            features = get_hsv_histogram(masked_img)
-            for feature in features:
-                data = update_data_dict(data, feature, features[feature])
-        if 'histogram_lab' in answers_type_features:
-            features = get_lab_histogram(masked_img)
-            for feature in features:
-                data = update_data_dict(data, feature, features[feature])
-        if 'pyfeats' in answers_type_features and should_remove_bg:
-            pyfeats_features = get_pyfeats_features(raw_img, mask)
-            for feature in pyfeats_features:
-                data = update_data_dict(
-                    data, feature, pyfeats_features[feature])
-
-        if write_img:
+        if write_img and pill_img:
             with safe_open_w(file_path) as f:
-                pill_masked_img.save(f)
+                pill_img.save(f)
     return data
 
 
 # MAIN
 if __name__ == '__main__':
-    parser = ap.ArgumentParser(formatter_class=RawTextHelpFormatter)
+    parser = ap.ArgumentParser(formatter_class=ap.RawTextHelpFormatter)
     parser.add_argument("-a", "--augmented", required=False,
                         action='store_true', default=False, help='Use directory augmented')
     parser.add_argument("-rmbg", "--remove-bg", required=False, action='store_true',
@@ -275,19 +151,24 @@ if __name__ == '__main__':
     print(args)
 
     random.seed(42)
-    normalize_type = args.normalize_type
-    normalize_type = 'NORM_MINMAX' if normalize_type not in CV_NORMALIZE_TYPE.keys(
-    ) else normalize_type
+    normalize_img = args.normalize_img
+    
+    if not normalize_img:
+        normalize_type = None
+    else:
+        normalize_type = args.normalize_type
+        normalize_type = 'NORM_MINMAX' if normalize_type not in CV_NORMALIZE_TYPE.keys(
+        ) else normalize_type
+        if normalize_type:
+            normalize_type = CV_NORMALIZE_TYPE[normalize_type]
 
     res_augmented = 'augmentation' if args.augmented else 'no_augmentation'
-    src_directory = os.path.join(
-        args.src_directory, res_augmented) if args.src_directory != '' else f"data/{res_augmented}"
+    src_directory = args.src_directory if args.src_directory != '' else f"data/{res_augmented}"
     df = get_df(src_directory)
     type_output = args.classification
     should_remove_bg = args.remove_bg
     write_img = args.write_img
     crop_img = args.crop_img
-    normalize_img = args.normalize_img
     df_filtred = get_df_filtered(df, type_output)
     indexes_species = df_filtred.index
 
@@ -349,6 +230,15 @@ if __name__ == '__main__':
                     value) == np.ndarray or type(value) == pd.DataFrame else [value]
             else:
                 data[key] += value
+
+    data['options_dataset'] = {
+        'normalize_type': normalize_type if (normalize_img) else None,
+        'size_img': size_img,
+        'should_remove_bg': should_remove_bg,
+        'crop_img': crop_img,
+        'features': answers_type_features,
+    }
+    
     if VERBOSE:
         for key in data.keys():
             print(f"[+] {key}: have len: {len(data[key])}")

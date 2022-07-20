@@ -10,6 +10,10 @@ from models import base_models
 from metrics import recall_m, precision_m, f1_m
 import h5py
 import json
+from tensorflow.keras.optimizers import RMSprop, Adam, SGD, Adadelta, Nadam
+
+# hugging face
+from transformers import TFViTModel, ViTFeatureExtractor
 
 # Tensorflow
 import tensorflow as tf
@@ -33,11 +37,33 @@ from utilities.utils import get_dataset
 
 VERBOSE = False
 
+optimizers = {
+    'ADAM': Adam,
+    'RMSPROP': RMSprop,
+    'SGD': SGD,
+    'ADADELTA': Adadelta,
+    'NADAM': Nadam
+}
+
 def local_print(msg):
     if VERBOSE:
         print(msg)
+        
+def get_huggingface_model(input_shape, num_classes, model_id):
+    base_model = TFViTModel.from_pretrained(model_id)
+    shape_channel_first = (input_shape[-1], input_shape[0], input_shape[1])
+    pixel_values = tfl.Input(shape=input_shape, name='pixel_values', dtype='float32')
+    x = pixel_values
+    x = tfl.Reshape(shape_channel_first)(x)
+    x = base_model.vit(x)[0]
+    
+    prediction_layer = tfl.Dense(num_classes, activation='softmax', name='outputs')
+    outputs = prediction_layer(x[:, 0, :])
+    model = tf.keras.Model(pixel_values, outputs)
+    
+    return model
 
-def get_model(input_shape, num_classes, model_name, should_train):
+def get_keras_model(input_shape, num_classes, model_name, should_train):
     base_model = base_models[model_name]
     preprocess_input = base_model['preprocess_input']
 
@@ -51,7 +77,7 @@ def get_model(input_shape, num_classes, model_name, should_train):
     inputs = tf.keras.Input(shape=input_shape)
     x = inputs
     x = preprocess_input(x)
-    x = base_model(x, training=False)
+    x = base_model(x)
     x = tfl.GlobalAveragePooling2D()(x)
     x = tfl.Dense(512, activation='relu')(x)
     x = tfl.Dropout(0.5)(x)
@@ -62,24 +88,28 @@ def get_model(input_shape, num_classes, model_name, should_train):
 
     return model
 
-def run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num_classes, batch_size, le, dest_logs, epochs, dest_models, should_save_model):
+def run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num_classes, batch_size, le, dest_logs, epochs, dest_models, should_save_model, optimizer, base_learning_rate, options_dataset, early_stop):
     keras_verbose = 1 if VERBOSE else 0
     for model_name in model_names:
         should_train = False if model_name.endswith('_PRETRAINED') else True
         model_name_key = model_name if should_train else model_name.replace('_PRETRAINED', '')
         
-        if base_models[model_name_key]['preprocess_input'] is None: # if is not pretrained model
+        if 'is_hugging_face' in base_models[model_name_key].keys() and base_models[model_name_key]['is_hugging_face']: # if is hugging face model
+            model_id = base_models[model_name_key]['model_id']
+            current_model = get_huggingface_model(input_shape, num_classes, model_id)
+        elif base_models[model_name_key]['preprocess_input'] is None: # if is not pretrained model
             current_model = base_models[model_name_key]['base'](input_shape, num_classes)
         else:
-            current_model = get_model(input_shape, num_classes, model_name_key, should_train)  # get pretrained model
+            current_model = get_keras_model(input_shape, num_classes, model_name_key, should_train)  # get pretrained model
         local_print("==========================================================")
         local_print(f"[+] Current model: {model_name}")
         
         callbacks = get_tensorboard_callbacks(model_name, x_valid, y_valid, le, dest_logs)
-        
-        base_learning_rate = 0.001
+        if early_stop is not None:
+            callbacks.append(tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3))
         local_print(f"[+] Compile model {model_name}...")
-        current_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=base_learning_rate),
+        
+        current_model.compile(optimizer=optimizer(learning_rate=base_learning_rate),
                     loss=tf.keras.losses.categorical_crossentropy,
                     metrics=[
                         'accuracy',
@@ -100,7 +130,7 @@ def run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num
         local_print(f"[+] Fitting model {model_name}...")
         current_model.fit(x_train, y_train, verbose=keras_verbose, validation_data=(x_valid, y_valid), epochs=epochs, callbacks=callbacks, batch_size=batch_size)
         if should_save_model:
-            save_model_ext(current_model, f"{dest_models}/{model_name}.h5", le=le)
+            save_model_ext(current_model, f"{dest_models}/{model_name}.h5", le=le, options_dataset=options_dataset)
             
         local_print(f"[+] Model trained for {epochs} epochs")
         local_print(f"[+] Model summary: {current_model.summary()}")
@@ -108,31 +138,37 @@ def run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num
         local_print("==========================================================\n\n")
 
 def get_tensorboard_callbacks(model_name, x_valid, y_valid, le, dest_logs):
+    shape_img = x_valid.shape[1:-1]
+    shape_img_str = f"{shape_img[0]}x{shape_img[1]}"
     base_dir = dest_logs
-    os.system(f'rm -rf {base_dir}/{model_name}')
-    logdir = f"{base_dir}/{model_name}/{datetime.now().strftime('%Y%m%d')}"
+    logdir = f"{base_dir}/{model_name}_{shape_img_str}/{datetime.now().strftime('%Y%m%d')}"
     
     # Define the basic TensorBoard callback.
     tensorboard_cb = tf.keras.callbacks.TensorBoard(log_dir=logdir, write_graph=True, write_images=True, histogram_freq=1)
     
     ''' Callbacks '''
-    file_writer = tf.summary.create_file_writer(logdir + '/cm')
+    file_writer = tf.summary.create_file_writer(logdir + '/imgs')
     callbacks = [
         tensorboard_cb,
-        ConfusionMatrixCallback(x_valid, y_valid, le, file_writer)
-        # ClassificationReportCallback(x_valid, y_valid, le, file_writer)
+        ConfusionMatrixCallback(x_valid, y_valid, le, file_writer),
+        ClassificationReportCallback(x_valid, y_valid, le, file_writer)
         # ImagesPredictionsCallback(x_valid, y_valid, le, file_writer)
     ]
     return callbacks
 
 
-def save_model_ext(model, filepath, overwrite=True, le=None):
+def save_model_ext(model, filepath, overwrite=True, le=None, options_dataset=None):
     # https://stackoverflow.com/questions/44310448/attaching-class-labels-to-a-keras-model
     save_model(model, filepath, overwrite)
+    f = h5py.File(filepath, mode='a')
+    if options_dataset is not None:
+        # Add is_deep_learning_features in options dataset
+        options_dataset = json.loads(options_dataset[0])
+        options_dataset['is_deep_learning_features'] = True
+        f.attrs['options_dataset'] = json.dumps(options_dataset)
     if le is not None:
-        f = h5py.File(filepath, mode='a')
         f.attrs['class_names'] = json.dumps(list(le.classes_))
-        f.close()
+    f.close()
         
 def extract_features(hf):
     '''
@@ -144,7 +180,7 @@ def extract_features(hf):
     x = None
     
     for key in hf.keys():
-        if key != 'classes':
+        if key != 'classes' and key != 'options_dataset':
             local_print(f"[+] Add {key} feature in X.")
             if len(np.array(hf[key]).shape) != 4:
                 print(f"[-] Feature {key} have not 4 dim")
@@ -189,15 +225,21 @@ if __name__ == '__main__':
     parser = ap.ArgumentParser(formatter_class=RawTextHelpFormatter)
     parser.add_argument("-p", "--path-dataset", required=False, type=str, default='data/deep_learning/export/data_all_20_gray.h5', help='Path of your dataset (h5 file)')
     parser.add_argument("-lt", "--launch-tensorboard", required=False, action='store_true', default=False, help='Launch tensorboard after fitting')
+    parser.add_argument("-es", "--early-stop", required=False, action='store_true', default=False, help='Early stop after fitting')
     parser.add_argument("-b", "--batch-size", required=False, type=int, default=32, help='Batch size')
+    parser.add_argument("-lr", "--learning-rate", required=False, type=float, default=0.001, help='Learning rate (default 0.001)')
+    parser.add_argument("-opt", "--optimizer", required=False, type=str, default="Adam", help=f'Optimizer (default adam). Available: {optimizers.keys()}')
     parser.add_argument("-e", "--epochs", required=False, type=int, default=50, help='Epoch')
     parser.add_argument("-m", "--models", required=False, type=str, help=f'Select model(s), if grid search is enabled, you can select multiple models separate by ",". example -m=vgg19,resnet50. By default is select all models.\nModels availables:\n{models_availaibles}.')
     parser.add_argument("-s", "--save-model", required=False, action='store_true', default=False, help='Save model')
     parser.add_argument("-dst-l", "--dest-logs", required=False, type=str, help='Destination for tensorboard logs. (default logs/tensorboard)')
     parser.add_argument("-dst-m", "--dest-models", required=False, type=str, help='Destination for model if save model is enabled')
     parser.add_argument("-v", "--verbose", required=False, action='store_true', default=False, help='Verbose')
+    
     args = parser.parse_args()
     print(args)
+    
+    base_learning_rate = args.learning_rate
     path_dataset = args.path_dataset
     launch_tensorboard = args.launch_tensorboard
     batch_size = args.batch_size
@@ -206,8 +248,11 @@ if __name__ == '__main__':
     should_save_model = args.save_model
     dest_models = args.dest_models
     dest_logs = args.dest_logs
+    early_stop = args.early_stop
+    
     VERBOSE = args.verbose
     
+    optimizer = optimizers[args.optimizer.upper()] if args.optimizer.upper() in optimizers.keys() else optimizers["ADAMS"]
     
     if not os.path.exists(path_dataset):
         print("[-] File does not exist")
@@ -238,7 +283,7 @@ if __name__ == '__main__':
     model_names = [model_name for model_name in model_names if model_name in models_availaibles] # delete not in base_models
 
     if len(model_names) == 0:
-        local_print(f"[-] No model selected, select one of the following:\n{', '.join(models_availaibles)}")
+        local_print(f"[-] No model selected, select one of the following:\n{models_availaibles}")
         exit(3)
 
     local_print(f"[+] MODELS: {','.join(model_names)}")
@@ -249,7 +294,8 @@ if __name__ == '__main__':
     if 'classes' not in hf.keys():
         print('[-] Dataset does not contain classes')
         exit(4)
-    
+        
+    options_dataset = hf['options_dataset'] if ('options_dataset' in hf.keys()) else None
     X, y = extract_features(hf)
     local_print(f"[+] X shape: {X.shape}")
     local_print(f"[+] y shape: {y.shape}")
@@ -275,7 +321,7 @@ if __name__ == '__main__':
     local_print(f"[+] X_valid.shape: {x_valid.shape} | y_valid.shape: {y_valid.shape}")
     
     # Run all models according to model_names arg
-    run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num_classes, batch_size, le, dest_logs, epochs, dest_models, should_save_model)
+    run_models(x_train, x_valid, y_train, y_valid, model_names, input_shape, num_classes, batch_size, le, dest_logs, epochs, dest_models, should_save_model, optimizer, base_learning_rate, options_dataset, early_stop)
  
     if launch_tensorboard:
         print("[+] Run tensorboard")

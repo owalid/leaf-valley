@@ -4,8 +4,60 @@ import pandas as pd
 import cv2 as cv
 import numpy as np
 from multiprocessing.pool import ThreadPool
+
 from plantcv import plantcv as pcv
 import h5py
+import json
+
+import os.path as path
+import sys
+from inspect import getsourcefile
+current_dir = path.dirname(path.abspath(getsourcefile(lambda:0)))
+current_dir = current_dir[:current_dir.rfind(path.sep)]
+sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
+from utilities.prepare_features import prepare_features
+from utilities.remove_background_functions import remove_bg
+from utilities.image_transformation import rgbtobgr
+
+CV_NORMALIZE_TYPE = {
+    'NORM_INF': cv.NORM_INF,
+    'NORM_L1': cv.NORM_L1,
+    'NORM_L2': cv.NORM_L2,
+    'NORM_L2SQR': cv.NORM_L2SQR,
+    'NORM_HAMMING': cv.NORM_HAMMING,
+    'NORM_HAMMING2': cv.NORM_HAMMING2,
+    'NORM_TYPE_MASK': cv.NORM_TYPE_MASK,
+    'NORM_RELATIVE': cv.NORM_RELATIVE,
+    'NORM_MINMAX': cv.NORM_MINMAX
+}
+
+def safe_get_item(dictionary, key, default=None):
+    '''
+      Get item from dictionary
+      dictionary: dictionary
+    '''
+    return dictionary[key] if key in dictionary else default
+
+def preprocess_pipeline_prediction(rgb_img, options):
+  '''
+    Preprocess image before prediction
+  '''
+  
+  normalize_type = None
+  if 'normalize_type' in options.keys() and options['normalize_type'] and isinstance(options['normalize_type'], str) and options['normalize_type'] in CV_NORMALIZE_TYPE.keys():
+    normalize_type = CV_NORMALIZE_TYPE[options['normalize_type']]
+
+  norm_type = safe_get_item(options, 'normalize_type', None)
+  norm_type = CV_NORMALIZE_TYPE[norm_type] if norm_type is not None else None
+  data = {}
+  img = prepare_features(data, rgb_img, safe_get_item(options,'features',{}), safe_get_item(options, 'should_remove_bg'),
+                        size_img=safe_get_item(options, 'size_img', None),\
+                        normalize_type=normalize_type,\
+                        crop_img=safe_get_item(options, 'crop_img', False),\
+                        is_deep_learning_features=safe_get_item(options, 'crop_img', False))
+    
+  return img
+  
 
 def chunks(arr, chunk_size):
   '''
@@ -17,14 +69,7 @@ def chunks(arr, chunk_size):
       list of chunks
   '''
   return [arr[i:i+chunk_size] for i in range(0, len(arr), chunk_size)]
-  
-    
-  
-def update_data_dict(data_dict, key, value):
-  if key not in data_dict:
-    data_dict[key] = []
-  data_dict[key].append(value)
-  return data_dict
+
 
 def is_array(x):
   '''
@@ -40,11 +85,11 @@ def get_dataset(path):
   hf = h5py.File(path, 'r')
   return hf
   
-def store_dataset(path, dict, verbose):
+def store_dataset(path, src_dict, verbose):
   '''
     Store dataset in h5py file
     path: path of h5py file
-    dict: dictionary to store
+    src_dict: dictionary to store
   '''
   print(F"PATH: {path}")
   h = h5py.File(path, 'w')
@@ -54,37 +99,42 @@ def store_dataset(path, dict, verbose):
     
 
   # Saves labels
-  for col in dict.keys():
-    col_array = np.array(dict[col])
-    shape_array = np.shape(col_array)
-    
-    first_element = col_array[0]
-    
-    while is_array(first_element):  # If array, keep going
-      first_element = first_element[0]
+  for col in src_dict.keys():
+    if isinstance(src_dict[col], dict):
+      str_json = json.dumps(src_dict[col])
+      h.create_dataset(col, (1,), h5py.string_dtype('utf-8'), data=[str_json])
+    else:
+      col_array = np.array(src_dict[col])
+      shape_array = np.shape(col_array)
+      
+      
+      first_element = col_array[0]
+      
+      while is_array(first_element):  # If array, keep going
+        first_element = first_element[0]
 
-    # Select the correct type for h5py file
-    if type(first_element) is float or type(first_element) is np.float64 or type(first_element) is np.float32: # If float
-      col_type = h5py.h5t.IEEE_F32BE
-      col_type_str = "h5py.h5t.IEEE_F32BE"
-    elif type(first_element) is bool or type(first_element) is np.uint8:
-      col_array.astype(np.uint8)
-      col_type = h5py.h5t.STD_U8BE
-      col_type_str = "h5py.h5t.STD_U8BE"
-    elif type(first_element) is int or type(first_element) is np.int64 or type(first_element) is np.int32: # If int or int64
-      col_type = h5py.h5t.STD_I32BE
-      col_type_str = "h5py.h5t.STD_I32BE"
-    elif type(first_element) is np.str_ or type(first_element) is str: # If string or np.str
-      col_type = h5py.string_dtype('utf-8')
-      col_type_str = "h5py.string_dtype('utf-8')"
+      # Select the correct type for h5py file
+      if type(first_element) is float or type(first_element) is np.float64 or type(first_element) is np.float32: # If float
+        col_type = h5py.h5t.IEEE_F32BE
+        col_type_str = "h5py.h5t.IEEE_F32BE"
+      elif type(first_element) is bool or type(first_element) is np.uint8:
+        col_array.astype(np.uint8)
+        col_type = h5py.h5t.STD_U8BE
+        col_type_str = "h5py.h5t.STD_U8BE"
+      elif type(first_element) is int or type(first_element) is np.int64 or type(first_element) is np.int32: # If int or int64
+        col_type = h5py.h5t.STD_I32BE
+        col_type_str = "h5py.h5t.STD_I32BE"
+      elif type(first_element) is np.str_ or type(first_element) is str: # If string or np.str
+        col_type = h5py.string_dtype('utf-8')
+        col_type_str = "h5py.string_dtype('utf-8')"
+        
+      if verbose:
+        print(f"[+] Column: {col} - Type: {col_type_str} - Shape: {shape_array}")
       
-    if verbose:
-      print(f"[+] Column: {col} - Type: {col_type_str} - Shape: {shape_array}")
-    
-    col_array = np.array(col_array, dtype=col_type)
-      
-    # Create the dataset
-    h.create_dataset(col, shape_array, col_type, data=col_array)
+      col_array = np.array(col_array, dtype=col_type)
+        
+      # Create the dataset
+      h.create_dataset(col, shape_array, col_type, data=col_array)
 
 def replace_text(text, lst, rep=' '):
     '''
@@ -94,109 +144,12 @@ def replace_text(text, lst, rep=' '):
         text = text.replace(l, rep)
     return text
 
-
-def crop_resize_image(img_masked, img_to_resize):
-    '''
-      Crop and resize image of leaf to delete padding arround leaf.
-
-      img_masked: numpy array
-      img_to_resize: numpy array
-      return numpy array
-    '''
-    arr = 1*(img_masked.sum(axis=1) > 0)
-    x1 = list(arr).index(1)
-    x2 = len(arr) - list(arr)[::-1].index(1)
-    arr = 1*(img_masked.sum(axis=0) > 0)
-    y1 = list(arr).index(1)
-    y2 = len(arr) - list(arr)[::-1].index(1)
-
-    return cv.resize(img_to_resize[x1:x2+1, y1:y2+1, ], img_masked.shape, interpolation=cv.INTER_CUBIC)
-
-def bgrtogray(img):
-  '''
-    Convert BGR to Gray
-    img: numpy array
-  '''
-  return cv.cvtColor(np.array(img, dtype='uint8'), cv.COLOR_BGR2GRAY)
-
-def bgrtorgb(img):
-    '''
-      Convert BGR to RGB
-      img: numpy array
-    '''
-    return cv.cvtColor(np.array(img, dtype='uint8'), cv.COLOR_BGR2RGB)
-
-
-def blur_img(img, k):
-    '''
-      Blur image
-      img: numpy array
-      k: kernel size
-    '''
-    return cv.blur(img.copy(), k)
-
-
 def safe_open_w(path):
     '''
       Open "path" for writing, creating any parent directories as needed.
     '''
     os.makedirs(os.path.dirname(path), exist_ok=True)
     return open(path, 'w')
-
-
-def get_canny_img(img, sigma=1.5):
-    '''
-      Get canny image
-      img: numpy array
-      sigma: sigma of gaussian
-      return numpy array
-    '''
-
-    return pcv.canny_edge_detect(img, sigma=sigma)
-
-
-def get_gabor_img(img):
-    '''
-      Get gabor image
-      img: numpy array
-    '''
-
-    filters = []
-    ksize = 31
-    for theta in np.arange(0, np.pi, np.pi / 16):
-        kern = cv.getGaborKernel(
-            (ksize, ksize), 3.5, theta, 10.0, 0.5, 0, ktype=cv.CV_32F)
-        kern /= 1.5*kern.sum()
-        filters.append(kern)
-
-    accum = np.zeros_like(img)
-
-    def f(kern):
-        return cv.filter2D(img, cv.CV_8UC3, kern)
-    pool = ThreadPool(processes=8)
-    for fimg in pool.imap_unordered(f, filters):
-        np.maximum(accum, fimg, accum)
-
-    return accum
-
-
-def kmean_img(img, k_n):
-    '''
-      K-mean clustering image
-
-      img: numpy array
-      k_n: number of clusters
-      return: numpy array
-    '''
-    Z = img.reshape((-1, 3))
-    Z = np.float32(Z)
-    criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 10, 1)
-    K = k_n
-    ret, label, center = cv.kmeans(
-        Z, K, None, criteria, 50, cv.KMEANS_RANDOM_CENTERS)
-    center = np.uint8(center)
-    res = center[label.flatten()]
-    return res.reshape((img.shape))
 
 
 def get_df(path='data/augmentation'):
