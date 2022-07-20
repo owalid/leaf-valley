@@ -145,13 +145,19 @@ class PredictionController:
             
         return df
 
-    def dp_predict(model, class_names, folders=[], data_dir='', images=None):        
+    def dp_predict(model, class_names, folders=[], data_dir='', images=None):
+        img_lst = []        
         for f in folders:
             bgr_img, _, _ = pcv.readimage(os.path.join(data_dir,f), mode='bgr')
-            img = cv.cvtColor(cv.resize(np.array(bgr_img), (256,256)), cv.COLOR_BGR2RGB)
+            img_lst.appemd(bgr_img)
+
+        for img in img_lst:
+            img = cv.cvtColor(cv.resize(np.array(img), (256,256)), cv.COLOR_BGR2RGB)
             img = cv.resize(np.array(img), tuple(model.layers[0].get_output_at(0).get_shape().as_list()[1:-1]))
             img = cv.normalize(img, None, alpha=0, beta=1, norm_type=cv.NORM_MINMAX, dtype=cv.CV_32F)
             images = np.array(img[tf.newaxis, ...]) if images is None else np.concatenate((images, np.array(img[tf.newaxis, ...])), axis=0) 
+
+        del img_lst
 
         # get prediction labels
         df = pd.DataFrame(index=folders)
@@ -225,7 +231,13 @@ class PredictionController:
 
             output.append(img_dict)
 
-        return output              
+        return output             
+
+    def check_hacking(model):                  
+        return bool(model.find('/') != -1 or \
+                    model.find('\\') != -1 or \
+                    model.find('..') != -1 or \
+                    model.find('.') != -1) 
    
     def get_randomimag(nb_img, species, desease, ml_model, dp_model):
         global models, class_names
@@ -260,17 +272,13 @@ class PredictionController:
             # protect to LFI and RFI attacks
             ml_model = path.basename(ml_model)
             ml_model = ml_model.replace("%", '')
-            if ml_model.find('/') != -1 or \
-                ml_model.find('\\') != -1 or \
-                ml_model.find('..') != -1 or \
-                ml_model.find('.') != -1:
+            if PredictionController.check_hacking(ml_model):
                 return {'error': 'Incorrect model name don\'t try to hack us.'}
         
             model_path = f'../../data/models_saved/{ml_model}.pkl.z'
             if os.path.exists(model_path):
                 print('Info : Start ML model processing at :', dt.now())
                 df_features = pd.concat(list(tqdm(current_app._executor.map(PredictionController.get_ml_features,folders, repeat(data_dir)), total=len(folders))))
-                # current_app._executor.shutdown()
                 ml_model_dict = joblib.load(model_path)
                 ml_df = PredictionController.ml_predict(ml_model_dict, df_features)
                 print('Info : End ML model proessing at :', dt.now())
@@ -282,10 +290,7 @@ class PredictionController:
             # protect to LFI and RFI attacks
             dp_model = path.basename(dp_model)
             dp_model = dp_model.replace("%", '')
-            if dp_model.find('/') != -1 or \
-                dp_model.find('\\') != -1 or \
-                dp_model.find('..') != -1 or \
-                dp_model.find('.') != -1:
+            if PredictionController.check_hacking(dp_model):
                 return {'error': 'Incorrect model name don\'t try to hack us.'}
         
             model_path = f'../../data/models_saved/{dp_model}.h5'
@@ -295,8 +300,8 @@ class PredictionController:
                 models[dp_model] = load_model(model_path, custom_objects)
                 f = h5py.File(model_path, mode='r')
                 if 'class_names' in f.attrs and len(f.attrs['class_names']) > 0:
-                    class_names_raw = f.attrs.get('class_names')
-                    class_names = json.loads(class_names_raw)
+                    class_names = f.attrs.get('class_names')
+                    class_names = json.loads(class_names)
                     f.close()
                     dp_df = PredictionController.dp_predict(models[dp_model], class_names, folders=folders, data_dir=data_dir)
                     print('Info : End DP model proessing at :', dt.now())
@@ -334,57 +339,6 @@ class PredictionController:
             comments = []
             with open(comment_filename, "w") as js_f:
                 json.dump(comments, js_f)
-
-        # Load ML model
-        ml_model_dict = None
-        if ml_model:
-            # protect to LFI and RFI attacks
-            ml_model = path.basename(ml_model)
-            ml_model = ml_model.replace("%", '')
-            if ml_model.find('/') != -1 or \
-                ml_model.find('\\') != -1 or \
-                ml_model.find('..') != -1 or \
-                ml_model.find('.') != -1:
-                return {'error': 'Incorrect model name don\'t try to hack us.'}
-        
-            model_path = f'../../data/models_saved/{ml_model}.joblib'
-            if os.path.exists(model_path):
-                print('strat loading ml model at :', dt.now())
-                ml_model_dict = joblib.load(model_path)
-                print('end loading ml model at :', dt.now())
-            else:
-                return {'error': f'{ml_model} model not found'}   
-
-        # Load ML model
-        class_names = None
-        models[dp_model] = None
-        if dp_model:
-            # protect to LFI and RFI attacks
-            dp_model = path.basename(dp_model)
-            dp_model = dp_model.replace("%", '')
-            if dp_model.find('/') != -1 or \
-                dp_model.find('\\') != -1 or \
-                dp_model.find('..') != -1 or \
-                dp_model.find('.') != -1:
-                return {'error': 'Incorrect model name don\'t try to hack us.'}
-        
-            model_path = f'../../data/models_saved/{dp_model}.h5'
-            if os.path.exists(model_path):
-                print('strat loading dp model at :', dt.now())
-                custom_objects={'recall_m': recall_m, 'precision_m': precision_m, 'f1_m': f1_m}
-                models[dp_model] = load_model(model_path, custom_objects)
-                f = h5py.File(model_path, mode='r')
-                class_names_raw = None
-                if 'class_names' in f.attrs and len(f.attrs['class_names']) > 0:
-                    class_names_raw = f.attrs.get('class_names')
-                    class_names = json.loads(class_names_raw)
-                    f.close()
-                else:
-                    f.close()
-                    return create_response(data={'error': 'Error don\'t have classes for classification.'}, status=500)
-                print('end loading dp model at :', dt.now())
-            else:
-                return {'error': f'{dp_model} model not found'}   
  
         # add comment if it exits
         img_dict['comment'] = ''
@@ -399,18 +353,66 @@ class PredictionController:
         rgb_img = cv.cvtColor(bgr_img, cv.COLOR_BGR2RGB)
         mask, _ = remove_bg(bgr_img)
 
-        # Get DP prediction
-        dp_predict_output = None
+        # Load ML model
+        if ml_model:
+            # protect to LFI and RFI attacks
+            ml_model = path.basename(ml_model)
+            ml_model = ml_model.replace("%", '')
+            if PredictionController.check_hacking(ml_model):
+                return {'error': 'Incorrect model name don\'t try to hack us.'}
+
+            model_path = f'../../data/models_saved/{ml_model}.pkl.z'
+            if os.path.exists(model_path):
+                print('Info : Start ML model processing at :', dt.now())
+                df_features = PredictionController.get_ml_features(bgr_img=bgr_img)
+                ml_model_dict = joblib.load(model_path)
+                ml_df = PredictionController.ml_predict(ml_model_dict, df_features)
+                print('Info : End ML model proessing at :', dt.now())
+            else:
+                return {'error': f'{ml_model} model not found'}   
+
+        # Load DP model
         if dp_model:
-            dp_predict_output = PredictionController.dp_predict(bgr_img, models[dp_model], class_names, img_dict['img_species'], img_dict['img_desease'])
-            if 'error' in dp_predict_output.keys():
-                return create_response(data=dp_predict_output, status=500)
+            # protect to LFI and RFI attacks
+            dp_model = path.basename(dp_model)
+            dp_model = dp_model.replace("%", '')
+            if PredictionController.check_hacking(dp_model):
+                return {'error': 'Incorrect model name don\'t try to hack us.'}
+        
+            model_path = f'../../data/models_saved/{dp_model}.h5'
+            if os.path.exists(model_path):
+                print('strat loading dp model at :', dt.now())
+                custom_objects={'recall_m': recall_m, 'precision_m': precision_m, 'f1_m': f1_m}
+                models[dp_model] = load_model(model_path, custom_objects)
+                f = h5py.File(model_path, mode='r')
+                if 'class_names' in f.attrs and len(f.attrs['class_names']) > 0:
+                    class_names = f.attrs.get('class_names')
+                    class_names = json.loads(class_names)
+                    f.close()                   
+                    dp_df = PredictionController.dp_predict(models[dp_model], class_names, images=[bgr_img])
+                    print('Info : End DP model proessing at :', dt.now())
+                else:
+                    f.close()
+                    return create_response(data={'error': 'Error don\'t have classes for classification.'}, status=500)
+                print('end loading dp model at :', dt.now())
+            else:
+                return {'error': f'{dp_model} model not found'}   
 
         # Get ML classification
-        ml_predict_output = None
-        if ml_model:
-            masked_img = PredictionController.generate_img_without_bg(mask, bgr_img)
-            ml_predict_output = PredictionController.ml_predict(bgr_img, mask, masked_img, ml_model_dict, img_dict['img_species'], img_dict['img_desease'])
+        if ml_df is not None:
+            img_dict['ml_prediction'] = {
+                'class': ml_df['prediction_label'].squeeze(),
+                'score': f'{100*float(ml_df["proba"].squeeze()):.2f}',
+                'matching': bool(ml_df['matching'].squeeze()),                    
+            }
+
+        # Get DP prediction
+        if dp_df is not None:
+            img_dict['dl_prediction'] = {
+                'class': dp_df['prediction_label'].squeeze(),
+                'score': f'{100*float(dp_df["proba"].squeeze()):.2f}',
+                'matching': bool(dp_df['matching'].squeeze()),                    
+            }    
 
         # convert numpy array image to base64
         _, rgb_img = cv.imencode('.jpg', bgr_img)
@@ -421,11 +423,6 @@ class PredictionController:
         # add images to the dictionary
         img_dict['rgb_img'] = rgb_img
         img_dict['masked_img'] = masked_img
-        
-        if dp_predict_output:
-            img_dict['dl_prediction'] = dp_predict_output
-        if ml_predict_output:
-            img_dict['ml_prediction'] = ml_predict_output
 
         del bgr_img, rgb_img, masked_img
 
@@ -436,12 +433,9 @@ class PredictionController:
         # protect to LFI and RFI attacks
         model_name = path.basename(model_name)
         model_name = model_name.replace("%", '')
-        if model_name.find('/') != -1 or \
-           model_name.find('\\') != -1 or \
-           model_name.find('..') != -1 or \
-           model_name.find('.') != -1:
-           return create_response(data={'error': 'Incorrect model name don\'t try to hack us.'}, status=500)
-        
+        if PredictionController.check_hacking(model_name):
+            return create_response(data={'error': 'Incorrect model name don\'t try to hack us.'}, status=500)
+    
         model_path = f'../../data/models_saved/{model_name}.h5'
         model_exist = os.path.exists(model_path)
         
@@ -449,10 +443,9 @@ class PredictionController:
             custom_objects={'recall_m': recall_m, 'precision_m': precision_m, 'f1_m': f1_m}
             models[model_name] = load_model(model_path, custom_objects)
             f = h5py.File(model_path, mode='r')
-            class_names_raw = None
             if 'class_names' in f.attrs and len(f.attrs['class_names']) > 0:
-                class_names_raw = f.attrs.get('class_names')
-                class_names = json.loads(class_names_raw)
+                class_names = f.attrs.get('class_names')
+                class_names = json.loads(class_names)
                 f.close()
             else:
                 f.close()
