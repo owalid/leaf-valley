@@ -1,17 +1,12 @@
-FROM node:14-alpine
-
+FROM node:17.2-alpine
 
 WORKDIR /home/app
 
-COPY docker-entrypoint.sh /usr/local/bin/
-
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-ENTRYPOINT ["docker-entrypoint.sh"]
-
+ENV NODE_OPTIONS --openssl-legacy-provider
 ENV NODE_ENV=dev
+ENV BASE_API_URL="http://api:5000/api"
+ENV NUXT_HOST=0.0.0.0
 ENV NUXT_PORT=3000
-
 
 CMD ["yarn", "dev"]
 

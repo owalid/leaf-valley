@@ -20,12 +20,9 @@ services:
       context: ./client
     volumes:
       - ./client:/home/app
-      - vic2i_node_modules:/app/node_modules:cached
+    env_file:
+      - ./client/.env
     expose:
       - 3000
     ports:
       - 3000:3000
-
-volumes:
-  vic2i_node_modules:
-    driver: local

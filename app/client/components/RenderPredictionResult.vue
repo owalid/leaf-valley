@@ -7,15 +7,8 @@
         class="ml-auto img-prediction"
       />
     </v-col>
-    <v-col
-      xl="8"
-      md="6"
-      sm="4"
-      xs="2"
-    > 
-      <v-progress-linear
-        v-bind="linearProgressProps"
-      ></v-progress-linear>
+    <v-col xl="8" md="6" sm="4" xs="2">
+      <v-progress-linear v-bind="linearProgressProps"></v-progress-linear>
     </v-col>
     <v-col>
       <!-- Loading -->
@@ -25,11 +18,7 @@
         class="img-prediction loading"
       >
         <template #default>
-          <v-row
-            class="fill-height ma-0"
-            align="center"
-            justify="center"
-          >
+          <v-row class="fill-height ma-0" align="center" justify="center">
             <v-progress-circular
               indeterminate
               color="light-blue darken-1"
@@ -58,48 +47,52 @@
 </template>
 <script>
 export default {
-  name: "RenderPredictionResult",
+  name: 'RenderPredictionResult',
   props: {
     result: {
       type: Object,
-      required: true
-    }
+      required: true,
+    },
   },
   computed: {
     linearProgressProps() {
-      if (this.state === "LOADING") {
+      if (this.state === 'LOADING') {
         return {
           stream: true,
           'buffer-value': 0,
           reverse: true,
-          color:"green darken-1"
-        };
-      } else if (this.state === "ERROR") {
+          color: 'green darken-1',
+        }
+      } else if (this.state === 'ERROR') {
         return {
           value: 100,
-          color: "red darken-2"
-        };
+          color: 'red darken-2',
+        }
       } else {
         return {
           value: 100,
-          color: "green darken-1"
-        };
+          color: 'green darken-1',
+        }
       }
     },
     state() {
       if (!this.result || 'error' in this.result) {
         return 'ERROR'
-      } else if (this.result && 'prediction' in this.result && 'score' in this.result && 'im_withoutbg_b64' in this.result) {
+      } else if (
+        this.result &&
+        'prediction' in this.result &&
+        'score' in this.result &&
+        'im_withoutbg_b64' in this.result
+      ) {
         return 'SUCCESS'
       } else {
         return 'LOADING'
       }
-    }
-  }
+    },
+  },
 }
 </script>
 <style lang="scss" scoped>
-
 .img-prediction {
   max-width: 200px;
   height: 200px;

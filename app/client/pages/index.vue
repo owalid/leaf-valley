@@ -21,16 +21,10 @@
         />
       </v-col>
       <v-col>
-        <v-switch
-          v-model="shouldRemoveBg"
-          label="Remove background ?"
-        />
+        <v-switch v-model="shouldRemoveBg" label="Remove background ?" />
       </v-col>
       <v-col>
-        <v-btn
-          :disabled="processingPrediction"
-          @click="getPredictions"
-        >
+        <v-btn :disabled="processingPrediction" @click="getPredictions">
           Predict
         </v-btn>
       </v-col>
@@ -42,16 +36,16 @@
 </template>
 
 <script>
-import RenderPredictionResult from '~/components/RenderPredictionResult';
+import RenderPredictionResult from '~/components/RenderPredictionResult'
 
 export default {
   name: 'IndexPage',
   components: { RenderPredictionResult },
   async asyncData({ $axios }) {
     const res = await $axios.get('/models/')
-    const {result} = res.data
+    const { result } = res.data
     return {
-      models: result.models
+      models: result.models,
     }
   },
   data() {
@@ -62,72 +56,89 @@ export default {
       b64Files: null,
       models: {},
       results: [],
-      processingPrediction: false
-    };
+      processingPrediction: false,
+    }
   },
   computed: {
     payloads() {
-      const result = [];
+      const result = []
 
-      this.b64Files.forEach(b64file => {
-        result.push({ model_name: this.modelSelected, img: b64file, should_remove_bg: this.shouldRemoveBg })
-      });
-      return result;
-    }
+      this.b64Files.forEach((b64file) => {
+        result.push({
+          model_name: this.modelSelected,
+          img: b64file,
+          should_remove_bg: this.shouldRemoveBg,
+        })
+      })
+      return result
+    },
   },
   methods: {
     async onChangeFileInput(newFiles) {
-      newFiles = newFiles.slice(0, 5);
-      const vm = this;
-      this.b64Files = [];
-      await Promise.all(newFiles.map(async (file) => {
-        const b64File = await vm.toBase64(file);
-        this.b64Files.push(b64File.split(',')[1]);
-      }));
+      newFiles = newFiles.slice(0, 5)
+      const vm = this
+      this.b64Files = []
+      await Promise.all(
+        newFiles.map(async (file) => {
+          const b64File = await vm.toBase64(file)
+          this.b64Files.push(b64File.split(',')[1])
+        })
+      )
     },
 
-  // Transform files to base64
-  toBase64(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = error => reject(error);
-    });
-  }, 
-  async sendPostAndAddToResults(payload, indexPayload) {
-    try {
-      this.results.push({ indexPayload, source_img: payload.img });
-      const request = await this.$axios.post('/models/predict', payload);
-      const prediction = request.data.result;
+    // Transform files to base64
+    toBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.readAsDataURL(file)
+        reader.onload = () => resolve(reader.result)
+        reader.onerror = (error) => reject(error)
+      })
+    },
+    async sendPostAndAddToResults(payload, indexPayload) {
+      try {
+        this.results.push({ indexPayload, source_img: payload.img })
+        const request = await this.$axios.post('/models/predict', payload)
+        const prediction = request.data.result
 
-      this.results.forEach((result, indexResult) => {
-        if (result.indexPayload === indexPayload) {
-          this.results[indexResult] = { ...this.results[indexResult], ...prediction };
-        }
-      })
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error(error);
-      this.results.forEach((result, indexResult) => {
-        if (result.indexPayload === indexPayload) {
-          const {result} = error.response.data;
-          this.results[indexResult] = { ...this.results[indexResult], error: result };
-        }
-      })
-    } finally { // We sort because promises are async and its exucted in parallel
-      this.results.sort((a, b) => a.indexPayload - b.indexPayload);
-    }
-  },
-  async getPredictions() {
-      this.results = [];
-      this.processingPrediction = true;
+        this.results.forEach((result, indexResult) => {
+          if (result.indexPayload === indexPayload) {
+            this.results[indexResult] = {
+              ...this.results[indexResult],
+              ...prediction,
+            }
+          }
+        })
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error(error)
+        this.results.forEach((result, indexResult) => {
+          if (result.indexPayload === indexPayload) {
+            const { result } = error.response.data
+            this.results[indexResult] = {
+              ...this.results[indexResult],
+              error: result,
+            }
+          }
+        })
+      } finally {
+        // We sort because promises are async and its exucted in parallel
+        this.results.sort((a, b) => a.indexPayload - b.indexPayload)
+      }
+    },
+    async getPredictions() {
+      this.results = []
+      this.processingPrediction = true
 
       // Post to server each images in parallel
-      await Promise.all(this.payloads.map((payload, indexPayload) => this.sendPostAndAddToResults(payload, indexPayload)));
-      this.processingPrediction = false;
-    }
-  }
+      await Promise.all(
+        this.payloads.map((payload, indexPayload) =>
+          this.sendPostAndAddToResults(payload, indexPayload)
+        )
+      )
+      this.processingPrediction = false
+    },
+  },
 }
 </script>
 <style lang="scss" scoped>
@@ -136,6 +147,4 @@ export default {
   border-radius: 5px;
   width: 25%;
 }
-
-
 </style>

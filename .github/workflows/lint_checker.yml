@@ -1,0 +1,20 @@
+name: Lint checker
+
+on:
+  pull_request:
+    paths:
+      - 'app/client/**'
+jobs:
+  js-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      
+      - name: Install dependecies
+        working-directory: ./app/client
+        run: yarn install --immutable --immutable-cache --check-cache
+
+      - name: Run ESLint
+        working-directory: ./app/client
+        run: yarn run lint
