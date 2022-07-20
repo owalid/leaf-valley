@@ -56,7 +56,8 @@ def prepare_features(data, rgb_img, target_features, should_remove_bg, size_img=
   
   # Remove bg
   mask, rgb_img = remove_bg(rgb_img) if should_remove_bg else (None, rgb_img)
-  
+  original_rgb_img = rgb_img.copy()
+
   if size_img is not None and isinstance(size_img, tuple):
     rgb_img = cv.resize(rgb_img, size_img)
 
@@ -133,13 +134,12 @@ def prepare_features(data, rgb_img, target_features, should_remove_bg, size_img=
       features = get_lab_histogram(rgb_img)
       for feature in features:
           data = update_features_dict(data, feature, features[feature])
-  if 'pyfeats' in target_features and rgb_img:
-      if mask is None:
-        mask, rgb_img = remove_bg(rgb_img)
-        
-      pyfeats_features = get_pyfeats_features(rgb_img, mask)
-      for feature in pyfeats_features:
-          data = update_features_dict(
-              data, feature, pyfeats_features[feature])
-          
+  if ('pyfeats' in target_features) & (rgb_img is not None):
+    if mask is None:
+      mask, masked_img = remove_bg(original_rgb_img)
+      
+    pyfeats_features = get_pyfeats_features(masked_img, mask)
+    for feature in pyfeats_features:
+        data = update_features_dict(
+            data, feature, pyfeats_features[feature])
   return data, pill_img

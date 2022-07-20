@@ -151,11 +151,16 @@ if __name__ == '__main__':
     print(args)
 
     random.seed(42)
-    normalize_type = args.normalize_type
-    normalize_type = 'NORM_MINMAX' if normalize_type not in CV_NORMALIZE_TYPE.keys(
-    ) else normalize_type
-    if normalize_type:
-        normalize_type = CV_NORMALIZE_TYPE[normalize_type]
+    normalize_img = args.normalize_img
+    
+    if not normalize_img:
+        normalize_type = None
+    else:
+        normalize_type = args.normalize_type
+        normalize_type = 'NORM_MINMAX' if normalize_type not in CV_NORMALIZE_TYPE.keys(
+        ) else normalize_type
+        if normalize_type:
+            normalize_type = CV_NORMALIZE_TYPE[normalize_type]
 
     res_augmented = 'augmentation' if args.augmented else 'no_augmentation'
     src_directory = args.src_directory if args.src_directory != '' else f"data/{res_augmented}"
@@ -164,7 +169,6 @@ if __name__ == '__main__':
     should_remove_bg = args.remove_bg
     write_img = args.write_img
     crop_img = args.crop_img
-    normalize_img = args.normalize_img
     df_filtred = get_df_filtered(df, type_output)
     indexes_species = df_filtred.index
 
