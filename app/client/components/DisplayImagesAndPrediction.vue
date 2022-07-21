@@ -86,7 +86,7 @@ export default {
     colorDPScore(){
       if (Object.keys(this.result).includes('dl_prediction')){
         const val = this.result.dl_prediction.score
-        return ((val < 50) || (!this.result.img_num)) ? 'white--text' : (val < 70) ? 'lime--text text--accent-1' :  (val < 90) ? 'light-green--text text--accent-2' : 'green--text text--accent-4'
+        return ((val < 50) || (!this.result.img_num)) ? 'white--text' : (!this.result.dl_prediction.matching) ? 'red--text text--lighten-2' : (val < 70) ? 'lime--text text--accent-1' :  (val < 90) ? 'light-green--text text--accent-2' : 'green--text text--accent-4'
       } else {return 'white--text'}
     },
     colorMLMatching() {
@@ -97,7 +97,7 @@ export default {
     colorMLScore(){
       if (Object.keys(this.result).includes('ml_prediction')){
         const val = this.result.ml_prediction.score
-        return ((val < 50) || (!this.result.img_num)) ? 'white--text' : (val < 70) ? 'lime--text text--accent-1' :  (val < 90) ? 'light-green--text text--accent-2' : 'green--text text--accent-4'
+        return ((val < 50) || (!this.result.img_num)) ? 'white--text' : (!this.result.ml_prediction.matching) ? 'red--text text--lighten-2' : (val < 70) ? 'lime--text text--accent-1' :  (val < 90) ? 'light-green--text text--accent-2' : 'green--text text--accent-4'
       } else {return 'white--text'}
     },
     linearProgressProps() {

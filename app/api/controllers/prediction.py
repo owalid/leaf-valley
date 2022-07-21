@@ -75,12 +75,11 @@ class PredictionController:
         
         return masked_img
 
-    def get_ml_features(f, path, bgr_img=None):      
+    def get_ml_features(f='', path='', bgr_img=None):      
         # # Image processing
         if bgr_img is None:
             bgr_img, _, _ = pcv.readimage(os.path.join(path,f), mode='bgr')
         bgr_img = cv.resize(np.array(bgr_img), (256,256))
-        rgb_img = cv.cvtColor(bgr_img, cv.COLOR_BGR2RGB)
         bgr_img = cv.cvtColor(bgr_img, cv.COLOR_BGR2RGB)
         mask, _ = remove_bg(bgr_img)
         masked_img = PredictionController.generate_img_without_bg(mask, bgr_img)
@@ -145,12 +144,12 @@ class PredictionController:
             
         return df
 
-    def dp_predict(model, class_names, folders=[], data_dir='', images=None):
-        img_lst = []        
+    def dp_predict(model, class_names, folders=[], data_dir='', img_lst=[], class_name=['']):
         for f in folders:
             bgr_img, _, _ = pcv.readimage(os.path.join(data_dir,f), mode='bgr')
-            img_lst.appemd(bgr_img)
+            img_lst.append(bgr_img)
 
+        images = None
         for img in img_lst:
             img = cv.cvtColor(cv.resize(np.array(img), (256,256)), cv.COLOR_BGR2RGB)
             img = cv.resize(np.array(img), tuple(model.layers[0].get_output_at(0).get_shape().as_list()[1:-1]))
@@ -160,7 +159,7 @@ class PredictionController:
         del img_lst
 
         # get prediction labels
-        df = pd.DataFrame(index=folders)
+        df = pd.DataFrame(index=folders if folders != [] else class_name)
         y = model.predict(images)
 
         df['prediction_label'] = [class_names[le] for le in np.argmax(y, axis=1)]
@@ -350,8 +349,8 @@ class PredictionController:
         # Image processing
         bgr_img = np.array(Image.open(io.BytesIO(base64.b64decode(b64File))))
         bgr_img = cv.resize(np.array(bgr_img), (256,256))
-        rgb_img = cv.cvtColor(bgr_img, cv.COLOR_BGR2RGB)
-        mask, _ = remove_bg(bgr_img)
+        _, masked_img = remove_bg(bgr_img)
+        masked_img = cv.cvtColor(masked_img, cv.COLOR_BGR2RGB)
 
         # Load ML model
         if ml_model:
@@ -365,6 +364,7 @@ class PredictionController:
             if os.path.exists(model_path):
                 print('Info : Start ML model processing at :', dt.now())
                 df_features = PredictionController.get_ml_features(bgr_img=bgr_img)
+                df_features.index = [class_name] if class_name else ['___/(0)']
                 ml_model_dict = joblib.load(model_path)
                 ml_df = PredictionController.ml_predict(ml_model_dict, df_features)
                 print('Info : End ML model proessing at :', dt.now())
@@ -389,7 +389,7 @@ class PredictionController:
                     class_names = f.attrs.get('class_names')
                     class_names = json.loads(class_names)
                     f.close()                   
-                    dp_df = PredictionController.dp_predict(models[dp_model], class_names, images=[bgr_img])
+                    dp_df = PredictionController.dp_predict(models[dp_model], class_names, img_lst=[bgr_img], class_name=[class_name] if class_name else ['___/(0)'])
                     print('Info : End DP model proessing at :', dt.now())
                 else:
                     f.close()
@@ -399,7 +399,7 @@ class PredictionController:
                 return {'error': f'{dp_model} model not found'}   
 
         # Get ML classification
-        if ml_df is not None:
+        if ml_model:
             img_dict['ml_prediction'] = {
                 'class': ml_df['prediction_label'].squeeze(),
                 'score': f'{100*float(ml_df["proba"].squeeze()):.2f}',
@@ -407,7 +407,7 @@ class PredictionController:
             }
 
         # Get DP prediction
-        if dp_df is not None:
+        if dp_model:
             img_dict['dl_prediction'] = {
                 'class': dp_df['prediction_label'].squeeze(),
                 'score': f'{100*float(dp_df["proba"].squeeze()):.2f}',

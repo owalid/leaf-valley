@@ -31,6 +31,13 @@ CV_NORMALIZE_TYPE = {
     'NORM_MINMAX': cv.NORM_MINMAX
 }
 
+  
+def update_data_dict(data_dict, key, value):
+  if key not in data_dict:
+    data_dict[key] = []
+  data_dict[key].append(value)
+  return data_dict
+
 def safe_get_item(dictionary, key, default=None):
     '''
       Get item from dictionary

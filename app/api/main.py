@@ -4,7 +4,6 @@ from flask import g
 import os
 from flask import Flask
 from flask_cors import CORS
-import multiprocessing as mp
 
 ENV = os.environ.get("FLASK_ENV", "dev")
 
@@ -36,5 +35,5 @@ app = create_app()
 
 if __name__ == '__main__':
     port = 5000 if ENV != "prod" else 80
-    app._executor = concurrent.futures.ProcessPoolExecutor(max_workers=os.cpu_count())
+    app._executor = concurrent.futures.ProcessPoolExecutor(max_workers=((1+os.cpu_count()//5)*5))
     app.run(host='0.0.0.0', debug=True, port=port)
