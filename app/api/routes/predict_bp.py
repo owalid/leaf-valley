@@ -4,6 +4,7 @@ from controllers.prediction import PredictionController
 from utils.mixins import create_response
 
 mod = Blueprint('predict_routes', __name__, url_prefix='/api/models')
+com = Blueprint('comment_routes', __name__, url_prefix='/api/comment')
 
 @mod.route('/')
 def get_models():
@@ -31,7 +32,7 @@ def get_plants():
 def get_classes():
     return PredictionController.get_classes()
 
-@mod.route('/randimg', methods=[ 'POST' ])
+@mod.route('/random-img', methods=[ 'POST' ])
 def get_randomimg():
     data = request.get_json()
     if data:
@@ -44,8 +45,8 @@ def get_randomimg():
     return PredictionController.get_randomimag(nb_img, spacies, desease, ml_model, dp_model)
 
 
-@mod.route('/selimg', methods=[ 'POST' ])
-def get_selectedimg():
+@mod.route('/select-img', methods=[ 'POST' ])
+def get_selectedimge():
     data = request.get_json()
     if data:
         b64File    = data.get('b64Files')
@@ -53,9 +54,9 @@ def get_selectedimg():
         dp_model   = data.get('dp_model')
         class_name = data.get('class_name')
 
-    return PredictionController.get_selectedimag(class_name, b64File, ml_model, dp_model)
+    return PredictionController.get_selectedimage(class_name, b64File, ml_model, dp_model)
 
-@mod.route('/comment', methods=[ 'POST' ])
+@com.route('/', methods=[ 'POST' ])
 def process_comment():
     data = request.get_json()
     if data:

@@ -26,6 +26,7 @@ def create_app(test_config=None):
 
     # why blueprints http://flask.pocoo.org/docs/1.0/blueprints/
     app.register_blueprint(predict_bp.mod)
+    app.register_blueprint(predict_bp.com)
 
     return app
 

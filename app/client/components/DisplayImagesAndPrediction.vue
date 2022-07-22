@@ -12,12 +12,12 @@
         <v-img contain :src="`data:image/png;base64,${result.masked_img}`" class="ml-auto img-prediction" width="130" height="130" />
       </v-row>
       <v-col v-if="isDLModel">
-        <div class="text-subtitle-1 mb-1">===&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DP classification&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===</div>
+        <div class="text-subtitle-1 mb-1">===<span class="mx-12">DP classification</span>===</div>
         <div class="text-caption">Class predicted : <span :class="colorDPMatching">{{ result.dl_prediction.class }}</span></div>
         <div class="text-caption">Score : <span :class="colorDPScore">{{ result.dl_prediction.score }}</span></div>
       </v-col>
       <v-col v-if="isMLModel">
-        <div class="text-subtitle-1 mb-1">===&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ML classification&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===</div>
+        <div class="text-subtitle-1 mb-1">===<span class="mx-12">ML classification</span>===</div>
         <div class="text-caption">Class predicted : <span :class="colorMLMatching">{{ result.ml_prediction.class}}</span></div>
         <div class="text-caption">Score : <span :class="colorMLScore">{{ result.ml_prediction.score }}</span></div>
       </v-col>
@@ -30,7 +30,7 @@
       <v-row v-else>
         <v-row v-if="showCommentFlag" justify="end" class="px-6 py-3">
         <v-col>
-            <v-textarea v-model="commentText" :label="labelFunc" filled :success-messages="msg_success" :error-messages="msg_error"></v-textarea>
+            <v-textarea v-model="commentText" :label="labelFunc" filled :success-messages="msgSuccess" :error-messages="msgError"></v-textarea>
             <v-row justify="end" class="ma-0">
               <v-btn class="mr-1" color="green lighten-1" style="font-size:8px; height: 24px;" @click="insertCommentClick">Submit</v-btn>
             <v-btn class="ml-1" color="red lighten-1" style="font-size:8px; height: 24px;" @click="cancelCommentClick">Cancel</v-btn>
@@ -51,7 +51,7 @@
                   </v-expansion-panel-header>
                   <v-expansion-panel-content>
                     <v-row justify="end" class="pb-2 mx-n5">
-                      <v-textarea v-model="commentText" :label="labelFunc" filled :success-messages="msg_success" :error-messages="msg_error"></v-textarea>
+                      <v-textarea v-model="commentText" :label="labelFunc" filled :rules="commentRules"  :success-messages="msgSuccess" :error-messages="msgError"></v-textarea>
 
                       <v-btn class="mr-1" color="green lighten-1" style="font-size:8px; height: 24px;" @click="updateCommentClick">Update</v-btn>
                     <v-btn class="ml-1" color="red lighten-1" style="font-size:8px; height: 24px;" @click="deleteCommentClick">Delete</v-btn>
@@ -85,8 +85,11 @@ export default {
       showCommentFlag: (this.result.comment === ''),
       addCommentFlag: (this.result.comment === ''),
       commentText: this.result.comment,
-      msg_error: [],
-      msg_success: []
+      msgError: [],
+      msgSuccess: [],
+      commentRules: [
+        v => (v && /^[0-9a-zA-Z]+$/.test(v) || 'Comment must be alphanumeric')
+      ],
     }
   },
   computed: {
@@ -95,21 +98,44 @@ export default {
         return (!this.result.img_num) ? 'white--text' : (this.result.dl_prediction.matching) ? 'green--text text--lighten-2' : 'red--text text--lighten-2'
       } else { return 'white--text' }
     },
+    colorMLMatching() {
+      if (Object.keys(this.result).includes('ml_prediction')) {
+        if  (!this.result.img_num){ 
+            return 'white--text'
+        } else if  (this.result.ml_prediction.matching){ 
+            return 'green--text text--lighten-2' 
+        } else { 
+            return 'red--text text--lighten-2' }
+      } else { return 'white--text' }
+    },
     colorDPScore() {
       if (Object.keys(this.result).includes('dl_prediction')) {
         const val = this.result.dl_prediction.score
-        return ((val < 50) || (!this.result.img_num)) ? 'white--text' : (!this.result.dl_prediction.matching) ? 'red--text text--lighten-2' : (val < 70) ? 'lime--text text--accent-1' : (val < 90) ? 'light-green--text text--accent-2' : 'green--text text--accent-4'
-      } else { return 'white--text' }
-    },
-    colorMLMatching() {
-      if (Object.keys(this.result).includes('ml_prediction')) {
-        return (!this.result.img_num) ? 'white--text' : (this.result.ml_prediction.matching) ? 'green--text text--lighten-2' : 'red--text text--lighten-2'
+        if ((val < 50) || (!this.result.img_num)){
+          return 'white--text'
+        } else if (!this.result.dl_prediction.matching){
+            return 'red--text text--lighten-2'
+        } else if (val < 70){
+            return 'lime--text text--accent-1'
+        } else if (val < 90){
+            return 'light-green--text text--accent-2'
+        } else {
+            return 'green--text text--accent-4' }
       } else { return 'white--text' }
     },
     colorMLScore() {
       if (Object.keys(this.result).includes('ml_prediction')) {
         const val = this.result.ml_prediction.score
-        return ((val < 50) || (!this.result.img_num)) ? 'white--text' : (!this.result.ml_prediction.matching) ? 'red--text text--lighten-2' : (val < 70) ? 'lime--text text--accent-1' : (val < 90) ? 'light-green--text text--accent-2' : 'green--text text--accent-4'
+        if ((val < 50) || (!this.result.img_num)) {
+            return 'white--text'
+        } else if (!this.result.ml_prediction.matching){
+            return 'red--text text--lighten-2' 
+        } else if (val < 70){
+            return 'lime--text text--accent-1'
+        } else if (val < 90){
+            return 'light-green--text text--accent-2'
+        } else {
+            return 'green--text text--accent-4' }
       } else { return 'white--text' }
     },
     linearProgressProps() {
@@ -183,17 +209,21 @@ export default {
 
 
     async processComment(method) {
-      const payload = { method, comment: { species: this.result.img_species, desease: this.result.img_desease, img_num: this.result.img_num, comment: this.commentText } }
-      await this.$axios.post('/models/comment', payload);
       try {
-        this.msg_success = ['Done with success']
-      } catch (error) {
-        this.msg_error = ['Done with error']
-      } finally {
-        setInterval(() => {
-          this.msg_success = []
-          this.msg_success = []
-        }, 3000)
+        const payload = { method, comment: { species: this.result.img_species, desease: this.result.img_desease, img_num: this.result.img_num, comment: this.commentText } }
+      await this.$axios.post('/comment', payload);
+      try {
+          this.msgSuccess = ['Done with success']
+          } catch (error) {
+            this.msgError = ['Done with error']
+          } finally {
+            setInterval(() => {
+              this.msgSuccess = []
+            }, 3000)
+          }
+      } catch(error) {
+            // eslint-disable-next-line no-console
+            console.error(error)
       }
     }
   },

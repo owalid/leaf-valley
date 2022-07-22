@@ -102,6 +102,10 @@ class PredictionController:
 
         return df
 
+    def class_split(ldf):
+        ldf['species'] = ldf.index.to_series().apply(lambda f: f.split('___')[0])
+        ldf['desease'] = ldf.index.to_series().apply(lambda f: f.split('___')[1].split('/')[0])
+        ldf['img_num'] = ldf.index.to_series().apply(lambda f: f.split('(')[-1].split(')')[0])
 
     def ml_predict(model_dict, df_features):       
         # Get ML model components
@@ -121,9 +125,8 @@ class PredictionController:
         df['prediction_label'] = le.inverse_transform(df['preds'])
         df['proba'] = model.predict_proba(df_features[md_feat]).max(axis=1).tolist()
 
-        df['species'] = df.index.to_series().apply(lambda f: f.split('___')[0])
-        df['desease'] = df.index.to_series().apply(lambda f: f.split('___')[1].split('/')[0])
-        df['img_num'] = df.index.to_series().apply(lambda f: f.split('(')[-1].split(')')[0])
+        # Split the class name
+        PredictionController.class_split(df)
 
         # prediction matching
         if len(classes) == 2:
@@ -157,9 +160,8 @@ class PredictionController:
         df['prediction_label'] = [class_names[le] for le in np.argmax(y, axis=1)]
         df['proba'] = y.max(axis=1)
 
-        df['species'] = df.index.to_series().apply(lambda f: f.split('___')[0])
-        df['desease'] = df.index.to_series().apply(lambda f: f.split('___')[1].split('/')[0])
-        df['img_num'] = df.index.to_series().apply(lambda f: f.split('(')[-1].split(')')[0])
+        # Split the class name
+        PredictionController.class_split(df)
 
         # prediction matching
         if len(class_names) == 2:
@@ -168,6 +170,15 @@ class PredictionController:
             df['matching'] = df.apply(lambda r: (r['prediction_label'].lower() == f"{r['species']}_{r['desease']}".lower()), axis=1)
 
         return df
+
+    def get_prediction_output(df, dict):
+        if df is not None:
+            df = df.loc[((df.species==dict['img_species']) & (df.desease==dict['img_desease']) & (df.img_num==dict['img_num']))]
+            dict['ml_prediction'] = {
+                'class': df['prediction_label'].squeeze(),
+                'score': f'{100*float(df["proba"].squeeze()):.2f}',
+                'matching': bool(df['matching'].squeeze()),                    
+            }        
 
     def process_images(folders, data_dir, comments, ml_df, dp_df):
 
@@ -203,27 +214,20 @@ class PredictionController:
 
             del bgr_img, rgb_img, masked_img
 
-            if ml_df is not None:
-                df = ml_df.loc[((ml_df.species==img_dict['img_species']) & (ml_df.desease==img_dict['img_desease']) & (ml_df.img_num==img_dict['img_num']))]
-                img_dict['ml_prediction'] = {
-                    'class': df['prediction_label'].squeeze(),
-                    'score': f'{100*float(df["proba"].squeeze()):.2f}',
-                    'matching': bool(df['matching'].squeeze()),                    
-                }
+            # Get ML prediction output
+            PredictionController.get_prediction_output(ml_df, img_dict)
 
-            if dp_df is not None:
-                df = dp_df.loc[(dp_df.species==img_dict['img_species']) & (dp_df.desease==img_dict['img_desease']) & (dp_df.img_num==img_dict['img_num'])]
-                img_dict['dl_prediction'] = {
-                    'class': df['prediction_label'].squeeze(),
-                    'score': f'{100*float(df["proba"].squeeze()):.2f}',
-                    'matching': bool(df['matching'].squeeze()),                    
-                }        
+            # Get DP prediction output
+            PredictionController.get_prediction_output(dp_df, img_dict)  
 
             output.append(img_dict)
 
         return output             
 
-    def check_hacking(model):                  
+    def check_hacking(model):
+        # protect to LFI and RFI attacks
+        model = os.path.basename(model)
+        model = model.replace("%", '')                       
         return bool(model.find('/') != -1 or \
                     model.find('\\') != -1 or \
                     model.find('..') != -1 or \
@@ -259,9 +263,6 @@ class PredictionController:
 
         # ML model Processing
         if ml_model:
-            # protect to LFI and RFI attacks
-            ml_model = os.path.basename(ml_model)
-            ml_model = ml_model.replace("%", '')
             if PredictionController.check_hacking(ml_model):
                 return {'error': 'Incorrect model name don\'t try to hack us.'}
         
@@ -277,9 +278,6 @@ class PredictionController:
 
         # Load DP model
         if dp_model:
-            # protect to LFI and RFI attacks
-            dp_model = os.path.basename(dp_model)
-            dp_model = dp_model.replace("%", '')
             if PredictionController.check_hacking(dp_model):
                 return {'error': 'Incorrect model name don\'t try to hack us.'}
         
@@ -305,7 +303,7 @@ class PredictionController:
 
         return create_response(data={str(k): v for k, v in enumerate(output)})
 
-    def get_selectedimag(class_name, b64File, ml_model, dp_model):
+    def get_selectedimage(class_name, b64File, ml_model, dp_model):
         if not (b64File and (ml_model or dp_model)):
             return create_response(data={'error': 'Incorrect date input \n Please select the correct ones !!!'}, status=500)
 
@@ -343,9 +341,6 @@ class PredictionController:
 
         # Load ML model
         if ml_model:
-            # protect to LFI and RFI attacks
-            ml_model = os.path.basename(ml_model)
-            ml_model = ml_model.replace("%", '')
             if PredictionController.check_hacking(ml_model):
                 return {'error': 'Incorrect model name don\'t try to hack us.'}
 
@@ -356,15 +351,13 @@ class PredictionController:
                 df_features = PredictionController.get_ml_features(options_dataset=ml_model_dict['options_dataset'], bgr_img=bgr_img)
                 df_features.index = [class_name] if class_name else ['___/(0)']
                 ml_df = PredictionController.ml_predict(ml_model_dict, df_features)
+                PredictionController.get_prediction_output(ml_df, img_dict)                
                 print(f'Info {dt.now()} : End {ml_model} model proessing')
             else:
                 return {'error': f'{ml_model} model not found'}   
 
         # Load DP model
         if dp_model:
-            # protect to LFI and RFI attacks
-            dp_model = os.path.basename(dp_model)
-            dp_model = dp_model.replace("%", '')
             if PredictionController.check_hacking(dp_model):
                 return {'error': 'Incorrect model name don\'t try to hack us.'}
         
@@ -378,28 +371,13 @@ class PredictionController:
                     class_names = json.loads(class_names)
                     f.close()                   
                     dp_df = PredictionController.dp_predict(dp_model_ins, class_names, img_lst=[rgb_img], class_name=[class_name] if class_name else ['___/(0)'])
+                    PredictionController.get_prediction_output(dp_df, img_dict)
                     print(f'Info {dt.now()} : End {dp_model} model proessing')
                 else:
                     f.close()
                     return create_response(data={'error': 'Error don\'t have classes for classification.'}, status=500)
             else:
                 return {'error': f'{dp_model} model not found'}   
-
-        # Get ML classification
-        if ml_model:
-            img_dict['ml_prediction'] = {
-                'class': ml_df['prediction_label'].squeeze(),
-                'score': f'{100*float(ml_df["proba"].squeeze()):.2f}',
-                'matching': bool(ml_df['matching'].squeeze()),                    
-            }
-
-        # Get DP prediction
-        if dp_model:
-            img_dict['dl_prediction'] = {
-                'class': dp_df['prediction_label'].squeeze(),
-                'score': f'{100*float(dp_df["proba"].squeeze()):.2f}',
-                'matching': bool(dp_df['matching'].squeeze()),                    
-            }    
 
         # convert numpy array image to base64
         _, rgb_img = cv.imencode('.jpg', bgr_img)
@@ -448,9 +426,8 @@ class PredictionController:
             if should_remove_bg:
                 new_img = im_withoutbg_b64
             else:
-                new_img = image_np
-                
-            new_img = cv.cvtColor (new_img, cv.COLOR_BGR2RGB)
+                new_img = image_np               
+            new_img = cv.cvtColor(new_img, cv.COLOR_BGR2RGB)
             new_img = cv.resize(new_img, tuple(model.layers[0].get_output_at(0).get_shape().as_list()[1:-1]))
             new_img = cv.normalize(new_img, None, alpha=0, beta=1, norm_type=cv.NORM_MINMAX, dtype=cv.CV_32F)            
 

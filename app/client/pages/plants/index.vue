@@ -158,18 +158,23 @@ export default {
     async getPredictions() {
       this.$v.$touch()
       if (!this.$v.$invalid) {
-        this.isValid = false
-        this.isLoading = true
-        this.predictionInProgress = true
-        const payload = { 'number_img': this.selectedSlider, 'spacies': this.selectedSpecies, 'desease': this.selectedDesease, 'ml_model': this.mlModelSelected, 'dp_model': this.dpModelSelected }
-        const request = await this.$axios.post('/models/randimg', payload);
+        try {
+            this.isValid = false
+            this.isLoading = true
+            this.predictionInProgress = true
+            const payload = { 'number_img': this.selectedSlider, 'spacies': this.selectedSpecies, 'desease': this.selectedDesease, 'ml_model': this.mlModelSelected, 'dp_model': this.dpModelSelected }
+            const request = await this.$axios.post('/models/random-img', payload);
 
-        this.results = [];
-        Object.keys(request.data.result).forEach(key => {
-          this.results.push(request.data.result[key]);
-        });
-        this.isLoading = false
-        this.predictionInProgress = false
+            this.results = [];
+            Object.keys(request.data.result).forEach(key => {
+              this.results.push(request.data.result[key]);
+            });
+            this.isLoading = false
+            this.predictionInProgress = false
+        } catch(error) {
+            // eslint-disable-next-line no-console
+            console.error(error)
+        }
       } else {
         this.errorMessage = "Data selection is not valid. Please select the valid ones"
         this.isValid = true

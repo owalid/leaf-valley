@@ -143,19 +143,24 @@ export default {
     async getPredictions() {
       this.$v.$touch()
       if (!this.$v.$invalid) {
-        this.isValid = false
-        this.isLoading = true
-        this.predictionInProgress = true
-        const payload = { 'class_name': (this.selectedClass) ? this.selectedClass + '/' + this.fileName : null, 
-                          'b64Files': this.b64Files, 'ml_model': this.mlModelSelected, 'dp_model': this.dpModelSelected }
-        const request = await this.$axios.post('/models/selimg', payload);
+        try {
+            this.isValid = false
+            this.isLoading = true
+            this.predictionInProgress = true
+            const payload = { 'class_name': (this.selectedClass) ? this.selectedClass + '/' + this.fileName : null, 
+                              'b64Files': this.b64Files, 'ml_model': this.mlModelSelected, 'dp_model': this.dpModelSelected }
+            const request = await this.$axios.post('/models/select-img', payload);
 
-        this.results = [];
-        Object.keys(request.data.result).forEach(key => {
-          this.results.push(request.data.result[key]);
-        });
-        this.isLoading = false
-        this.predictionInProgress = false
+            this.results = [];
+            Object.keys(request.data.result).forEach(key => {
+              this.results.push(request.data.result[key]);
+            });
+            this.isLoading = false
+            this.predictionInProgress = false
+          } catch(error) {
+              // eslint-disable-next-line no-console
+              console.error(error)
+          }
       } else {
         this.errorMessage = "Data selection is not valid. Please select the valid ones"
         this.isValid = true
