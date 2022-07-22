@@ -99,15 +99,14 @@ export default {
     }
   },
   async asyncData({ $axios }) {
-    const resMLModels = await $axios.post('/models/', {'md_grp': 'ML'})
-    const resDPModels = await $axios.post('/models/', {'md_grp': 'DP'})
+    const resModels = await $axios.get('/models/')
     const resPlants = await $axios.get('/models/plants')
     const species = Object.keys(resPlants.data.result.plants)
     return {
       species,
       plants: resPlants.data.result.plants,
-      dpModels: resDPModels.data.result.models,
-      mlModels: resMLModels.data.result.models,
+      dpModels: resModels.data.result.models.DP,
+      mlModels: resModels.data.result.models.ML,
     }
   },
   data() {

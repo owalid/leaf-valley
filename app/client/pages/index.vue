@@ -43,10 +43,10 @@ export default {
   name: 'IndexPage',
   components: { RenderPredictionResult},
   async asyncData({ $axios }) {
-    const res = await $axios.post('/models/', {'md_grp': 'DP'})
+    const res = await $axios.get('/models/')
     const {result} = res.data
     return {
-      models: result.models,
+      models: result.models.DP,
     }
   },
   data() {

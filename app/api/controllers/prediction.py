@@ -1,5 +1,4 @@
 import os
-from flask import current_app
 import io
 import sys
 import h5py
@@ -7,53 +6,76 @@ import json
 import base64
 import random
 import joblib
+import warnings
 import numpy as np
 import pandas as pd
-import warnings
-import concurrent.futures
 from itertools import repeat
-import parmap
+from flask import current_app
 
 import cv2 as cv
-from PIL import Image, ImageEnhance
+from PIL import Image
 from plantcv import plantcv as pcv
-from utils.mixins import create_response, serialize_list
-# from tensorflow import keras
+from utils.mixins import create_response
 
 import tensorflow as tf
 from keras.models import load_model
 
-from inspect import getsourcefile
-import os.path as path, sys
-current_dir = path.dirname(path.abspath(getsourcefile(lambda:0)))
-current_dir = current_dir[:current_dir.rfind(path.sep)]
-current_dir = current_dir[:current_dir.rfind(path.sep)]
-sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
-from process.deep_learning.metrics import recall_m, precision_m, f1_m
-from utilities.utils import get_df, set_plants_dict, update_data_dict
-
-from utilities.remove_background_functions import remove_bg
-from utilities.extract_features import get_pyfeats_features, get_lpb_histogram, get_hue_moment, get_haralick, get_hsv_histogram, get_lab_histogram, get_graycoprops, get_lab_img, get_hsv_img
-
-from datetime import datetime as dt
 from tqdm import tqdm
+from datetime import datetime as dt
+from inspect import getsourcefile
+
+current_dir = os.path.dirname(os.path.abspath(getsourcefile(lambda:0)))
+current_dir = current_dir[:current_dir.rfind(os.path.sep)]
+current_dir = current_dir[:current_dir.rfind(os.path.sep)]
+sys.path.insert(0, current_dir[:current_dir.rfind(os.path.sep)])
+
+from process.deep_learning.metrics import recall_m, precision_m, f1_m
+from utilities.prepare_features import prepare_features
+from utilities.remove_background_functions import remove_bg
+from utilities.utils import get_df, set_plants_dict, CV_NORMALIZE_TYPE
 
 warnings.filterwarnings("ignore")
 
-# from flask import jsonify
 
-class_names = None
-models = {}
+models_dict = {}
 
 class PredictionController:
-    def get_models(md_grp):
-        models_dir_path = '../../data/models_saved'
-        models_dir_exist = os.path.isdir(models_dir_path)
-        all_models = []
-        if models_dir_exist:
-            all_models = [f.split(".")[0] for f in os.listdir(models_dir_path) if f'{md_grp}_' in f and ((f.split(".")[-1] == 'h5') or ((f.split(".")[-2] == 'pkl') and (f.split(".")[-1] == 'z')))]
-            all_models.sort()
-        return create_response(data={'models': all_models})
+    def load_models(md, md_grp):
+        if md in models_dict.keys():
+            return models_dict[md]
+
+        custom_objects={'recall_m': recall_m, 'precision_m': precision_m, 'f1_m': f1_m}
+        # Load DP models
+        if md_grp == 'DP':
+            model_path = f'../../data/models_saved/{md}.h5'
+            if os.path.exists(model_path) and md not in models_dict.keys():
+                print(f'Info {dt.now()} : Loading {md} model\t.....')
+                models_dict[md] = load_model(model_path, custom_objects)
+    
+        # Load ML models
+        if md_grp == 'ML':
+            model_path = f'../../data/models_saved/{md}.pkl.z'
+            if os.path.exists(model_path) and md not in models_dict.keys():
+                print(f'Info {dt.now()} : Loading {md} model\t.....')
+                models_dict[md] = joblib.load(model_path)
+        
+        print(f'Info {dt.now()} : Loading models done >>>>>')
+        return models_dict[md]
+
+    def get_models():
+        models = {}
+
+        for md_grp in ['ML', 'DP']:
+            models_dir_path = '../../data/models_saved'
+            models_dir_exist = os.path.isdir(models_dir_path)
+            all_models = []
+            if models_dir_exist:
+                all_models = [f.split(".")[0] for f in os.listdir(models_dir_path) if f'{md_grp}_' in f and ((f.split(".")[-1] == 'h5') or ((f.split(".")[-2] == 'pkl') and (f.split(".")[-1] == 'z')))]
+                all_models.sort(reverse=True)
+            models[md_grp] = all_models
+
+        
+        return create_response(data={'models': models})
 
     def get_plants():
         data_dir = '../../data/no_augmentation'
@@ -66,48 +88,15 @@ class PredictionController:
         classes.sort()
         return create_response(data={'classes': classes})
 
-    def generate_img_without_bg(mask, raw_img):
-        im = Image.fromarray(raw_img)
-        enhancer = ImageEnhance.Sharpness(im)
-        pill_img = enhancer.enhance(2)
-        masked_img = np.array(pill_img)
-        masked_img = cv.resize(masked_img, (256,256))
-        
-        return masked_img
-
-    def get_ml_features(f='', path='', bgr_img=None):      
+    def get_ml_features(f='', path='', options_dataset={}, bgr_img=None):      
         # # Image processing
         if bgr_img is None:
             bgr_img, _, _ = pcv.readimage(os.path.join(path,f), mode='bgr')
-        bgr_img = cv.resize(np.array(bgr_img), (256,256))
-        bgr_img = cv.cvtColor(bgr_img, cv.COLOR_BGR2RGB)
-        mask, _ = remove_bg(bgr_img)
-        masked_img = PredictionController.generate_img_without_bg(mask, bgr_img)
-
-        # FEATURES MACHINE LEARNING
+        rgb_img = cv.cvtColor(bgr_img, cv.COLOR_BGR2RGB)
         data = {}
-        features = get_graycoprops(masked_img)
-        for feature in features:
-            data = update_data_dict(data, feature, features[feature])
-        features = get_lpb_histogram(masked_img)
-        for feature in features:
-            data = update_data_dict(data, feature, features[feature])
-        features = get_hue_moment(masked_img)
-        for feature in features:
-            data = update_data_dict(data, feature, features[feature])
-        features = get_haralick(masked_img)
-        for feature in features:
-            data = update_data_dict(data, feature, features[feature])
-        features = get_hsv_histogram(masked_img)
-        for feature in features:
-            data = update_data_dict(data, feature, features[feature])
-        features = get_lab_histogram(masked_img)
-        for feature in features:
-            data = update_data_dict(data, feature, features[feature])
-        pyfeats_features = get_pyfeats_features(bgr_img, mask)
-        for feature in pyfeats_features:
-            data = update_data_dict(data, feature, pyfeats_features[feature])
-
+        data, _ = prepare_features(data, rgb_img, options_dataset['features'], options_dataset['should_remove_bg'], options_dataset['size_img'], 
+                                   CV_NORMALIZE_TYPE[options_dataset['normalize_type']] if options_dataset['normalize_type'] else False, options_dataset['crop_img'])
+ 
         df = pd.DataFrame.from_dict(data)
         df.index = [f]
 
@@ -145,7 +134,9 @@ class PredictionController:
         return df
 
     def dp_predict(model, class_names, folders=[], data_dir='', img_lst=[], class_name=['']):
-        for f in folders:
+        if len(folders) > 0:
+            img_lst = []
+        for f in folders:           
             bgr_img, _, _ = pcv.readimage(os.path.join(data_dir,f), mode='bgr')
             img_lst.append(bgr_img)
 
@@ -155,12 +146,13 @@ class PredictionController:
             img = cv.resize(np.array(img), tuple(model.layers[0].get_output_at(0).get_shape().as_list()[1:-1]))
             img = cv.normalize(img, None, alpha=0, beta=1, norm_type=cv.NORM_MINMAX, dtype=cv.CV_32F)
             images = np.array(img[tf.newaxis, ...]) if images is None else np.concatenate((images, np.array(img[tf.newaxis, ...])), axis=0) 
-
+        
         del img_lst
 
         # get prediction labels
         df = pd.DataFrame(index=folders if folders != [] else class_name)
         y = model.predict(images)
+        del images
 
         df['prediction_label'] = [class_names[le] for le in np.argmax(y, axis=1)]
         df['proba'] = y.max(axis=1)
@@ -198,7 +190,6 @@ class PredictionController:
             bgr_img = cv.resize(np.array(bgr_img), (256,256))
             rgb_img = cv.cvtColor(bgr_img, cv.COLOR_BGR2RGB)
             _, masked_img = remove_bg(bgr_img)
-            # masked_img = PredictionController.generate_img_without_bg(mask, masked_img)
 
             # convert numpy array image to base64
             _, rgb_img = cv.imencode('.jpg', bgr_img)
@@ -269,41 +260,40 @@ class PredictionController:
         # ML model Processing
         if ml_model:
             # protect to LFI and RFI attacks
-            ml_model = path.basename(ml_model)
+            ml_model = os.path.basename(ml_model)
             ml_model = ml_model.replace("%", '')
             if PredictionController.check_hacking(ml_model):
                 return {'error': 'Incorrect model name don\'t try to hack us.'}
         
             model_path = f'../../data/models_saved/{ml_model}.pkl.z'
             if os.path.exists(model_path):
-                print('Info : Start ML model processing at :', dt.now())
-                df_features = pd.concat(list(tqdm(current_app._executor.map(PredictionController.get_ml_features,folders, repeat(data_dir)), total=len(folders))))
-                ml_model_dict = joblib.load(model_path)
+                print(f'Info {dt.now()} : Start {ml_model} model processing')
+                ml_model_dict = PredictionController.load_models(ml_model, 'ML')
+                df_features = pd.concat(list(tqdm(current_app._executor.map(PredictionController.get_ml_features, folders, repeat(data_dir), repeat(ml_model_dict['options_dataset'])), total=len(folders))))
                 ml_df = PredictionController.ml_predict(ml_model_dict, df_features)
-                print('Info : End ML model proessing at :', dt.now())
+                print(f'Info {dt.now()} : End {ml_model} model processing')
             else:
                 return {'error': f'{ml_model} model not found'}   
 
         # Load DP model
         if dp_model:
             # protect to LFI and RFI attacks
-            dp_model = path.basename(dp_model)
+            dp_model = os.path.basename(dp_model)
             dp_model = dp_model.replace("%", '')
             if PredictionController.check_hacking(dp_model):
                 return {'error': 'Incorrect model name don\'t try to hack us.'}
         
             model_path = f'../../data/models_saved/{dp_model}.h5'
             if os.path.exists(model_path):
-                print('Info : Start DP model processing at :', dt.now())
-                custom_objects={'recall_m': recall_m, 'precision_m': precision_m, 'f1_m': f1_m}
-                models[dp_model] = load_model(model_path, custom_objects)
+                print(f'Info {dt.now()} : Start {dp_model} model processing')
+                dp_model_ins = PredictionController.load_models(dp_model, 'DP')
                 f = h5py.File(model_path, mode='r')
                 if 'class_names' in f.attrs and len(f.attrs['class_names']) > 0:
                     class_names = f.attrs.get('class_names')
                     class_names = json.loads(class_names)
                     f.close()
-                    dp_df = PredictionController.dp_predict(models[dp_model], class_names, folders=folders, data_dir=data_dir)
-                    print('Info : End DP model proessing at :', dt.now())
+                    dp_df = PredictionController.dp_predict(dp_model_ins, class_names, folders=folders, data_dir=data_dir)
+                    print(f'Info {dt.now()} : End {dp_model} model processing')
                 else:
                     f.close()
                     return create_response(data={'error': 'Error don\'t have classes for classification.'}, status=500)
@@ -347,54 +337,51 @@ class PredictionController:
                 img_dict['comment'] = cmt[0]['comment']
         
         # Image processing
-        bgr_img = np.array(Image.open(io.BytesIO(base64.b64decode(b64File))))
-        bgr_img = cv.resize(np.array(bgr_img), (256,256))
-        _, masked_img = remove_bg(bgr_img)
-        masked_img = cv.cvtColor(masked_img, cv.COLOR_BGR2RGB)
+        rgb_img = np.array(Image.open(io.BytesIO(base64.b64decode(b64File))))
+        bgr_img = cv.cvtColor(rgb_img, cv.COLOR_RGB2BGR)
+        _, masked_img = remove_bg(cv.resize(np.array(bgr_img), (256,256)))
 
         # Load ML model
         if ml_model:
             # protect to LFI and RFI attacks
-            ml_model = path.basename(ml_model)
+            ml_model = os.path.basename(ml_model)
             ml_model = ml_model.replace("%", '')
             if PredictionController.check_hacking(ml_model):
                 return {'error': 'Incorrect model name don\'t try to hack us.'}
 
             model_path = f'../../data/models_saved/{ml_model}.pkl.z'
             if os.path.exists(model_path):
-                print('Info : Start ML model processing at :', dt.now())
-                df_features = PredictionController.get_ml_features(bgr_img=bgr_img)
+                print(f'Info {dt.now()} : Start {ml_model} model processing')
+                ml_model_dict = PredictionController.load_models(ml_model, 'ML')
+                df_features = PredictionController.get_ml_features(options_dataset=ml_model_dict['options_dataset'], bgr_img=bgr_img)
                 df_features.index = [class_name] if class_name else ['___/(0)']
-                ml_model_dict = joblib.load(model_path)
                 ml_df = PredictionController.ml_predict(ml_model_dict, df_features)
-                print('Info : End ML model proessing at :', dt.now())
+                print(f'Info {dt.now()} : End {ml_model} model proessing')
             else:
                 return {'error': f'{ml_model} model not found'}   
 
         # Load DP model
         if dp_model:
             # protect to LFI and RFI attacks
-            dp_model = path.basename(dp_model)
+            dp_model = os.path.basename(dp_model)
             dp_model = dp_model.replace("%", '')
             if PredictionController.check_hacking(dp_model):
                 return {'error': 'Incorrect model name don\'t try to hack us.'}
         
             model_path = f'../../data/models_saved/{dp_model}.h5'
             if os.path.exists(model_path):
-                print('strat loading dp model at :', dt.now())
-                custom_objects={'recall_m': recall_m, 'precision_m': precision_m, 'f1_m': f1_m}
-                models[dp_model] = load_model(model_path, custom_objects)
+                print(f'Info {dt.now()} : Strat {dp_model} model processing')
+                dp_model_ins = PredictionController.load_models(dp_model, 'DP')
                 f = h5py.File(model_path, mode='r')
                 if 'class_names' in f.attrs and len(f.attrs['class_names']) > 0:
                     class_names = f.attrs.get('class_names')
                     class_names = json.loads(class_names)
                     f.close()                   
-                    dp_df = PredictionController.dp_predict(models[dp_model], class_names, img_lst=[bgr_img], class_name=[class_name] if class_name else ['___/(0)'])
-                    print('Info : End DP model proessing at :', dt.now())
+                    dp_df = PredictionController.dp_predict(dp_model_ins, class_names, img_lst=[rgb_img], class_name=[class_name] if class_name else ['___/(0)'])
+                    print(f'Info {dt.now()} : End {dp_model} model proessing')
                 else:
                     f.close()
                     return create_response(data={'error': 'Error don\'t have classes for classification.'}, status=500)
-                print('end loading dp model at :', dt.now())
             else:
                 return {'error': f'{dp_model} model not found'}   
 
@@ -431,7 +418,7 @@ class PredictionController:
     def predict(b64img, model_name, should_remove_bg):
         
         # protect to LFI and RFI attacks
-        model_name = path.basename(model_name)
+        model_name = os.path.basename(model_name)
         model_name = model_name.replace("%", '')
         if PredictionController.check_hacking(model_name):
             return create_response(data={'error': 'Incorrect model name don\'t try to hack us.'}, status=500)
@@ -441,7 +428,7 @@ class PredictionController:
         
         if model_exist:
             custom_objects={'recall_m': recall_m, 'precision_m': precision_m, 'f1_m': f1_m}
-            models[model_name] = load_model(model_path, custom_objects)
+            dp_model_ins = load_model(model_path, custom_objects)
             f = h5py.File(model_path, mode='r')
             if 'class_names' in f.attrs and len(f.attrs['class_names']) > 0:
                 class_names = f.attrs.get('class_names')
@@ -451,7 +438,7 @@ class PredictionController:
                 f.close()
                 return create_response(data={'error': 'Error don\'t have classes for classification.'}, status=500)
 
-            model = models[model_name]
+            model = dp_model_ins
             base64_decoded = base64.b64decode(b64img)
             image = Image.open(io.BytesIO(base64_decoded))
             image_np = np.array(image)
@@ -459,7 +446,7 @@ class PredictionController:
             
             # call remove background function
             if should_remove_bg:
-                _, new_img = im_withoutbg_b64
+                new_img = im_withoutbg_b64
             else:
                 new_img = image_np
                 

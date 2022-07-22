@@ -1,21 +1,13 @@
-from statistics import mode
-from flask import Blueprint, jsonify
-from flask import request
-from utils.mixins import create_response, serialize_list
-from controllers.prediction import PredictionController
 import os
+from flask import Blueprint, request
+from controllers.prediction import PredictionController
+from utils.mixins import create_response
+
 mod = Blueprint('predict_routes', __name__, url_prefix='/api/models')
 
-@mod.route('/', methods=[ 'POST' ])
+@mod.route('/')
 def get_models():
-    data = request.get_json()
-    if data:
-        md_grp = data.get('md_grp')
-        if md_grp in ['ML','DP']:
-            return PredictionController.get_models(md_grp)
-        return create_response(data={'error': 'Incorrect model group'}, status=500)
-    else:
-        return create_response(data={'error': 'Data request empty'}, status=500)
+    return PredictionController.get_models()
 
 @mod.route('/predict', methods=[ 'POST' ])
 def get_prediction():

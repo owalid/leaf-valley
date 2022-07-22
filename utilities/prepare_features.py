@@ -137,6 +137,8 @@ def prepare_features(data, rgb_img, target_features, should_remove_bg, size_img=
   if ('pyfeats' in target_features) & (rgb_img is not None):
     if mask is None:
       mask, masked_img = remove_bg(original_rgb_img)
+    else:
+      masked_img = original_rgb_img
       
     pyfeats_features = get_pyfeats_features(masked_img, mask)
     for feature in pyfeats_features:

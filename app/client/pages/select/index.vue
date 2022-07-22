@@ -88,13 +88,12 @@ export default {
     }
   },
   async asyncData({ $axios }) {
-    const resMLModels = await $axios.post('/models/', { 'md_grp': 'ML' })
-    const resDPModels = await $axios.post('/models/', { 'md_grp': 'DP' })
+    const resModels = await $axios.get('/models/')
     const resClasses = await $axios.get('/models/classes')
     return {
       classes: resClasses.data.result.classes,
-      dpModels: resDPModels.data.result.models,
-      mlModels: resMLModels.data.result.models,
+      dpModels: resModels.data.result.models.DP,
+      mlModels: resModels.data.result.models.ML,
     }
   },
   data() {
