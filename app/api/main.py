@@ -4,6 +4,7 @@ from flask import g
 import os
 from flask import Flask
 from flask_cors import CORS
+from modules.s3_module import S3Module
 
 ENV = os.environ.get("FLASK_ENV", "dev")
 
@@ -27,6 +28,7 @@ def create_app(test_config=None):
     # why blueprints http://flask.pocoo.org/docs/1.0/blueprints/
     app.register_blueprint(predict_bp.mod)
     app.register_blueprint(predict_bp.com)
+    app._s3_module = S3Module()
 
     return app
 

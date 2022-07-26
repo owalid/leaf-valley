@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 from itertools import repeat
 from flask import current_app
+import tempfile
 
 import cv2 as cv
 from PIL import Image
@@ -19,10 +20,12 @@ from utils.mixins import create_response
 
 import tensorflow as tf
 from keras.models import load_model
+from keras.applications import convnext
 
 from tqdm import tqdm
 from datetime import datetime as dt
 from inspect import getsourcefile
+
 
 current_dir = os.path.dirname(os.path.abspath(getsourcefile(lambda:0)))
 current_dir = current_dir[:current_dir.rfind(os.path.sep)]
@@ -30,72 +33,158 @@ current_dir = current_dir[:current_dir.rfind(os.path.sep)]
 sys.path.insert(0, current_dir[:current_dir.rfind(os.path.sep)])
 
 from process.deep_learning.metrics import recall_m, precision_m, f1_m
-from utilities.prepare_features import prepare_features
 from utilities.remove_background_functions import remove_bg
-from utilities.utils import get_df, set_plants_dict, CV_NORMALIZE_TYPE
+from utilities.utils import get_df, set_plants_dict, preprocess_pipeline_prediction
 
 warnings.filterwarnings("ignore")
 
 
 models_dict = {}
+FLASK_ENV = os.environ.get("FLASK_ENV", "dev")
+s3_module = current_app._s3_module
+comment_filename = '../data/plants_comments.json' if FLASK_ENV == 'dev' else 'data/plants_comments.json'
+custom_objects={'recall_m': recall_m, 'precision_m': precision_m, 'f1_m': f1_m, "LayerScale": convnext.LayerScale}
 
 class PredictionController:
-    def load_models(md, md_grp):
-        if md in models_dict.keys():
-            return models_dict[md]
-
-        custom_objects={'recall_m': recall_m, 'precision_m': precision_m, 'f1_m': f1_m}
-        # Load DP models
-        if md_grp == 'DP':
-            model_path = f'../../data/models_saved/{md}.h5'
-            if os.path.exists(model_path) and md not in models_dict.keys():
-                print(f'Info {dt.now()} : Loading {md} model\t.....')
-                models_dict[md] = load_model(model_path, custom_objects)
+    def is_production():
+        return FLASK_ENV == 'production' or not PredictionController.have_s3_information()
     
-        # Load ML models
-        if md_grp == 'ML':
-            model_path = f'../../data/models_saved/{md}.pkl.z'
-            if os.path.exists(model_path) and md not in models_dict.keys():
-                print(f'Info {dt.now()} : Loading {md} model\t.....')
-                models_dict[md] = joblib.load(model_path)
+    def have_s3_information():
+        return s3_module.S3_ACCESS_KEY_ID and s3_module.S3_SECRET_ACCESS_KEY and s3_module.S3_BASE_ENDPOINT_URL and s3_module.S3_BUCKET_NAME
+    
+    def get_and_store_models(model_data, model_name):
+        if model_name in models_dict.keys():
+            return models_dict[model_name]
         
-        print(f'Info {dt.now()} : Loading models done >>>>>')
-        return models_dict[md]
+        if PredictionController.is_production() and models_dict.keys() > 3:
+            models_dict = dict(list(models_dict.items())[-2:])
+        
+        models_dict[model_name] = {
+            'model': model_data.model,
+            'classes': model_data.classes,
+            'options_datasets': model_data.options_datasets
+        }
+        
+    def load_deeplearning_model(model_path, model_name):
+        if FLASK_ENV == 'dev':
+            dp_model_ins = load_model(model_path, custom_objects)
+            f = h5py.File(model_path, mode='r')
+            if 'class_names' in f.attrs and len(f.attrs['class_names']) > 0 and 'options_dataset' in f.attrs and len(f.attrs['options_dataset']) > 0:
+                options_dataset = f.attrs.get('options_dataset')
+                options_dataset = json.loads(options_dataset)
+                class_names = f.attrs.get('class_names')
+                class_names = json.loads(class_names)
+                f.close()
+            else:
+                f.close()
+                return None
+
+        else:
+            with tempfile.NamedTemporaryFile(mode='w+b') as f:
+                s3_module.s3_client.download_fileobj(s3_module.S3_BUCKET_NAME, os.path.join(s3_module.S3_MODELS_FOLDER, model_name + '.h5', f))
+                dp_model_ins = load_model(f.name, custom_objects)
+                h5file = h5py.File(f.name, mode='r')
+                if 'class_names' in h5file.attrs and len(h5file.attrs['class_names']) > 0 and 'options_dataset' in h5file.attrs and len(h5file.attrs['options_dataset']) > 0:
+                    options_dataset = f.attrs.get('options_dataset')
+                    options_dataset = json.loads(options_dataset)
+                    class_names = h5file.attrs.get('class_names')
+                    class_names = json.loads(class_names)
+                    h5file.close()
+                else:
+                    h5file.close()
+                    return None
+                
+        return dp_model_ins, options_dataset, class_names
+    
+    def load_ml_model(model_path, model_name):
+        if FLASK_ENV == 'dev':
+            return joblib.load(model_path)
+        else:
+           with io.BytesIO() as data:
+                s3_module.s3_client.download_fileobj(s3_module.S3_BUCKET_NAME, os.path.join(s3_module.S3_MODELS_FOLDER, model_name + '.pkl.z'), data)
+                data.seek(0)    # move back to the beginning after writing
+                model = joblib.load(data)
+                
+        return model
+            
+    def load_models(model_name, md_grp):
+        if model_name in models_dict.keys():
+            return models_dict[model_name]
+
+        if PredictionController.is_production() and models_dict.keys() >= 3:
+            models_dict = dict(list(models_dict.items())[-2:])
+            
+        ext = '.h5' if md_grp == 'DP' else '.pkl.z'
+        model_path = f'../../data/models_saved/{model_name}{ext}'
+        
+        if not PredictionController.is_production() and os.path.exists(model_path):
+            return None
+        
+        if md_grp == 'DP':
+            model_loaded = PredictionController.load_deeplearning_model(model_path, model_name)
+            if not model_loaded:
+                return None
+            
+            model, options_dataset, class_names = model_loaded
+            models_dict[model_name] = { 'model': model, 'options_dataset': options_dataset, 'class_names': class_names }
+            
+        else:
+            ml_model = PredictionController.load_ml_model(model_path, model_name)
+            
+            if not ml_model:
+                return None
+            models_dict[model_name] = ml_model
+    
+        return models_dict[model_name]
 
     def get_models():
         models = {}
-
+            
         for md_grp in ['ML', 'DP']:
-            models_dir_path = '../../data/models_saved'
-            models_dir_exist = os.path.isdir(models_dir_path)
-            all_models = []
-            if models_dir_exist:
-                all_models = [f.split(".")[0] for f in os.listdir(models_dir_path) if f'{md_grp}_' in f and ((f.split(".")[-1] == 'h5') or ((f.split(".")[-2] == 'pkl') and (f.split(".")[-1] == 'z')))]
+            if PredictionController.is_production():
+                all_models = [f.split(".")[0] for f in s3_module.models_list if f'{md_grp}_' in f and ((f.split(".")[-1] == 'h5') or ((f.split(".")[-2] == 'pkl') and (f.split(".")[-1] == 'z')))]
                 all_models.sort(reverse=True)
-            models[md_grp] = all_models
-
-        
+                models[md_grp] = all_models
+            else:
+                models_dir_path = '../../data/models_saved'
+                models_dir_exist = os.path.isdir(models_dir_path)
+                all_models = []
+                if models_dir_exist:
+                    all_models = [f.split(".")[0] for f in os.listdir(models_dir_path) if f'{md_grp}_' in f and ((f.split(".")[-1] == 'h5') or ((f.split(".")[-2] == 'pkl') and (f.split(".")[-1] == 'z')))]
+                    all_models.sort(reverse=True)
+                models[md_grp] = all_models
+                
         return create_response(data={'models': models})
 
     def get_plants():
-        data_dir = '../../data/no_augmentation'
-        plants_dict = set_plants_dict(get_df(data_dir))
+        if PredictionController.is_production():
+            plants_dict = set_plants_dict(s3_module.get_df_leafs())
+        else:
+            data_dir = '../../data/no_augmentation'
+            plants_dict = set_plants_dict(get_df(data_dir))
         return create_response(data={'plants': plants_dict})
 
     def get_classes():
-        data_dir = '../../data/no_augmentation'
-        classes = [f for f in os.listdir(data_dir) if f != 'Background_without_leaves']
+        if PredictionController.is_production():
+            lst_dir = s3_module.get_folders_leafs()
+        else:
+            data_dir = '../../data/no_augmentation'
+            lst_dir = os.listdir(data_dir)
+            
+        classes = [f for f in lst_dir if f != 'Background_without_leaves']
         classes.sort()
         return create_response(data={'classes': classes})
 
     def get_ml_features(f='', path='', options_dataset={}, bgr_img=None):      
-        # # Image processing
+        # Image processing
         if bgr_img is None:
-            bgr_img, _, _ = pcv.readimage(os.path.join(path,f), mode='bgr')
+            if PredictionController.is_production():
+                bgr_img = s3_module.get_image_from_path(os.path.join(path, f))
+            else:
+                bgr_img, _, _ = pcv.readimage(os.path.join(path, f), mode='bgr')
+
         rgb_img = cv.cvtColor(bgr_img, cv.COLOR_BGR2RGB)
-        data = {}
-        data, _ = prepare_features(data, rgb_img, options_dataset['features'], options_dataset['should_remove_bg'], options_dataset['size_img'], 
-                                   CV_NORMALIZE_TYPE[options_dataset['normalize_type']] if options_dataset['normalize_type'] else False, options_dataset['crop_img'])
+        data = preprocess_pipeline_prediction(rgb_img, options_dataset)
  
         df = pd.DataFrame.from_dict(data)
         df.index = [f]
@@ -136,18 +225,21 @@ class PredictionController:
             
         return df
 
-    def dp_predict(model, class_names, folders=[], data_dir='', img_lst=[], class_name=['']):
+    def dp_predict(model, class_names, options_dataset, folders=[], data_dir='', img_lst=[], class_name=['']):
         if len(folders) > 0:
             img_lst = []
-        for f in folders:           
-            bgr_img, _, _ = pcv.readimage(os.path.join(data_dir,f), mode='bgr')
+            
+        for f in folders:
+            if PredictionController.is_production():
+                bgr_img = s3_module.get_image_from_path(f)
+            else:
+                bgr_img, _, _ = pcv.readimage(os.path.join(data_dir,f), mode='bgr')
+
             img_lst.append(bgr_img)
 
         images = None
         for img in img_lst:
-            img = cv.cvtColor(cv.resize(np.array(img), (256,256)), cv.COLOR_BGR2RGB)
-            img = cv.resize(np.array(img), tuple(model.layers[0].get_output_at(0).get_shape().as_list()[1:-1]))
-            img = cv.normalize(img, None, alpha=0, beta=1, norm_type=cv.NORM_MINMAX, dtype=cv.CV_32F)
+            img = preprocess_pipeline_prediction(img, options_dataset)
             images = np.array(img[tf.newaxis, ...]) if images is None else np.concatenate((images, np.array(img[tf.newaxis, ...])), axis=0) 
         
         del img_lst
@@ -171,10 +263,10 @@ class PredictionController:
 
         return df
 
-    def get_prediction_output(df, dict):
+    def get_prediction_output(df, dict, key):
         if df is not None:
             df = df.loc[((df.species==dict['img_species']) & (df.desease==dict['img_desease']) & (df.img_num==dict['img_num']))]
-            dict['ml_prediction'] = {
+            dict[key] = {
                 'class': df['prediction_label'].squeeze(),
                 'score': f'{100*float(df["proba"].squeeze()):.2f}',
                 'matching': bool(df['matching'].squeeze()),                    
@@ -191,14 +283,18 @@ class PredictionController:
 
             # add comment if it exits
             img_dict['comment'] = ''
-            if len(comments)>0:
+            if len(comments) > 0:
                 cmt = [x for x in comments if (x['species'] == img_dict['img_species']) and (x['desease'] == img_dict['img_desease']) and (x['img_num'] == img_dict['img_num'])]
-                if len(cmt)>0:
+                if len(cmt) > 0:
                     img_dict['comment'] = cmt[0]['comment']
             
             # # Image processing
-            bgr_img, _, _ = pcv.readimage(os.path.join(data_dir,f), mode='bgr')
-            bgr_img = cv.resize(np.array(bgr_img), (256,256))
+            if PredictionController.is_production():
+                bgr_img = s3_module.get_image_from_path(f)
+            else:
+                bgr_img, _, _ = pcv.readimage(os.path.join(data_dir,f), mode='bgr')
+
+            bgr_img = cv.resize(np.array(bgr_img), (256, 256))
             rgb_img = cv.cvtColor(bgr_img, cv.COLOR_BGR2RGB)
             _, masked_img = remove_bg(bgr_img)
 
@@ -215,16 +311,16 @@ class PredictionController:
             del bgr_img, rgb_img, masked_img
 
             # Get ML prediction output
-            PredictionController.get_prediction_output(ml_df, img_dict)
+            PredictionController.get_prediction_output(ml_df, img_dict, 'ml_prediction')
 
             # Get DP prediction output
-            PredictionController.get_prediction_output(dp_df, img_dict)  
+            PredictionController.get_prediction_output(dp_df, img_dict, 'dp_prediction')
 
             output.append(img_dict)
 
         return output             
 
-    def check_hacking(model):
+    def check_lfi_attack(model):
         # protect to LFI and RFI attacks
         model = os.path.basename(model)
         model = model.replace("%", '')                       
@@ -240,13 +336,19 @@ class PredictionController:
             return create_response(data={'error': 'Incorrect date input \n Please select the correct ones !!!'}, status=500)
 
         data_dir = '../../data/no_augmentation'
-        comment_filename = '../../data/plants_comments.json'
-        df = get_df(data_dir)
+        
+        if PredictionController.is_production():
+            df = s3_module.get_df_leafs()
+        else:
+            df = get_df(data_dir)
         indexes = df.loc[((df.specie==species)|(species=='All'))&((df.disease==desease)|(desease=='All'))].index.tolist()
         
-        folders = []
-        for idx in indexes:
-            folders.append([os.path.join(idx,f) for f in os.listdir(os.path.join(data_dir,idx))])
+        if PredictionController.is_production():
+            folders = s3_module.files_leafs
+        else:
+            folders = []
+            for idx in indexes:
+                folders.append([os.path.join(idx,f) for f in os.listdir(os.path.join(data_dir,idx))])
         
         folders = sum(folders,[])
         random.shuffle(folders)
@@ -263,13 +365,11 @@ class PredictionController:
 
         # ML model Processing
         if ml_model:
-            if PredictionController.check_hacking(ml_model):
-                return {'error': 'Incorrect model name don\'t try to hack us.'}
+            if PredictionController.check_lfi_attack(ml_model):
+                return {'error': 'Incorrect model name.'}
         
-            model_path = f'../../data/models_saved/{ml_model}.pkl.z'
-            if os.path.exists(model_path):
-                print(f'Info {dt.now()} : Start {ml_model} model processing')
-                ml_model_dict = PredictionController.load_models(ml_model, 'ML')
+            ml_model_dict = PredictionController.load_models(ml_model, 'ML')
+            if ml_model_dict:
                 df_features = pd.concat(list(tqdm(current_app._executor.map(PredictionController.get_ml_features, folders, repeat(data_dir), repeat(ml_model_dict['options_dataset'])), total=len(folders))))
                 ml_df = PredictionController.ml_predict(ml_model_dict, df_features)
                 print(f'Info {dt.now()} : End {ml_model} model processing')
@@ -278,23 +378,14 @@ class PredictionController:
 
         # Load DP model
         if dp_model:
-            if PredictionController.check_hacking(dp_model):
-                return {'error': 'Incorrect model name don\'t try to hack us.'}
+            if PredictionController.check_lfi_attack(dp_model):
+                return {'error': 'Incorrect model name.'}
         
-            model_path = f'../../data/models_saved/{dp_model}.h5'
-            if os.path.exists(model_path):
-                print(f'Info {dt.now()} : Start {dp_model} model processing')
-                dp_model_ins = PredictionController.load_models(dp_model, 'DP')
-                f = h5py.File(model_path, mode='r')
-                if 'class_names' in f.attrs and len(f.attrs['class_names']) > 0:
-                    class_names = f.attrs.get('class_names')
-                    class_names = json.loads(class_names)
-                    f.close()
-                    dp_df = PredictionController.dp_predict(dp_model_ins, class_names, folders=folders, data_dir=data_dir)
-                    print(f'Info {dt.now()} : End {dp_model} model processing')
-                else:
-                    f.close()
-                    return create_response(data={'error': 'Error don\'t have classes for classification.'}, status=500)
+            data_model_loaded = PredictionController.load_models(dp_model, 'DP')
+            
+            if data_model_loaded:
+                dp_model_instance, options_dataset, class_names = data_model_loaded
+                dp_df = PredictionController.dp_predict(dp_model_instance, class_names, options_dataset, folders=folders, data_dir=data_dir)
             else:
                 return {'error': f'{dp_model} model not found'}   
 
@@ -305,7 +396,7 @@ class PredictionController:
 
     def get_selectedimage(class_name, b64File, ml_model, dp_model):
         if not (b64File and (ml_model or dp_model)):
-            return create_response(data={'error': 'Incorrect date input \n Please select the correct ones !!!'}, status=500)
+            return create_response(data={'error': 'Incorrect data input \n Please select the correct ones !!!'}, status=500)
 
         img_dict = {}
         if class_name:
@@ -318,7 +409,6 @@ class PredictionController:
             img_dict['img_num'] = None
 
         # open comment file
-        comment_filename = '../../data/plants_comments.json'
         try:
             with open(comment_filename, "r") as js_f:
                 comments = json.load(js_f)
@@ -329,53 +419,44 @@ class PredictionController:
  
         # add comment if it exits
         img_dict['comment'] = ''
-        if len(comments)>0 and class_name:
+        if len(comments) > 0 and class_name:
             cmt = [x for x in comments if (x['species'] == img_dict['img_species']) and (x['desease'] == img_dict['img_desease']) and (x['img_num'] == img_dict['img_num'])]
-            if len(cmt)>0:
+            if len(cmt) > 0:
                 img_dict['comment'] = cmt[0]['comment']
         
         # Image processing
         rgb_img = np.array(Image.open(io.BytesIO(base64.b64decode(b64File))))
         bgr_img = cv.cvtColor(rgb_img, cv.COLOR_RGB2BGR)
-        _, masked_img = remove_bg(cv.resize(np.array(bgr_img), (256,256)))
+        _, masked_img = remove_bg(cv.resize(np.array(bgr_img), (256, 256)))
 
         # Load ML model
         if ml_model:
-            if PredictionController.check_hacking(ml_model):
-                return {'error': 'Incorrect model name don\'t try to hack us.'}
+            if PredictionController.check_lfi_attack(ml_model):
+                return {'error': 'Incorrect model name.'}
 
-            model_path = f'../../data/models_saved/{ml_model}.pkl.z'
-            if os.path.exists(model_path):
-                print(f'Info {dt.now()} : Start {ml_model} model processing')
-                ml_model_dict = PredictionController.load_models(ml_model, 'ML')
+            ml_model_dict = PredictionController.load_models(ml_model, 'ML')
+            
+            if ml_model_dict:
                 df_features = PredictionController.get_ml_features(options_dataset=ml_model_dict['options_dataset'], bgr_img=bgr_img)
                 df_features.index = [class_name] if class_name else ['___/(0)']
                 ml_df = PredictionController.ml_predict(ml_model_dict, df_features)
-                PredictionController.get_prediction_output(ml_df, img_dict)                
-                print(f'Info {dt.now()} : End {ml_model} model proessing')
+                PredictionController.get_prediction_output(ml_df, img_dict)
             else:
                 return {'error': f'{ml_model} model not found'}   
 
         # Load DP model
         if dp_model:
-            if PredictionController.check_hacking(dp_model):
-                return {'error': 'Incorrect model name don\'t try to hack us.'}
+            if PredictionController.check_lfi_attack(dp_model):
+                return {'error': 'Incorrect model name.'}
         
-            model_path = f'../../data/models_saved/{dp_model}.h5'
-            if os.path.exists(model_path):
+            data_model_loaded = PredictionController.load_models(dp_model, 'DP')
+            
+            if data_model_loaded:
                 print(f'Info {dt.now()} : Strat {dp_model} model processing')
-                dp_model_ins = PredictionController.load_models(dp_model, 'DP')
-                f = h5py.File(model_path, mode='r')
-                if 'class_names' in f.attrs and len(f.attrs['class_names']) > 0:
-                    class_names = f.attrs.get('class_names')
-                    class_names = json.loads(class_names)
-                    f.close()                   
-                    dp_df = PredictionController.dp_predict(dp_model_ins, class_names, img_lst=[rgb_img], class_name=[class_name] if class_name else ['___/(0)'])
-                    PredictionController.get_prediction_output(dp_df, img_dict)
-                    print(f'Info {dt.now()} : End {dp_model} model proessing')
-                else:
-                    f.close()
-                    return create_response(data={'error': 'Error don\'t have classes for classification.'}, status=500)
+                dp_model_instance, options_dataset, class_names = data_model_loaded
+                
+                dp_df = PredictionController.dp_predict(dp_model_instance, class_names, options_dataset, img_lst=[rgb_img], class_name=[class_name] if class_name else ['___/(0)'])
+                PredictionController.get_prediction_output(dp_df, img_dict)
             else:
                 return {'error': f'{dp_model} model not found'}   
 
@@ -398,25 +479,24 @@ class PredictionController:
         # protect to LFI and RFI attacks
         model_name = os.path.basename(model_name)
         model_name = model_name.replace("%", '')
-        if PredictionController.check_hacking(model_name):
-            return create_response(data={'error': 'Incorrect model name don\'t try to hack us.'}, status=500)
+        if PredictionController.check_lfi_attack(model_name):
+            return create_response(data={'error': 'Incorrect model name.'}, status=500)
     
-        model_path = f'../../data/models_saved/{model_name}.h5'
-        model_exist = os.path.exists(model_path)
+        if FLASK_ENV == 'dev' or not PredictionController.have_s3_information:
+            model_path = f'../../data/models_saved/{model_name}.h5'
+            model_exist = os.path.exists(model_path)
+        else:
+            models_availables = PredictionController.get_s3_models()
+            model_exist = model_name in models_availables
         
         if model_exist:
-            custom_objects={'recall_m': recall_m, 'precision_m': precision_m, 'f1_m': f1_m}
-            dp_model_ins = load_model(model_path, custom_objects)
-            f = h5py.File(model_path, mode='r')
-            if 'class_names' in f.attrs and len(f.attrs['class_names']) > 0:
-                class_names = f.attrs.get('class_names')
-                class_names = json.loads(class_names)
-                f.close()
-            else:
-                f.close()
-                return create_response(data={'error': 'Error don\'t have classes for classification.'}, status=500)
-
-            model = dp_model_ins
+            if not model_name in models.keys():
+                data_model_loaded = PredictionController.load_deeplearning_model(model_path, model_name)
+                if not data_model_loaded:
+                    return create_response(data={'error': 'Error don\'t have classes for classification.'}, status=500)
+                
+                model, options_dataset, class_names = data_model_loaded
+                        
             base64_decoded = base64.b64decode(b64img)
             image = Image.open(io.BytesIO(base64_decoded))
             image_np = np.array(image)
@@ -426,10 +506,9 @@ class PredictionController:
             if should_remove_bg:
                 new_img = im_withoutbg_b64
             else:
-                new_img = image_np               
-            new_img = cv.cvtColor(new_img, cv.COLOR_BGR2RGB)
-            new_img = cv.resize(new_img, tuple(model.layers[0].get_output_at(0).get_shape().as_list()[1:-1]))
-            new_img = cv.normalize(new_img, None, alpha=0, beta=1, norm_type=cv.NORM_MINMAX, dtype=cv.CV_32F)            
+                new_img = image_np
+                
+            new_img = preprocess_pipeline_prediction(new_img, options_dataset)
 
             # get prediction labels
             y = model.predict(new_img[tf.newaxis, ...])
@@ -450,7 +529,6 @@ class PredictionController:
             return create_response(data={'error': f'{model_name} model not found'}, status=500)
             
     def process_comment(method, comment):
-        comment_filename = '../../data/plants_comments.json'
 
         with open(comment_filename, "r") as js_f:
             try:
@@ -472,7 +550,3 @@ class PredictionController:
             json.dump(comments, js_f, indent = 2)
 
         return create_response(data={'result': f'{method} with success'})
-
-
-
-            
