@@ -29,6 +29,7 @@
         </v-btn>
       </v-col>
     </v-row>
+
     <v-row v-for="result in results" :key="result.indexPayload">
       <render-prediction-result :result="result" />
     </v-row>
@@ -45,7 +46,7 @@ export default {
     const res = await $axios.get('/models/')
     const { result } = res.data
     return {
-      models: result.models,
+      models: result.models.DP,
     }
   },
   data() {
