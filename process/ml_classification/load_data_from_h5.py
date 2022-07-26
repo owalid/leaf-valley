@@ -16,7 +16,7 @@ import os
 import sys
 from inspect import getsourcefile
 current_dir = os.path.dirname(os.path.abspath(getsourcefile(lambda: 0)))
-sys.path.insert(0, current_dir[:current_dir.rfind(os.path.sep)])
+sys.path.insert(0, os.path.sep.join(current_dir.split(os.path.sep)[:-2]))
 
 from utilities.utils import local_print
 
@@ -27,7 +27,7 @@ def convert_to_df(lst):
         df[f] = list(hf[f])
     return df
 
-def load_data_from_h5(path, file, verbose = False):
+def load_data_from_h5(path, file, verbose):
     start = dt.now()
     local_print(f'Job to convert h5 file to DataFrame started at : {start}', verbose)
 
