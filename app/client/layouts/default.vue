@@ -9,7 +9,7 @@
           </v-btn>
         </v-toolbar-items>
       </v-bottom-navigation>
-      </div>
+    </div>
 
     <v-main>
       <nuxt />
@@ -23,10 +23,10 @@ export default {
   data() {
     return {
       menuItems: [
-        { title: 'Home', path: '/'},
-        { title: 'Select image', path: '/select'},
-        { title: 'Random images', path: '/plants'},
-      ]
+        { title: 'Home', path: '/' },
+        { title: 'Select image', path: '/select' },
+        { title: 'Random images', path: '/plants' },
+      ],
     }
   },
 }

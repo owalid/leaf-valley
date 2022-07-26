@@ -5,77 +5,95 @@
     </v-alert>
     <v-row class="mt-2">
       <v-col>
-        <v-select 
-        v-model="selectedSpecies" 
-        label="Species" :items="species" 
-        :error-messages="selectedSpeciesErrors"
-        :disabled="predictionInProgress"
-        dense @change="changeSpecies" />
+        <v-select
+          v-model="selectedSpecies"
+          label="Species"
+          :items="species"
+          :error-messages="selectedSpeciesErrors"
+          :disabled="predictionInProgress"
+          dense
+          @change="changeSpecies"
+        />
       </v-col>
       <v-col>
-        <v-select 
-        v-model="selectedDesease" 
-        label="Deseases" 
-        :items="plants[selectedSpecies]" 
-        :disabled="predictionInProgress"
-        dense
-        :error-messages="selectedDeseaseErrors"></v-select>
+        <v-select
+          v-model="selectedDesease"
+          label="Deseases"
+          :items="plants[selectedSpecies]"
+          :disabled="predictionInProgress"
+          dense
+          :error-messages="selectedDeseaseErrors"
+        ></v-select>
       </v-col>
       <v-col>
-        <v-select 
-        v-model="dpModelSelected" label="DP model" 
-        :items="dpModels" 
-        :disabled="predictionInProgress"
-        :error-messages="selectedModelsErrors" dense></v-select>
+        <v-select
+          v-model="dpModelSelected"
+          label="DP model"
+          :items="dpModels"
+          :disabled="predictionInProgress"
+          :error-messages="selectedModelsErrors"
+          dense
+        ></v-select>
       </v-col>
       <v-col>
-        <v-select 
-        v-model="mlModelSelected" label="ML model" 
-        :disabled="predictionInProgress"
-        :items="mlModels" :error-messages="selectedModelsErrors" dense></v-select>
+        <v-select
+          v-model="mlModelSelected"
+          label="ML model"
+          :disabled="predictionInProgress"
+          :items="mlModels"
+          :error-messages="selectedModelsErrors"
+          dense
+        ></v-select>
       </v-col>
       <v-col class="ml-8 pa-0" sm="1">
         <v-subheader class="pt-1">Number of images</v-subheader>
       </v-col>
       <v-col class="pl-0">
         <v-card-text class="pl-0">
-          <v-slider 
-          v-model="selectedSlider" 
-          max="25" 
-          min="0" 
-          step="5" 
-          thumb-color="green lighten-1"
-          color="green lighten-1" 
-          thumb-label="always"
-          :disabled="predictionInProgress"
-          :error-messages="selectedSliderErrors">
+          <v-slider
+            v-model="selectedSlider"
+            max="25"
+            min="0"
+            step="5"
+            thumb-color="green lighten-1"
+            color="green lighten-1"
+            thumb-label="always"
+            :disabled="predictionInProgress"
+            :error-messages="selectedSliderErrors"
+          >
           </v-slider>
         </v-card-text>
       </v-col>
 
-    <v-col class="mx-8">
-      <v-btn color="green lighten-1" :disabled="predictionInProgress" @click="getPredictions">
-        Predict
-      </v-btn>
-    </v-col>
-      </v-row>
+      <v-col class="mx-8">
+        <v-btn
+          color="green lighten-1"
+          :disabled="predictionInProgress"
+          @click="getPredictions"
+        >
+          Predict
+        </v-btn>
+      </v-col>
+    </v-row>
 
     <v-row v-if="isLoading" justify="center">
-      <v-progress-circular indeterminate color="green lighten-1"></v-progress-circular>
+      <v-progress-circular
+        indeterminate
+        color="green lighten-1"
+      ></v-progress-circular>
     </v-row>
     <v-row v-else>
       <v-col v-for="result in results" :key="result.indexPayload">
         <display-images-and-prediction :result="result" />
       </v-col>
     </v-row>
-
   </v-container>
 </template>
 
 <script>
 import { validationMixin } from 'vuelidate'
 import { required, requiredIf } from 'vuelidate/lib/validators'
-import DisplayImagesAndPrediction from '~/components/DisplayImagesAndPrediction';
+import DisplayImagesAndPrediction from '~/components/DisplayImagesAndPrediction'
 
 export default {
   name: 'PlantsPage',
@@ -89,12 +107,12 @@ export default {
       mlModelSelected: {
         required: requiredIf(function () {
           return !this.dpModelSelected
-        })
+        }),
       },
       dpModelSelected: {
         required: requiredIf(function () {
           return !this.mlModelSelected
-        })
+        }),
       },
     }
   },
@@ -128,26 +146,39 @@ export default {
   computed: {
     selectedSpeciesErrors() {
       const errors = []
-      if (!this.$v.selectedSpecies.$dirty) { return errors }
-      !this.$v.selectedSpecies.required && errors.push('Spicies field is required')
+      if (!this.$v.selectedSpecies.$dirty) {
+        return errors
+      }
+      !this.$v.selectedSpecies.required &&
+        errors.push('Spicies field is required')
       return errors
     },
     selectedDeseaseErrors() {
       const errors = []
-      if (!this.$v.selectedDesease.$dirty) { return errors }
-      !this.$v.selectedDesease.required && errors.push('Desease field is required')
+      if (!this.$v.selectedDesease.$dirty) {
+        return errors
+      }
+      !this.$v.selectedDesease.required &&
+        errors.push('Desease field is required')
       return errors
     },
     selectedSliderErrors() {
       const errors = []
-      if (!this.$v.selectedSlider.$dirty) { return errors }
-      (!this.$v.selectedSlider.required || this.selectedSlider <= 0) && errors.push('Number of image is required and should be positive')
+      if (!this.$v.selectedSlider.$dirty) {
+        return errors
+      }
+      ;(!this.$v.selectedSlider.required || this.selectedSlider <= 0) &&
+        errors.push('Number of image is required and should be positive')
       return errors
     },
     selectedModelsErrors() {
       const errors = []
-      if (!this.$v.mlModelSelected.$dirty && !this.$v.dpModelSelected.$dirty) { return errors }
-      !this.mlModelSelected && !this.dpModelSelected && errors.push('You must select at least one ML or PL model')
+      if (!this.$v.mlModelSelected.$dirty && !this.$v.dpModelSelected.$dirty) {
+        return errors
+      }
+      !this.mlModelSelected &&
+        !this.dpModelSelected &&
+        errors.push('You must select at least one ML or PL model')
       return errors
     },
   },
@@ -159,30 +190,37 @@ export default {
       this.$v.$touch()
       if (!this.$v.$invalid) {
         try {
-            this.isValid = false
-            this.isLoading = true
-            this.predictionInProgress = true
-            const payload = { 'number_img': this.selectedSlider, 'spacies': this.selectedSpecies, 'desease': this.selectedDesease, 'ml_model': this.mlModelSelected, 'dp_model': this.dpModelSelected }
-            const request = await this.$axios.post('/models/random-img', payload);
+          this.isValid = false
+          this.isLoading = true
+          this.predictionInProgress = true
+          const payload = {
+            number_img: this.selectedSlider,
+            spacies: this.selectedSpecies,
+            desease: this.selectedDesease,
+            ml_model: this.mlModelSelected,
+            dp_model: this.dpModelSelected,
+          }
+          const request = await this.$axios.post('/models/random-img', payload)
 
-            this.results = [];
-            Object.keys(request.data.result).forEach(key => {
-              this.results.push(request.data.result[key]);
-            });
-            this.isLoading = false
-            this.predictionInProgress = false
-        } catch(error) {
-            // eslint-disable-next-line no-console
-            console.error(error)
+          this.results = []
+          Object.keys(request.data.result).forEach((key) => {
+            this.results.push(request.data.result[key])
+          })
+          this.isLoading = false
+          this.predictionInProgress = false
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error(error)
         }
       } else {
-        this.errorMessage = "Data selection is not valid. Please select the valid ones"
+        this.errorMessage =
+          'Data selection is not valid. Please select the valid ones'
         this.isValid = true
         setInterval(() => {
-            this.isValid = false
-          }, 3000)
+          this.isValid = false
+        }, 3000)
       }
-    }
+    },
   },
-};
+}
 </script>
