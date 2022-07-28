@@ -26,6 +26,8 @@ from tqdm import tqdm
 from datetime import datetime as dt
 from inspect import getsourcefile
 
+from modules.s3_module import S3Module
+
 current_dir = os.path.dirname(os.path.abspath(getsourcefile(lambda:0)))
 current_dir = current_dir[:current_dir.rfind(os.path.sep)]
 current_dir = current_dir[:current_dir.rfind(os.path.sep)]
@@ -40,6 +42,7 @@ from utilities.image_transformation import rgbtobgr
 
 class PredictionController:
     models_dict = {}
+    s3_module = S3Module()
     FLASK_ENV = os.environ.get("FLASK_ENV", "dev")
     comment_filename = 'data/plants_comments.json' if FLASK_ENV == 'prod' else '../data/plants_comments.json'
     custom_objects = { 'recall_m': recall_m, 'precision_m': precision_m, 'f1_m': f1_m, "LayerScale": LayerScale }
@@ -82,7 +85,7 @@ class PredictionController:
             Description: Check if s3 information is available
         '''
         
-        return g._s3_module.S3_ACCESS_KEY_ID and g._s3_module.S3_SECRET_ACCESS_KEY and g._s3_module.S3_BASE_ENDPOINT_URL and g._s3_module.S3_BUCKET_NAME
+        return PredictionController.s3_module.S3_ACCESS_KEY_ID and PredictionController.s3_module.S3_SECRET_ACCESS_KEY and PredictionController.s3_module.S3_BASE_ENDPOINT_URL and PredictionController.s3_module.S3_BUCKET_NAME
         
     def load_deeplearning_model(model_path, model_name):
         '''
@@ -95,11 +98,11 @@ class PredictionController:
         
         if PredictionController.is_production():
             with tempfile.NamedTemporaryFile(mode='w+b') as f:
-                print("g._s3_module.S3_MODELS_FOLDER", g._s3_module.S3_MODELS_FOLDER)
+                print("PredictionController.s3_module.S3_MODELS_FOLDER", PredictionController.s3_module.S3_MODELS_FOLDER)
                 print("model_name", model_name)
-                path_model = os.path.join(g._s3_module.S3_MODELS_FOLDER, model_name + '.h5')
+                path_model = os.path.join(PredictionController.s3_module.S3_MODELS_FOLDER, model_name + '.h5')
                 print("path_model", path_model)
-                g._s3_module.s3_client.download_fileobj(g._s3_module.S3_BUCKET_NAME, path_model, f)
+                PredictionController.s3_module.s3_client.download_fileobj(PredictionController.s3_module.S3_BUCKET_NAME, path_model, f)
                 dl_model_ins = load_model(f.name, PredictionController.custom_objects)
                 print("[+] dl_model_ins", type(dl_model_ins))
                 h5file = h5py.File(f.name, mode='r')
@@ -145,7 +148,7 @@ class PredictionController:
             return joblib.load(model_path)
         else:
            with io.BytesIO() as data:
-                g._s3_module.s3_client.download_fileobj(g._s3_module.S3_BUCKET_NAME, os.path.join(g._s3_module.S3_MODELS_FOLDER, model_name + '.pkl.z'), data)
+                PredictionController.s3_module.s3_client.download_fileobj(PredictionController.s3_module.S3_BUCKET_NAME, os.path.join(PredictionController.s3_module.S3_MODELS_FOLDER, model_name + '.pkl.z'), data)
                 data.seek(0)    # move back to the beginning after writing
                 model = joblib.load(data)
                 
@@ -200,7 +203,7 @@ class PredictionController:
             
         for md_grp in ['ML', 'DL']:
             if PredictionController.is_production():
-                all_models = [f.split(".")[0] for f in g._s3_module.models_list if f'{md_grp}_' in f and ((f.split(".")[-1] == 'h5') or ((f.split(".")[-2] == 'pkl') and (f.split(".")[-1] == 'z')))]
+                all_models = [f.split(".")[0] for f in PredictionController.s3_module.models_list if f'{md_grp}_' in f and ((f.split(".")[-1] == 'h5') or ((f.split(".")[-2] == 'pkl') and (f.split(".")[-1] == 'z')))]
                 all_models.sort(reverse=True)
                 models[md_grp] = all_models
             else:
@@ -222,7 +225,7 @@ class PredictionController:
         '''
         
         if PredictionController.is_production():
-            plants_dict = set_plants_dict(g._s3_module.get_df_leafs())
+            plants_dict = set_plants_dict(PredictionController.s3_module.get_df_leafs())
         else:
             data_dir = '../../data/no_augmentation'
             plants_dict = set_plants_dict(get_df(data_dir))
@@ -236,7 +239,7 @@ class PredictionController:
         '''
         
         if PredictionController.is_production():
-            lst_dir = g._s3_module.get_folders_leafs()
+            lst_dir = PredictionController.s3_module.get_folders_leafs()
         else:
             data_dir = '../../data/no_augmentation'
             lst_dir = os.listdir(data_dir)
@@ -259,7 +262,7 @@ class PredictionController:
         # Image processing
         if bgr_img is None:
             if PredictionController.is_production():
-                bgr_img = g._s3_module.get_image_from_path(os.path.join(path, f))
+                bgr_img = PredictionController.s3_module.get_image_from_path(os.path.join(path, f))
             else:
                 bgr_img, _, _ = pcv.readimage(os.path.join(path, f), mode='bgr')
 
@@ -331,7 +334,7 @@ class PredictionController:
             
         for f in folders:
             if PredictionController.is_production():
-                bgr_img = g._s3_module.get_image_from_path(f)
+                bgr_img = PredictionController.s3_module.get_image_from_path(f)
             else:
                 bgr_img, _, _ = pcv.readimage(os.path.join(data_dir,f), mode='bgr')
 
@@ -401,7 +404,7 @@ class PredictionController:
             
             # # Image processing
             if PredictionController.is_production():
-                bgr_img = g._s3_module.get_image_from_path(f)
+                bgr_img = PredictionController.s3_module.get_image_from_path(f)
             else:
                 bgr_img, _, _ = pcv.readimage(os.path.join(data_dir,f), mode='bgr')
 
@@ -467,16 +470,16 @@ class PredictionController:
         data_dir = '../../data/no_augmentation'
         
         if PredictionController.is_production():
-            df = g._s3_module.get_df_leafs()
+            df = PredictionController.s3_module.get_df_leafs()
         else:
             df = get_df(data_dir)
         indexes = df.loc[((df.specie==species)|(species=='All'))&((df.disease==desease)|(desease=='All'))].index.tolist()
         
         if PredictionController.is_production():
             folders = []
-            all_folder = g._s3_module.get_folders_leafs()
+            all_folder = PredictionController.s3_module.get_folders_leafs()
             for name_folder in all_folder:
-                folders.append([f for f in g._s3_module.files_leafs if name_folder in f])
+                folders.append([f for f in PredictionController.s3_module.files_leafs if name_folder in f])
 
         else:
             folders = []

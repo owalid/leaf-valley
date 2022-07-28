@@ -43,7 +43,7 @@ if __name__ == '__main__':
         # import s3module
         from modules.s3_module import S3Module
         print("[main] init s3 end")
-        g._s3_module = S3Module()
+        s3_module = S3Module()
         print("[main] end init s3 end")
         
         app._executor = concurrent.futures.ProcessPoolExecutor(max_workers=((1+os.cpu_count()//5)*5))

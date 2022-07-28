@@ -5,9 +5,21 @@ import pandas as pd
 import numpy as np
 import boto3
 
-class S3Module:
+
+class S3Module():
+    
+    __instance = None
+    
+    def __new__(cls):
+        if cls.__instance is None:
+            cls.__instance = super(S3Module,cls).__new__(cls)
+            cls.__instance.__initialized = False
+        return cls.__instance
     
     def __init__(self):
+        if (self.__initialized): return
+        
+        self.__initialized = True
         FLASK_ENV = os.environ.get("FLASK_ENV", "dev")
         self.S3_ACCESS_KEY_ID = os.environ.get("S3_ACCESS_KEY_ID", None)
         self.S3_SECRET_ACCESS_KEY = os.environ.get("S3_SECRET_ACCESS_KEY", None)
@@ -19,18 +31,18 @@ class S3Module:
         if FLASK_ENV == "dev" or self.S3_ACCESS_KEY_ID is None or self.S3_SECRET_ACCESS_KEY is None or self.S3_BASE_ENDPOINT_URL is None or self.S3_BUCKET_NAME is None:
             return
         
-        self.session = boto3.Session(aws_access_key_id=self.S3_ACCESS_KEY_ID, aws_secret_access_key=self.S3_SECRET_ACCESS_KEY)
+        self.session = session = boto3.Session(aws_access_key_id=self.S3_ACCESS_KEY_ID, aws_secret_access_key=self.S3_SECRET_ACCESS_KEY, region_name='fr-par')
         self.s3_client = self.get_s3_client()
         self.s3_resource = self.get_s3_resource()
         self.models_list = self.get_models_list()
         self.files_leafs = self.get_files_leafs()
     
     def get_s3_client(self):
-        return self.session.client('s3', endpoint_url=self.S3_BASE_ENDPOINT_URL)
+        return boto3.client('s3', endpoint_url=self.S3_BASE_ENDPOINT_URL)
     
     def get_s3_resource(self):
-        # session = boto3.Session(aws_access_key_id=self.S3_ACCESS_KEY_ID, aws_secret_access_key=self.S3_SECRET_ACCESS_KEY)
-        return self.session.resource('s3', endpoint_url=self.S3_BASE_ENDPOINT_URL)
+        session = boto3.Session(aws_access_key_id=self.S3_ACCESS_KEY_ID, aws_secret_access_key=self.S3_SECRET_ACCESS_KEY)
+        return session.resource('s3', endpoint_url=self.S3_BASE_ENDPOINT_URL)
     
     def get_models_list(self):
         model_bucket = self.s3_resource.Bucket(self.S3_BUCKET_NAME)
