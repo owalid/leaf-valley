@@ -2,6 +2,7 @@ import concurrent.futures
 import os
 from flask import Flask
 from flask_cors import CORS
+from flask import g
 
 FLASK_ENV = os.environ.get("FLASK_ENV", "dev")
 
@@ -19,11 +20,6 @@ def create_app(test_config=None):
     
 
     CORS(app, origins=r"*")  # add CORS
-    
-    from utils.mixins import create_response
-    @app.route("/test")
-    def user_profile():
-        return create_response(data={'test': 'f'}, status=200)
     
     # import and register blueprints
     from routes import comment_bp, predict_bp
@@ -47,7 +43,7 @@ if __name__ == '__main__':
         # import s3module
         from modules.s3_module import S3Module
         print("[main] init s3 end")
-        app._s3_module = S3Module()
+        g._s3_module = S3Module()
         print("[main] end init s3 end")
         
         app._executor = concurrent.futures.ProcessPoolExecutor(max_workers=((1+os.cpu_count()//5)*5))
