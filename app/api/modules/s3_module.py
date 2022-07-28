@@ -18,7 +18,7 @@ class S3Module:
         
         if FLASK_ENV == "dev" or self.S3_ACCESS_KEY_ID is None or self.S3_SECRET_ACCESS_KEY is None or self.S3_BASE_ENDPOINT_URL is None or self.S3_BUCKET_NAME is None:
             return
-
+        
         self.s3_client = self.get_s3_client()
         self.s3_resource = self.get_s3_resource()
         self.models_list = self.get_models_list()

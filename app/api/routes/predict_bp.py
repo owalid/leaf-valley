@@ -4,10 +4,10 @@ from controllers.prediction import PredictionController
 from utils.mixins import create_response
 
 mod = Blueprint('predict_routes', __name__, url_prefix='/api/models')
-com = Blueprint('comment_routes', __name__, url_prefix='/api/comment')
 
 @mod.route('/')
 def get_models():
+    print("hello world /")
     return PredictionController.get_models()
 
 @mod.route('/predict', methods=[ 'POST' ])
@@ -33,16 +33,16 @@ def get_classes():
     return PredictionController.get_classes()
 
 @mod.route('/random-img', methods=[ 'POST' ])
-def get_randomimg():
+def get_randomimage():
     data = request.get_json()
     if data:
         nb_img = data.get('number_img')
         spacies = data.get('spacies')
         desease = data.get('desease')
         ml_model = data.get('ml_model')
-        dp_model = data.get('dp_model')
-
-    return PredictionController.get_randomimag(nb_img, spacies, desease, ml_model, dp_model)
+        dl_model = data.get('dl_model')
+        
+    return PredictionController.get_randomimage(nb_img, spacies, desease, ml_model, dl_model)
 
 
 @mod.route('/select-img', methods=[ 'POST' ])
@@ -51,16 +51,7 @@ def get_selectedimge():
     if data:
         b64File    = data.get('b64Files')
         ml_model   = data.get('ml_model')
-        dp_model   = data.get('dp_model')
+        dl_model   = data.get('dl_model')
         class_name = data.get('class_name')
-
-    return PredictionController.get_selectedimage(class_name, b64File, ml_model, dp_model)
-
-@com.route('/', methods=[ 'POST' ])
-def process_comment():
-    data = request.get_json()
-    if data:
-        method = data.get('method')
-        comment = data.get('comment')
-
-    return PredictionController.process_comment(method, comment)
+        
+    return PredictionController.get_selectedimage(class_name, b64File, ml_model, dl_model)

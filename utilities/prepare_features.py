@@ -58,6 +58,9 @@ def prepare_features(data, rgb_img, target_features, should_remove_bg, size_img=
   mask, rgb_img = remove_bg(rgb_img) if should_remove_bg else (None, rgb_img)
   original_rgb_img = rgb_img.copy()
 
+  if isinstance(size_img, list):
+    size_img = tuple(size_img)
+    
   if size_img is not None and isinstance(size_img, tuple):
     rgb_img = cv.resize(rgb_img, size_img)
 
@@ -79,33 +82,39 @@ def prepare_features(data, rgb_img, target_features, should_remove_bg, size_img=
   # ==== Extract feature ====
   
   # FEATURES DEEP LEARNING
+  if (not target_features or len(target_features) == 0) and is_deep_learning_features:
+      return rgb_img, pill_img
+    
   if 'rgb' in target_features:
+      if is_deep_learning_features:
+        return rgb_img, pill_img
+
       data = update_features_dict(data, 'rgb_img', rgb_img)
   if 'gabor' in target_features:
       if is_deep_learning_features:
-        return get_gabor_img(rgb_img)
+        return get_gabor_img(rgb_img), pill_img
       
       data = update_features_dict(
           data, 'gabor_img', get_gabor_img(rgb_img))
   if 'gray' in target_features:
       if is_deep_learning_features:
-        return bgrtogray(rgb_img)
+        return bgrtogray(rgb_img), pill_img
       
       data = update_features_dict(data, 'gray_img', bgrtogray(rgb_img))
   if 'canny' in target_features:
       if is_deep_learning_features:
-        return get_canny_img(rgb_img)
+        return get_canny_img(rgb_img), pill_img
       
       data = update_features_dict(
           data, 'canny_img', get_canny_img(rgb_img))
   if 'lab' in target_features:
       if is_deep_learning_features:
-        return get_lab_img(rgb_img)
+        return get_lab_img(rgb_img), pill_img
       
       data = update_features_dict(data, 'lab',  get_lab_img(rgb_img))
   if 'hsv' in target_features:
       if is_deep_learning_features:
-        return get_hsv_img(rgb_img)
+        return get_hsv_img(rgb_img), pill_img
       
       data = update_features_dict(data, 'hsv',  get_hsv_img(rgb_img))
 
@@ -144,4 +153,5 @@ def prepare_features(data, rgb_img, target_features, should_remove_bg, size_img=
     for feature in pyfeats_features:
         data = update_features_dict(
             data, feature, pyfeats_features[feature])
+
   return data, pill_img

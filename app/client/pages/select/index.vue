@@ -30,9 +30,9 @@
       </v-col>
       <v-col class="mx-8">
         <v-select
-          v-model="dpModelSelected"
-          label="DP model"
-          :items="dpModels"
+          v-model="dlModelSelected"
+          label="DL model"
+          :items="dlModels"
           :disabled="predictionInProgress"
           :error-messages="selectedModelsErrors"
           dense
@@ -88,10 +88,10 @@ export default {
       selectdFile: { required },
       mlModelSelected: {
         required: requiredIf(function () {
-          return !this.dpModelSelected
+          return !this.dlModelSelected
         }),
       },
-      dpModelSelected: {
+      dlModelSelected: {
         required: requiredIf(function () {
           return !this.mlModelSelected
         }),
@@ -103,7 +103,7 @@ export default {
     const resClasses = await $axios.get('/models/classes')
     return {
       classes: resClasses.data.result.classes,
-      dpModels: resModels.data.result.models.DP,
+      dlModels: resModels.data.result.models.DL,
       mlModels: resModels.data.result.models.ML,
     }
   },
@@ -115,7 +115,7 @@ export default {
       errorMessage: '',
       selectdFile: null,
       selectedClass: null,
-      dpModelSelected: null,
+      dlModelSelected: null,
       mlModelSelected: null,
       isValid: false,
       isLoading: false,
@@ -133,11 +133,11 @@ export default {
     },
     selectedModelsErrors() {
       const errors = []
-      if (!this.$v.mlModelSelected.$dirty && !this.$v.dpModelSelected.$dirty) {
+      if (!this.$v.mlModelSelected.$dirty && !this.$v.dlModelSelected.$dirty) {
         return errors
       }
       !this.mlModelSelected &&
-        !this.dpModelSelected &&
+        !this.dlModelSelected &&
         errors.push('You must select at least one ML or PL model')
       return errors
     },
@@ -170,7 +170,7 @@ export default {
               : null,
             b64Files: this.b64Files,
             ml_model: this.mlModelSelected,
-            dp_model: this.dpModelSelected,
+            dl_model: this.dlModelSelected,
           }
           const request = await this.$axios.post('/models/select-img', payload)
 

@@ -27,9 +27,9 @@
       </v-col>
       <v-col>
         <v-select
-          v-model="dpModelSelected"
-          label="DP model"
-          :items="dpModels"
+          v-model="dlModelSelected"
+          label="DL model"
+          :items="dlModels"
           :disabled="predictionInProgress"
           :error-messages="selectedModelsErrors"
           dense
@@ -106,10 +106,10 @@ export default {
       selectedSlider: { required },
       mlModelSelected: {
         required: requiredIf(function () {
-          return !this.dpModelSelected
+          return !this.dlModelSelected
         }),
       },
-      dpModelSelected: {
+      dlModelSelected: {
         required: requiredIf(function () {
           return !this.mlModelSelected
         }),
@@ -123,7 +123,7 @@ export default {
     return {
       species,
       plants: resPlants.data.result.plants,
-      dpModels: resModels.data.result.models.DP,
+      dlModels: resModels.data.result.models.DL,
       mlModels: resModels.data.result.models.ML,
     }
   },
@@ -132,9 +132,9 @@ export default {
       selectedSlider: 5,
       selectedSpecies: null,
       selectedDesease: null,
-      dpModelSelected: null,
+      dlModelSelected: null,
       mlModelSelected: null,
-      dpModels: [],
+      dlModels: [],
       mlModels: [],
       results: [],
       errorMessage: '',
@@ -173,11 +173,11 @@ export default {
     },
     selectedModelsErrors() {
       const errors = []
-      if (!this.$v.mlModelSelected.$dirty && !this.$v.dpModelSelected.$dirty) {
+      if (!this.$v.mlModelSelected.$dirty && !this.$v.dlModelSelected.$dirty) {
         return errors
       }
       !this.mlModelSelected &&
-        !this.dpModelSelected &&
+        !this.dlModelSelected &&
         errors.push('You must select at least one ML or PL model')
       return errors
     },
@@ -198,7 +198,7 @@ export default {
             spacies: this.selectedSpecies,
             desease: this.selectedDesease,
             ml_model: this.mlModelSelected,
-            dp_model: this.dpModelSelected,
+            dl_model: this.dlModelSelected,
           }
           const request = await this.$axios.post('/models/random-img', payload)
 

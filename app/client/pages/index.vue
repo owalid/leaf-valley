@@ -46,7 +46,7 @@ export default {
     const res = await $axios.get('/models/')
     const { result } = res.data
     return {
-      models: result.models.DP,
+      models: [...result.models.DL, ...result.models.ML],
     }
   },
   data() {
