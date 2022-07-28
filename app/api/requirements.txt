@@ -6,4 +6,4 @@ jsonify
 tensorflow==2.8.0
 opencv-python
 plantcv
-opencv-python
+tqdm
