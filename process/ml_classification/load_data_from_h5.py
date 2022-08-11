@@ -5,15 +5,17 @@
              options dataset used for the features creation
 '''
 
-import h5py
-import json
-import pandas as pd
-from tqdm import tqdm
-from datetime import datetime as dt
-import concurrent.futures
-
 import os
 import sys
+import h5py
+import json
+import random
+import pandas as pd
+from tqdm import tqdm
+import concurrent.futures
+from sklearn.utils import shuffle
+from datetime import datetime as dt
+
 from inspect import getsourcefile
 current_dir = os.path.dirname(os.path.abspath(getsourcefile(lambda: 0)))
 sys.path.insert(0, os.path.sep.join(current_dir.split(os.path.sep)[:-2]))
@@ -55,6 +57,13 @@ def load_data_from_h5(path, file, verbose):
         df_features = pd.concat([df_features, df], axis=1)
 
     df_features['classes'] = df_features.classes.apply(lambda l: l.decode("utf-8"))
+
+    # SPlit manually data into train/test
+    df_features = shuffle(df_features)
+
+    df_features.loc[random.sample(df_features.index.to_list(), int(.7*len(df_features))),'split'] = 'train'
+    df_features['split'].fillna('test', inplace=True)
+
     df_features = df_features.copy()
 
     local_print(f'Info : DataFrame shape : {df_features.shape}', verbose)

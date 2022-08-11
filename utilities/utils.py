@@ -31,7 +31,7 @@ def update_data_dict(data_dict, key, value):
 
 def local_print(msg, verbose):
     if verbose:
-        print(msg)
+        print('[+] ' + msg)
 
 def safe_get_item(dictionary, key, default=None):
     '''
