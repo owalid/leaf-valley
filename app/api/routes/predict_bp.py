@@ -7,7 +7,6 @@ mod = Blueprint('predict_routes', __name__, url_prefix='/api/models')
 
 @mod.route('/')
 def get_models():
-    print("hello world /")
     return PredictionController.get_models()
 
 @mod.route('/predict', methods=[ 'POST' ])

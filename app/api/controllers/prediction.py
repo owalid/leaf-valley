@@ -258,7 +258,7 @@ class PredictionController:
                 options_dataset: options dataset of the model (dict)
                 bgr_img: image in BGR format (np.array)
         '''
-        
+        print("test")
         # Image processing
         if bgr_img is None:
             if PredictionController.is_production():
@@ -366,7 +366,7 @@ class PredictionController:
 
         return df
 
-    def get_prediction_output(df, dict):
+    def get_prediction_output(df, dict, key):
         '''
          Description: Utilitiy function to create the output for the prediction
          
@@ -375,16 +375,14 @@ class PredictionController:
             - dict: Dictionary result with the prediction results, with two keys: 'ML' and 'DL'. (dict)
             - key: String with the key to access the dictionary. (str)
         '''
-        result = None
         
         if df is not None:
             df = df.loc[((df.species==dict['img_species']) & (df.desease==dict['img_desease']) & (df.img_num==dict['img_num']))]
-            result = {
+            dict[key] = {
                 'class': df['prediction_label'].squeeze(),
                 'score': f'{100*float(df["proba"].squeeze()):.2f}',
                 'matching': bool(df['matching'].squeeze()),                    
-            }
-        return result
+            }  
 
     def process_images(folders, data_dir, comments, ml_df, dl_df):
 
@@ -425,10 +423,10 @@ class PredictionController:
             del bgr_img, rgb_img, masked_img
 
             # Get ML prediction output
-            ml_df['ml_prediction'] = PredictionController.get_prediction_output(ml_df, img_dict)
+            PredictionController.get_prediction_output(ml_df, img_dict, 'ml_prediction')
 
             # Get DL prediction output
-            dl_df['dl_prediction'] = PredictionController.get_prediction_output(dl_df, img_dict)
+            PredictionController.get_prediction_output(dl_df, img_dict, 'dl_prediction')
 
             output.append(img_dict)
 
@@ -574,7 +572,7 @@ class PredictionController:
                 df_features = PredictionController.get_ml_features(options_dataset=ml_model_dict['options_dataset'], bgr_img=bgr_img)
                 df_features.index = [class_name] if class_name else ['___/(0)']
                 ml_df = PredictionController.ml_predict(ml_model_dict, df_features)
-                ml_df['ML'] = PredictionController.get_prediction_output(ml_df, img_dict)
+                PredictionController.get_prediction_output(ml_df, img_dict, 'ML')
             else:
                 return create_response(data={'error': f'{ml_model} model not found'}, status=500)
 
@@ -587,7 +585,7 @@ class PredictionController:
             
             if data_model_loaded:
                 dl_df = PredictionController.dl_predict(data_model_loaded['model'], data_model_loaded['class_names'], data_model_loaded['options_dataset'], img_lst=[rgb_img], class_name=[class_name] if class_name else ['___/(0)'])
-                dl_df['DL'] = PredictionController.get_prediction_output(dl_df, img_dict)
+                PredictionController.get_prediction_output(dl_df, img_dict, 'DL')
             else:
                 return create_response(data={'error': f'{dl_model} model not found'}, status=500)
 
