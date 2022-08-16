@@ -34,8 +34,9 @@ def create_response(data=None, status=200, message=""):
         raise TypeError(f"Data should be a dictionary 😞 \n data is type: {type(data)}")
 
     response = {"success": 200 <= status < 300, "message": message, "result": data}
+    response = jsonify(response)
     response.headers.add('Access-Control-Allow-Origin', '*')
-    return jsonify(response), status
+    return response, status
 
 def serialize_list(items):
     """Serializes a list of SQLAlchemy Objects, exposing their attributes.
