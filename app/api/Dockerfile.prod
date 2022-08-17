@@ -19,4 +19,4 @@ RUN pip install gunicorn boto3
 RUN pip install 'protobuf<=3.20.1' --force-reinstall
 ENV FLASK_ENV prod
 
-CMD ["gunicorn", "--workers=1", "--threads=1", "--timeout=120", "main:app"]
+CMD ["gunicorn", "--workers=5", "--threads=5", "--timeout=120", "main:app"]

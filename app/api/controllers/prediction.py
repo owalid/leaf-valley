@@ -28,10 +28,13 @@ from inspect import getsourcefile
 
 from modules.s3_module import S3Module
 
-# current_dir = os.path.dirname(os.path.abspath(getsourcefile(lambda:0)))
-# current_dir = current_dir[:current_dir.rfind(os.path.sep)]
-# current_dir = current_dir[:current_dir.rfind(os.path.sep)]
-# sys.path.insert(0, current_dir[:current_dir.rfind(os.path.sep)])
+FLASK_ENV = os.environ.get("FLASK_ENV", "dev")
+
+if FLASK_ENV != 'prod':
+    current_dir = os.path.dirname(os.path.abspath(getsourcefile(lambda:0)))
+    current_dir = current_dir[:current_dir.rfind(os.path.sep)]
+    current_dir = current_dir[:current_dir.rfind(os.path.sep)]
+    sys.path.insert(0, current_dir[:current_dir.rfind(os.path.sep)])
 
 from process.deep_learning.metrics import recall_m, precision_m, f1_m, LayerScale
 from utilities.remove_background_functions import remove_bg
