@@ -1,0 +1,42 @@
+name: Deploy api to scaleway.
+
+# Run workflow on every push to master branch.
+on: ['push']
+
+# Your workflows jobs.
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # Check-out your repository.
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # We need to do that because docker build can't copy parent directory inside a docker.
+      - name: Copy utilities in api folder
+        run: cp -r utilities app/api/
+
+      - name: Copy process in api folder
+        run: cp -r process app/api/
+      
+      - name: Login to scaleway
+        run: docker login rg.fr-par.scw.cloud/leaf-api -u nologin --password-stdin <<< ${{ secrets.SCW_SECRET_KEY }}
+
+      - name: Docker build
+        run: docker build -t leaf_api:latest -f Dockerfile.prod app/api/
+
+      - name: Docker tag
+        run: docker tag leaf_api:latest rg.fr-par.scw.cloud/leaf-api/leaf_api:latest
+
+      - name: Docker push
+        run: docker push rg.fr-par.scw.cloud/leaf-api/leaf_api:latest
+
+      - name: update container with new image version
+        uses: yamatt/scaleway-serverless-container-deploy-action@v1.1
+        with:
+          container_id: ${{ secrets.SCALEWAY_CONTAINER_ID }}
+          secret_key: ${{ secrets.SCALEWAY_SECRET_KEY }}
+          registry_image_url: rg.fr-par.scw.cloud/leaf-api/leaf_api:latest
+      
+      - name: Remove utilities and process in api folder
+        run: rm -rf app/api/utilities app/api/process

@@ -36,7 +36,7 @@ sys.path.insert(0, current_dir[:current_dir.rfind(os.path.sep)])
 from process.deep_learning.metrics import recall_m, precision_m, f1_m, LayerScale
 from utilities.remove_background_functions import remove_bg
 from utilities.prepare_features import prepare_features
-from utilities.utils import set_plants_dict, get_df, CV_NORMALIZE_TYPE, safe_get_item, safe_open_w
+from utilities.utils import set_plants_dict, get_df, safe_get_item, safe_open_w
 from utilities.image_transformation import rgbtobgr
 
 
@@ -56,14 +56,8 @@ class PredictionController:
                 - options: options for preprocess pipeline (dict)
                 - is_deep_learning_model: is deep learning model (bool)
         '''
-        
-        normalize_type = None
 
-        if 'normalize_type' in options.keys() and options['normalize_type'] and isinstance(options['normalize_type'], str) and options['normalize_type'] in CV_NORMALIZE_TYPE.keys():
-            normalize_type = CV_NORMALIZE_TYPE[options['normalize_type']]
-
-        norm_type = safe_get_item(options, 'normalize_type', None)
-        norm_type = CV_NORMALIZE_TYPE[norm_type] if norm_type is not None else None
+        normalize_type = safe_get_item(options, 'normalize_type', None)
         data = {}
         img, _ = prepare_features(data, rgb_img, safe_get_item(options,'features',{}), safe_get_item(options, 'should_remove_bg'),
                                 size_img=safe_get_item(options, 'size_img', None),\
@@ -606,8 +600,6 @@ class PredictionController:
     def predict(b64img, model_name, should_remove_bg):
         
         # protect to LFI and RFI attacks
-        model_name = os.path.basename(model_name)
-        model_name = model_name.replace("%", '')
         if PredictionController.check_lfi_attack(model_name):
             return create_response(data={'error': 'Incorrect model name.'}, status=500)
         
@@ -649,7 +641,7 @@ class PredictionController:
         im_withoutbg_b64 = base64.b64encode(img_arr).decode('utf-8')
         prediction_data = {
             'prediction': prediction_label,
-            'score': str(prediction_score),
+            'score': f'{100*float(prediction_score):.2f}',
             'im_withoutbg_b64': im_withoutbg_b64
         }
         return create_response(data=prediction_data)
