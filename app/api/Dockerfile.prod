@@ -1,7 +1,6 @@
 FROM python:3.8.12-slim
 
 RUN mkdir -p /home/api
-RUN mkdir -p /utilities
 COPY utilities /utilities/
 COPY process /process/
 
