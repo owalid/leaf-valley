@@ -23,7 +23,7 @@ jobs:
         run: docker login rg.fr-par.scw.cloud/leaf-api -u nologin --password-stdin <<< ${{ secrets.SCW_SECRET_KEY }}
 
       - name: Docker build
-        run: docker build -t leaf_api:latest -f Dockerfile.prod app/api/
+        run: docker build -t leaf_api:latest -f app/api/Dockerfile.prod app/api
 
       - name: Docker tag
         run: docker tag leaf_api:latest rg.fr-par.scw.cloud/leaf-api/leaf_api:latest
