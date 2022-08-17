@@ -5,7 +5,7 @@ COPY . /home/app
 WORKDIR /home/app
 
 ENV NODE_OPTIONS --openssl-legacy-provider
-ENV NUXT_BASE_API_URL https://api-leaf-valley.herokuapp.com/api
+ENV NUXT_BASE_API_URL https://leafapinsdggu509a-leafapi.functions.fnc.fr-par.scw.cloud/api
 ENV HOST 0.0.0.0
 ENV NUXT_HOST 0.0.0.0
 RUN npm install
