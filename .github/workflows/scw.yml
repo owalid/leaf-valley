@@ -31,15 +31,11 @@ jobs:
       - name: Docker push in namespace
         run: docker push rg.fr-par.scw.cloud/leaf-api/leaf_api:latest
 
-      - name: Deploy the container
-        uses: jawher/action-scw@v2.4.0
-        env:
-          SCW_ACCESS_KEY: ${{ secrets.SCW_ACCESS_KEY }}
-          SCW_SECRET_KEY: ${{ secrets.SCW_SECRET_KEY }}
-          SCW_ORGANIZATION_ID: ${{ secrets.SCW_ORGANIZATION_ID }}
-          SCW_ZONE: fr-par-1
-        with:
-          args: container container deploy ${{ secrets.SCW_CONTAINER_ID }}
+      - name: Create config file.
+        run: mkdir -p $HOME/.config/ && echo ${{ secrets.SCW_CONFIG_FILE }} > $HOME/.config/scw
+
+      - name: Run command cli
+        run: docker run -it --rm -v $HOME/.config/scw:/root/.config/scw scaleway/cli:v2.5.4 container container deploy ${{ secrets.SCW_CONTAINER_ID }}
       
       - name: Remove utilities and process in api folder
-        run: rm -rf app/api/utilities app/api/process
+        run: rm -rf app/api/utilities app/api/process $HOME/.config/
