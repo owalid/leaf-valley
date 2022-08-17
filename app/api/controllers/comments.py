@@ -12,7 +12,12 @@ current_dir = current_dir[:current_dir.rfind(os.path.sep)]
 current_dir = current_dir[:current_dir.rfind(os.path.sep)]
 sys.path.insert(0, current_dir[:current_dir.rfind(os.path.sep)])
 
-from utilities.utils import safe_open_w
+def safe_open_w(path, option_open='w'):
+    '''
+      Open "path" for writing, creating any parent directories as needed.
+    '''
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    return open(path, option_open)
 
 class CommentsController:
     FLASK_ENV = os.environ.get("FLASK_ENV", "dev")
