@@ -5,8 +5,6 @@ RUN mkdir -p /home/api
 COPY . /home/api/
 COPY utilities /home/api/utilities
 COPY process /home/api/process
-# delete utilities folder
-RUN rm -rf /home/api/utilities /home/api/process
 
 WORKDIR /home/api
 
