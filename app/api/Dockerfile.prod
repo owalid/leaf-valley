@@ -17,6 +17,7 @@ RUN pip install --upgrade setuptools pip
 RUN pip install -r /home/api/requirements.txt
 RUN pip install gunicorn boto3
 RUN pip install 'protobuf<=3.20.1' --force-reinstall
+RUN pip install numpy --upgrade
 ENV FLASK_ENV prod
 
-CMD ["gunicorn", "--workers=5", "--threads=5", "--timeout=120", "main:app"]
+CMD ["gunicorn", "--workers=10", "--threads=10", "--timeout=120", "main:app"]
