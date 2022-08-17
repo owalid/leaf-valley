@@ -36,7 +36,7 @@ from modules.s3_module import S3Module
 from process.deep_learning.metrics import recall_m, precision_m, f1_m, LayerScale
 from utilities.remove_background_functions import remove_bg
 from utilities.prepare_features import prepare_features
-from utilities.utils import set_plants_dict, get_df, safe_get_item, safe_open_w
+from utilities.utils import set_plants_dict, get_df, CV_NORMALIZE_TYPE, safe_get_item, safe_open_w
 from utilities.image_transformation import rgbtobgr
 
 
@@ -56,8 +56,15 @@ class PredictionController:
                 - options: options for preprocess pipeline (dict)
                 - is_deep_learning_model: is deep learning model (bool)
         '''
+        
+        normalize_type = None
 
-        normalize_type = safe_get_item(options, 'normalize_type', None)
+        if 'normalize_type' in options.keys() and options['normalize_type']:
+            if isinstance(options['normalize_type'], str) and options['normalize_type'] in CV_NORMALIZE_TYPE.keys():
+                normalize_type = CV_NORMALIZE_TYPE[options['normalize_type']]
+            elif isinstance(options['normalize_type'], int):
+                normalize_type = safe_get_item(options, 'normalize_type', None)
+
         data = {}
         img, _ = prepare_features(data, rgb_img, safe_get_item(options,'features',{}), safe_get_item(options, 'should_remove_bg'),
                                 size_img=safe_get_item(options, 'size_img', None),\
