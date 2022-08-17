@@ -1,8 +1,8 @@
 FROM python:3.8.12-slim
 
 RUN mkdir -p /home/api
-COPY utilities /utilities/
-COPY process /process/
+# COPY utilities /
+# COPY process /
 
 COPY . /home/api/
 # delete utilities folder

@@ -7,9 +7,10 @@ from inspect import getsourcefile
 
 from utils.mixins import create_response
 
-current_dir = os.path.dirname(os.path.abspath(getsourcefile(lambda:0)))
-current_dir = current_dir[:current_dir.rfind(os.path.sep)]
-sys.path.insert(0, current_dir[:current_dir.rfind(os.path.sep)])
+# current_dir = os.path.dirname(os.path.abspath(getsourcefile(lambda:0)))
+# current_dir = current_dir[:current_dir.rfind(os.path.sep)]
+# current_dir = current_dir[:current_dir.rfind(os.path.sep)]
+# sys.path.insert(0, current_dir[:current_dir.rfind(os.path.sep)])
 
 from utilities.utils import safe_open_w
 
