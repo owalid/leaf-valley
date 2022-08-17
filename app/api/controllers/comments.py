@@ -9,15 +9,9 @@ from utils.mixins import create_response
 
 current_dir = os.path.dirname(os.path.abspath(getsourcefile(lambda:0)))
 current_dir = current_dir[:current_dir.rfind(os.path.sep)]
-current_dir = current_dir[:current_dir.rfind(os.path.sep)]
 sys.path.insert(0, current_dir[:current_dir.rfind(os.path.sep)])
 
-def safe_open_w(path, option_open='w'):
-    '''
-      Open "path" for writing, creating any parent directories as needed.
-    '''
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    return open(path, option_open)
+from utilities.utils import safe_open_w
 
 class CommentsController:
     FLASK_ENV = os.environ.get("FLASK_ENV", "dev")
