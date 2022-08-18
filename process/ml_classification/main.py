@@ -159,7 +159,7 @@ def heat_map(y_pred, y_test, classes, title='', filename=''):
     cf_matrix = confusion_matrix(y_test, y_pred)
     group_counts = ["{:0.0f}".format(value) for value in cf_matrix.flatten()]
     group_percentages = ["{0:.2%}".format(value) \
-                         for value in (cf_matrix/cf_matrix.sum(axis=1)).T.flatten()]
+                         for value in (cf_matrix.T/cf_matrix.T.sum(axis=0)).T.flatten()]
     labels = [f"{v1}\n{v2}" for v1, v2 in \
               zip(group_counts,group_percentages)]
     labels = np.asarray(labels).reshape(len(classes),len(classes))
