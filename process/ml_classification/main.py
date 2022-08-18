@@ -231,7 +231,7 @@ if __name__ == '__main__':
     parser.add_argument("-cs", "--classification-step", required=False, type=str, default="ALL",
                         help='Classification step: LOAD_DATA, FIT_MODEL, PREDICT_MODEL, FIT_PREDICT_MODEL, ALL (default)')
     parser.add_argument("-f", "--filename", required=True, type=str, 
-                        help='Basename of the file input data without extension')
+                        help='path and file name of the input data')
     parser.add_argument("-dst", "--process-output", required=False, type=str, default='data/process/ml_classification',
                         help='Path to save or to get the preprocessed data, plots and reports. default: data/process/ml_classification')
     parser.add_argument("-sd", "--save-data", required=False,

@@ -94,6 +94,7 @@ This program allows to train a deep learning model with the data preprocessed
 
 ```
 python process/deep_learning/main.py -h
+
 usage: process/deep_learning/main.py [-h] [-p PATH_DATASET] [-lt] [-es] [-b BATCH_SIZE] [-lr LEARNING_RATE] [-opt OPTIMIZER] [-e EPOCHS] [-m MODELS] [-s] [-dst-l DEST_LOGS] [-dst-m DEST_MODELS] [-v]
 
 optional arguments:
@@ -120,6 +121,40 @@ optional arguments:
                         Destination for tensorboard logs. (default logs/tensorboard)
   -dst-m DEST_MODELS, --dest-models DEST_MODELS
                         Destination for model if save model is enabled
+  -v, --verbose         Verbose
+```
+
+
+## ML CLassification process
+
+This program allows you to train a ML classification models with the data preprocessed
+
+```
+python process/ml_classification/main.py  -h
+
+usage: main.py [-h] [-cs CLASSIFICATION_STEP] -f FILENAME [-dst PROCESS_OUTPUT] [-sd] [-nortype NORMALIZE_TYPE] [-cm CLASSIFICATION_MODELS] [-ct CLASSIFICATION_TYPES] [-sm] [-dms MODELS_SAVED] [-sp]
+               [-sr] [-v]
+
+options:
+  -h, --help            show this help message and exit
+  -cs CLASSIFICATION_STEP, --classification-step CLASSIFICATION_STEP
+                        Classification step: LOAD_DATA, FIT_MODEL, PREDICT_MODEL, FIT_PREDICT_MODEL, ALL (default)
+  -f FILENAME, --filename FILENAME
+                        path and file name of the input data
+  -dst PROCESS_OUTPUT, --process-output PROCESS_OUTPUT
+                        Path to save or to get the preprocessed data, plots and reports. default: data/process/ml_classification
+  -sd, --save-data      Save options_datasets json file and converted data from h5 format to DataFrame one with flag train/test flag
+  -nortype NORMALIZE_TYPE, --normalize-type NORMALIZE_TYPE
+                        Normalize data (NORM_STANDARSCALER or NORM_MINMAX normalization) (Default: NORM_MINMAX)
+  -cm CLASSIFICATION_MODELS, --classification-models CLASSIFICATION_MODELS
+                        Classification models: XGC, ETC, RFC, ALL (default). Example -cm=RFC,ETC
+  -ct CLASSIFICATION_TYPES, --classification-types CLASSIFICATION_TYPES
+                        Classification type: PLANTS, HEALTHY, PLANTS_DESEASES classes, ALL (default)
+  -sm, --save-model     Save model
+  -dms MODELS_SAVED, --models_saved MODELS_SAVED
+                        Path to save models. default: data/models_saved
+  -sp, --save-plots     Save heatmap plots
+  -sr, --save-reports   Save report
   -v, --verbose         Verbose
 ```
 
