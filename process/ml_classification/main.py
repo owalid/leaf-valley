@@ -116,7 +116,6 @@ def load_model_func(md_label, class_type, dst_path, verbose):
 
 # fit models
 def fit_models(X_train, y_orig, classification_models, classification_types, options_dataset, save ,md_dst, verbose):
-  start = dt.now()
   # Data normalization
   scaler, X_train = data_normalization(X_train, scaler_dict[normalize_type], save=save, fit=True)
 
@@ -131,6 +130,7 @@ def fit_models(X_train, y_orig, classification_models, classification_types, opt
 
     # Fit models
     for md_label in models_dict[class_type].keys():
+        start = dt.now()
         local_print(f'\033[92m+++++++++++      Fitting for model {md_label} and class type {class_type} started     ++++++++++\033[0m\n', verbose)
         models_dict[class_type][md_label].fit(X_train, yl_train.classes)
         if save:
