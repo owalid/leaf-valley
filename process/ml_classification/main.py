@@ -1,10 +1,12 @@
 '''
   CLI used to manage ML classification.
 '''
+from datetime import datetime
 import os
 import sys
 import random
 import joblib
+from datetime import datetime as dt
 
 import pandas as pd
 import numpy as np
@@ -114,6 +116,7 @@ def load_model_func(md_label, class_type, dst_path, verbose):
 
 # fit models
 def fit_models(X_train, y_orig, classification_models, classification_types, options_dataset, save ,md_dst, verbose):
+  start = dt.now()
   # Data normalization
   scaler, X_train = data_normalization(X_train, scaler_dict[normalize_type], save=save, fit=True)
 
@@ -128,10 +131,11 @@ def fit_models(X_train, y_orig, classification_models, classification_types, opt
 
     # Fit models
     for md_label in models_dict[class_type].keys():
-        local_print(f'\n\033[92m+++++++++++      Fitting for model {md_label} and class type {class_type} started     ++++++++++\033[0m\n', verbose)
+        local_print(f'\033[92m+++++++++++      Fitting for model {md_label} and class type {class_type} started     ++++++++++\033[0m\n', verbose)
         models_dict[class_type][md_label].fit(X_train, yl_train.classes)
         if save:
           save_model_func( md_label, models_dict[class_type][md_label], scaler, le, X_train.columns, class_type,options_dataset, md_dst, verbose)
+        local_print(f'\033[93mInfo : The training of the models finished, it took {dt.now() - start}\033[0m\n', verbose)
 
 # Accuracy Classification Report
 def accuracy_classification_report(y_test, y_pred, classes, msg = '', filename=''):
@@ -201,7 +205,7 @@ def predict_models(X_test_orig, y_test, classification_models, classification_ty
   for class_type in classification_types:
     # Set models dictionary
     for md_label in classification_models:
-      local_print(f'\n\033[92m+++++++++++      Prediction for model {md_label} and class type {class_type} started     ++++++++++\033[0m\n', verbose)
+      local_print(f'\033[92m+++++++++++      Prediction for model {md_label} and class type {class_type} started     ++++++++++\033[0m\n', verbose)
       model, scaler, le, features, _ = load_model_func(md_label, class_type, md_dst, verbose)
 
       # Label encoding
