@@ -1,5 +1,14 @@
+pandas
+numpy
+matplotlib
+seaborn
+tqdm
+scikit-learn
+xgboost
+scipy
 scikit-image>=0.19.2
 opencv-python
+Pillow
 pyfeats
 mahotas
 plantcv
