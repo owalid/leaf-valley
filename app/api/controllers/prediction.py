@@ -262,7 +262,6 @@ class PredictionController:
                 options_dataset: options dataset of the model (dict)
                 bgr_img: image in BGR format (np.array)
         '''
-        print("test")
         # Image processing
         if bgr_img is None:
             if PredictionController.is_production():
@@ -280,7 +279,7 @@ class PredictionController:
 
     def class_split(ldf):
         ldf['species'] = ldf.index.to_series().apply(lambda f: f.split('___')[0])
-        ldf['desease'] = ldf.index.to_series().apply(lambda f: f.split('___')[1].split('/')[0])
+        ldf['desease'] = ldf.index.to_series().apply(lambda f: f.split('___')[-1].split('/')[-2])
         ldf['img_num'] = ldf.index.to_series().apply(lambda f: f.split('(')[-1].split(')')[0])
 
     def ml_predict(model_dict, df_features):
