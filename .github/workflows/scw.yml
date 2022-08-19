@@ -22,15 +22,6 @@ jobs:
       - name: Login to scaleway
         run: docker login rg.fr-par.scw.cloud/leaf-api -u nologin --password-stdin <<< ${{ secrets.SCW_SECRET_KEY }}
 
-      - name: Test 1
-        run: ls app/api/ && ls app/api/utilities && ls app/api/process
-
-      - name: Test 2
-        run: ls app/api/utilities
-
-      - name: Test 3
-        run: ls app/api/process
-
       - name: Docker build
         run: cd app/api && docker build -t leaf_api:latest -f Dockerfile.prod .
 

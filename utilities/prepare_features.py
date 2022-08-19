@@ -43,14 +43,13 @@ def prepare_features(data, rgb_img, target_features, should_remove_bg, size_img=
   
   
   # ==== Preprocess image ====
-  
   # Crop image
   if crop_img == True:
       rgb_img = crop_resize_image(rgb_img, rgb_img)
   
   # Generate PIL image and add enhancements
-  im = Image.fromarray(rgb_img)
-  enhancer = ImageEnhance.Sharpness(im)
+  pill_img = Image.fromarray(rgb_img)
+  enhancer = ImageEnhance.Sharpness(pill_img)
   pill_img = enhancer.enhance(2)
   rgb_img = np.array(pill_img)
   
@@ -60,7 +59,7 @@ def prepare_features(data, rgb_img, target_features, should_remove_bg, size_img=
 
   if isinstance(size_img, list):
     size_img = tuple(size_img)
-    
+
   if size_img is not None and isinstance(size_img, tuple):
     rgb_img = cv.resize(rgb_img, size_img)
 
@@ -83,7 +82,7 @@ def prepare_features(data, rgb_img, target_features, should_remove_bg, size_img=
   
   # FEATURES DEEP LEARNING
   if (not target_features or len(target_features) == 0) and is_deep_learning_features:
-      return rgb_img, pill_img
+      return rgb_img, None
     
   if 'rgb' in target_features:
       if is_deep_learning_features:

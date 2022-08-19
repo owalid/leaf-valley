@@ -640,6 +640,8 @@ class PredictionController:
             model = model_data['model']
             class_names = model_data['class_names']
             new_img = PredictionController.preprocess_pipeline_prediction(rgb_img, options_dataset, is_deep_learning_model=True)
+            _, img_arr = cv.imencode('.jpg', rgbtobgr(new_img))
+            im_withoutbg_b64 = base64.b64encode(img_arr).decode('utf-8')
             y = model.predict(new_img[tf.newaxis, ...])
             label_encoded = np.argmax(y, axis=-1)[0]
             prediction_label = class_names[label_encoded]
