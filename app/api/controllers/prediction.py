@@ -40,7 +40,7 @@ from process.deep_learning.metrics import recall_m, precision_m, f1_m, LayerScal
 from utilities.remove_background_functions import remove_bg
 from utilities.prepare_features import prepare_features
 from utilities.utils import set_plants_dict, get_df, CV_NORMALIZE_TYPE, safe_get_item, safe_open_w
-from utilities.image_transformation import rgbtobgr
+from utilities.image_transformation import bgrtorgb, rgbtobgr
 
 
 class PredictionController:
@@ -338,11 +338,12 @@ class PredictionController:
             
         for f in folders:
             if PredictionController.is_production():
-                bgr_img = PredictionController.s3_module.get_image_from_path(f)
+                rgb_img = PredictionController.s3_module.get_image_from_path(f)
             else:
                 bgr_img, _, _ = pcv.readimage(os.path.join(data_dir,f), mode='bgr')
+                rgb_img = bgrtorgb(bgr_img)
 
-            img_lst.append(bgr_img)
+            img_lst.append(rgb_img)
 
         images = None
         for img in img_lst:
@@ -411,7 +412,7 @@ class PredictionController:
                 bgr_img, _, _ = pcv.readimage(os.path.join(data_dir,f), mode='bgr')
 
             bgr_img = cv.resize(np.array(bgr_img), (256, 256))
-            rgb_img = cv.cvtColor(bgr_img, cv.COLOR_BGR2RGB)
+            rgb_img = bgrtorgb(bgr_img)
             _, masked_img = remove_bg(bgr_img)
 
             # convert numpy array image to base64
@@ -622,6 +623,7 @@ class PredictionController:
         base64_decoded = base64.b64decode(b64img)
         rgb_img = Image.open(io.BytesIO(base64_decoded))
         rgb_img = np.array(rgb_img)
+        
         options_dataset = model_data['options_dataset']
         
         if type_model == 'ML':
@@ -635,8 +637,7 @@ class PredictionController:
             prediction_score = ml_df['proba'][index]
         else:
             model = model_data['model']
-            class_names = model_data['class_names']    
-        
+            class_names = model_data['class_names']
             new_img = PredictionController.preprocess_pipeline_prediction(rgb_img, options_dataset, is_deep_learning_model=True)
             y = model.predict(new_img[tf.newaxis, ...])
             label_encoded = np.argmax(y, axis=-1)[0]
@@ -647,7 +648,7 @@ class PredictionController:
             _, rgb_img = remove_bg(rgb_img)
 
         # convert numpy array image to base64
-        _, img_arr = cv.imencode('.jpg', rgb_img)
+        _, img_arr = cv.imencode('.jpg', rgbtobgr(rgb_img))
         im_withoutbg_b64 = base64.b64encode(img_arr).decode('utf-8')
         prediction_data = {
             'prediction': prediction_label,
