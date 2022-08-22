@@ -9,4 +9,4 @@ plantcv
 tqdm
 pyfeats
 joblib==1.1.0
-dotenv
+python-dotenv
