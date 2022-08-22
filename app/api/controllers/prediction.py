@@ -356,7 +356,6 @@ class PredictionController:
         y = model.predict(images)
         del images
 
-        print(y.shape)
         df['prediction_label'] = [class_names[le] for le in np.argmax(y, axis=1)]
         df['proba'] = y.max(axis=1)
 
