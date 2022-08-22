@@ -38,7 +38,7 @@ export default {
   computed: {
     ...mapGetters({
       alert: 'alert',
-    })
+    }),
   },
 }
 </script>
