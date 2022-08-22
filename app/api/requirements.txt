@@ -10,3 +10,5 @@ tqdm
 pyfeats
 joblib==1.1.0
 python-dotenv
+scikit-learn==1.0.2
+scikit-image==0.19.2
