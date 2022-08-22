@@ -183,6 +183,11 @@ export default {
         } catch (error) {
           // eslint-disable-next-line no-console
           console.error(error)
+          const { result } = error.response.data
+          this.$store.dispatch('ACTION_SET_ALERT', result.error)
+        } finally {
+          this.isLoading = false
+          this.predictionInProgress = false
         }
       } else {
         this.errorMessage =

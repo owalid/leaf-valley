@@ -8,3 +8,4 @@ opencv-python
 plantcv
 tqdm
 pyfeats
+joblib==1.0.2

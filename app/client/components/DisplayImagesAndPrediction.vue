@@ -313,18 +313,16 @@ export default {
           },
         }
         await this.$axios.post('/comment', payload)
-        try {
-          this.msgSuccess = ['Done with success']
-        } catch (error) {
-          this.msgError = ['Done with error']
-        } finally {
-          setInterval(() => {
-            this.msgSuccess = []
-          }, 3000)
-        }
+        this.msgSuccess = ['Done with success']
+        setInterval(() => {
+          this.msgSuccess = []
+        }, 3000)
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error(error)
+        this.msgError = ['Done with error']
+        const { result } = error.response.data
+        this.$store.commit('SET_ALERTS', result)
       }
     },
   },

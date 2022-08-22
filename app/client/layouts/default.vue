@@ -1,5 +1,10 @@
 <template>
   <v-app dark>
+    <div v-if="alert">
+      <v-snackbar :value="!!alert" right top dense color="error">
+        {{ alert }}
+      </v-snackbar>
+    </div>
     <div class="px-15 ma-6">
       <v-bottom-navigation color="green lighten-1" height="50px">
         <v-spacer></v-spacer>
@@ -18,6 +23,7 @@
 </template>
 
 <script>
+import { mapGetters } from 'vuex'
 export default {
   name: 'DefaultLayout',
   data() {
@@ -28,6 +34,11 @@ export default {
         { title: 'Random images', path: '/plants' },
       ],
     }
+  },
+  computed: {
+    ...mapGetters({
+      alert: 'alert',
+    })
   },
 }
 </script>

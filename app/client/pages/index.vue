@@ -116,6 +116,7 @@ export default {
         this.results.forEach((result, indexResult) => {
           if (result.indexPayload === indexPayload) {
             const { result } = error.response.data
+            this.$store.dispatch('ACTION_SET_ALERT', result.error)
             this.results[indexResult] = {
               ...this.results[indexResult],
               error: result,

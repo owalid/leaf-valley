@@ -29,6 +29,7 @@ class S3Module():
         self.S3_DATASET_FOLDER = os.environ.get("S3_DATASET_FOLDER", None)
         
         if FLASK_ENV == "dev" or self.S3_ACCESS_KEY_ID is None or self.S3_SECRET_ACCESS_KEY is None or self.S3_BASE_ENDPOINT_URL is None or self.S3_BUCKET_NAME is None:
+            print("S3module => dev mode or missing environment variables")
             return
         
         self.session = boto3.Session(aws_access_key_id=self.S3_ACCESS_KEY_ID, aws_secret_access_key=self.S3_SECRET_ACCESS_KEY, region_name='fr-par')
