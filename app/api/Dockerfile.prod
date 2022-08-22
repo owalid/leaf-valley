@@ -15,7 +15,7 @@ RUN apt-get install libgl1-mesa-glx -y
 RUN pip install -U --upgrade pip
 RUN pip install --upgrade setuptools pip
 RUN pip install -r /home/api/requirements.txt
-RUN sudo apt install gunicorn
+RUN apt install gunicorn -y
 RUN pip install boto3 eventlet==0.30.2
 RUN pip install gunicorn[eventlet]
 RUN pip install 'protobuf<=3.20.1' --force-reinstall
