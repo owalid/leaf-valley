@@ -22,4 +22,6 @@ RUN pip install 'protobuf<=3.20.1' --force-reinstall
 RUN pip install numpy --upgrade
 ENV FLASK_ENV prod
 
+EXPOSE 80
+
 CMD ["gunicorn", "--workers=1", "--threads=1", "--timeout=800", "--keep-alive=10", "main:app"]
