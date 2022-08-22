@@ -28,15 +28,15 @@
       </v-row>
       <v-col v-if="isDLModel">
         <div class="text-subtitle-1 mb-1">
-          ===<span class="mx-12">DP classification</span>===
+          ===<span class="mx-12">DL classification</span>===
         </div>
         <div class="text-caption">
           Class predicted :
-          <span :class="colorDPMatching">{{ result.dl_prediction.class }}</span>
+          <span :class="colorDLMatching">{{ result.dl_prediction.class }}</span>
         </div>
         <div class="text-caption">
           Score :
-          <span :class="colorDPScore">{{ result.dl_prediction.score }}</span>
+          <span :class="colorDLScore">{{ result.dl_prediction.score }}</span>
         </div>
       </v-col>
       <v-col v-if="isMLModel">
@@ -168,7 +168,7 @@ export default {
     }
   },
   computed: {
-    colorDPMatching() {
+    colorDLMatching() {
       if (Object.keys(this.result).includes('dl_prediction')) {
         return !this.result.img_num
           ? 'white--text'
@@ -192,7 +192,7 @@ export default {
         return 'white--text'
       }
     },
-    colorDPScore() {
+    colorDLScore() {
       if (Object.keys(this.result).includes('dl_prediction')) {
         const val = this.result.dl_prediction.score
         if (val < 50 || !this.result.img_num) {

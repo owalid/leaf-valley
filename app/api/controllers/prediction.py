@@ -538,7 +538,7 @@ class PredictionController:
         img_dict = {}
         if class_name:
             img_dict['img_species'] = class_name.split('___')[0]
-            img_dict['img_desease'] = class_name.split('___')[1].split('/')[0]
+            img_dict['img_desease'] = class_name.split('___')[-1].split('/')[-2]
             img_dict['img_num'] = class_name.split('(')[-1].split(')')[0]
         else:
             img_dict['img_species'] = ''
