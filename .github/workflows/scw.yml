@@ -43,9 +43,8 @@ jobs:
       - name: Get kubeconfig
         run: echo ${{ secrets.KUBECONFIG }} | base64 -d > app/api/kubeconfig.yaml
 
-
       - name: Cp kubeconfig
-        run: mkdir -p $HOME/.kube/ && cp app/api/kubeconfig.yaml > $HOME/.kube/config
+        run: mkdir -p $HOME/.kube/ && cp app/api/kubeconfig.yaml $HOME/.kube/config
 
       - name: test 1
         run: cat app/api/kubeconfig.yaml | wc -l
