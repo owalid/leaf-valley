@@ -18,6 +18,15 @@ jobs:
 
       - name: Copy process in api folder
         run: cp -r process app/api/
+
+      - name: Copy env file
+        run: echo ${{ secrets.API_ENV_FILE }} >> app/api/.env
+
+      - name: Env exist ?
+        run: ls -al app/api
+
+      - name: Env number of lines
+        run: cat app/api/.env | wc -l
       
       - name: Login to scaleway
         run: docker login rg.fr-par.scw.cloud/leaf-api -u nologin --password-stdin <<< ${{ secrets.SCW_SECRET_KEY }}
@@ -31,14 +40,11 @@ jobs:
       - name: Docker push in namespace
         run: docker push rg.fr-par.scw.cloud/leaf-api/leaf_api:latest
 
-      - name: Create secret
-        run: kubectl create secret docker-registry registry-secret --docker-server=rg.fr-par.scw.cloud --docker-username=leaf-api --docker-password=${{ secrets.SCW_SECRET_KEY }}
+      - name: Get kubeconfig
+        run: echo ${{ secrets.KUBECONFIG }} > app/api/kubeconfig.yaml
 
-      - name: Apply deployment.yaml
-        run: kubectl apply -f app/api/deployment.yaml
+      - name: export KUBECONFIG
+        run: EXPORT=$(pwd)/app/api/kubeconfig.yaml
 
-      - name: Delete previous svc
-        run: kubectl delete svc  leafapideploy
-
-      - name: Expose port 80
-        run: kubectl expose deployment leafapideploy --type NodePort --port 80
+      - name: Restart pods
+        run: kubectl rollout restart deployment leafapideploy

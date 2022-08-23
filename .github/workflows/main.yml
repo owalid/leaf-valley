@@ -12,27 +12,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      # # We need to do that because docker build can't copy parent directory inside a docker.
-      # - name: Copy utilities in api folder
-      #   run: cp -r utilities/ app/api/
-
-      # - name: Copy process in api folder
-      #   run: cp -r process/ app/api/
-
-      # - name: Deploy api
-      #   uses: gonuit/heroku-docker-deploy@v1.3.3
-      #   with:
-      #     email: ${{ secrets.HEROKU_EMAIL }}
-      #     heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-      #     heroku_app_name: ${{ secrets.HEROKU_APP_NAME_API }}
-      #     dockerfile_directory: ./app/api
-      #     dockerfile_name: Dockerfile.prod
-      #     docker_options: "--no-cache"
-      #     process_type: web
-      
-      # - name: Remove utilities and process in api folder
-      #   run: rm -rf app/api/utilities app/api/process
-
       - name: Deploy client
         uses: gonuit/heroku-docker-deploy@v1.3.3
         with:
