@@ -20,7 +20,7 @@ jobs:
         run: cp -r process app/api/
 
       - name: Copy env file
-        run: echo ${{ secrets.API_ENV_FILE }} >> app/api/.env
+        run: echo ${{ secrets.API_ENV_FILE }} | base64 -d > app/api/.env
 
       - name: Env exist ?
         run: ls -al app/api
@@ -41,7 +41,7 @@ jobs:
         run: docker push rg.fr-par.scw.cloud/leaf-api/leaf_api:latest
 
       - name: Get kubeconfig
-        run: echo ${{ secrets.KUBECONFIG }} > app/api/kubeconfig.yaml
+        run: echo ${{ secrets.KUBECONFIG }} | base64 -d > app/api/kubeconfig.yaml
 
       - name: export KUBECONFIG
         run: EXPORT=$(pwd)/app/api/kubeconfig.yaml
