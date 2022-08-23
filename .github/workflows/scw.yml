@@ -44,7 +44,7 @@ jobs:
         run: echo ${{ secrets.KUBECONFIG }} | base64 -d > app/api/kubeconfig.yaml
 
       - name: export KUBECONFIG
-        run: EXPORT=$(pwd)/app/api/kubeconfig.yaml
+        run: export KUBECONFIG=$(pwd)/app/api/kubeconfig.yaml
 
       - name: Restart pods
         run: kubectl rollout restart deployment leafapideploy
