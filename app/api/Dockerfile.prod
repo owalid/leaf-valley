@@ -23,4 +23,4 @@ ENV FLASK_ENV prod
 
 EXPOSE 80
 
-CMD ["gunicorn", "--workers=1", "--threads=1", "--timeout=800", "--keep-alive=10", "--bind=0.0.0.0:80", "--log-file=gunicorn.log", "-error-logfile=gunicorn-error.log", "--capture-output", "--enable-stdio-inheritance", "main:app"]
+CMD ["gunicorn", "--workers=1", "--threads=1", "--timeout=800", "--keep-alive=10", "--bind=0.0.0.0:80", "--log-file=gunicorn.log", "--error-logfile=gunicorn-error.log", "--log-level=debug", "--capture-output", "--enable-stdio-inheritance", "main:app"]
