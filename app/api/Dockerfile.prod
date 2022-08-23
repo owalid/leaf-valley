@@ -16,12 +16,11 @@ RUN pip install -U --upgrade pip
 RUN pip install --upgrade setuptools pip
 RUN pip install -r /home/api/requirements.txt
 RUN apt install gunicorn -y
-RUN pip install gunicorn boto3 eventlet==0.30.2
-RUN pip install gunicorn[eventlet]
+RUN pip install gunicorn boto3
 RUN pip install 'protobuf<=3.20.1' --force-reinstall
 RUN pip install numpy --upgrade
 ENV FLASK_ENV prod
 
 EXPOSE 80
 
-CMD ["gunicorn", "--workers=1", "--threads=1", "--timeout=800", "--keep-alive=10", "--bind=0.0.0.0:80", "main:app"]
+CMD ["gunicorn", "--workers=1", "--threads=1", "--timeout=800", "--keep-alive=10", "--bind=0.0.0.0:80", "--log-file=gunicorn.log", "-error-logfile=gunicorn-error.log", "--capture-output", "--enable-stdio-inheritance", "main:app"]
