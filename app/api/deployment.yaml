@@ -17,5 +17,10 @@ spec:
       containers:
         - name: leaf-api
           image: rg.fr-par.scw.cloud/leaf-api/leaf_api:latest
+          resources:
+            requests:
+              memory: 20Gi
+            limits:
+              memory: 22Gi
       imagePullSecrets:
         - name: registry-secret
