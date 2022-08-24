@@ -5,7 +5,6 @@ metadata:
   labels:
     app: leafapideploy
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: leafapideploy
@@ -19,8 +18,8 @@ spec:
           image: rg.fr-par.scw.cloud/leaf-api/leaf_api:latest
           resources:
             requests:
-              memory: 20Gi
+              memory: 10Gi
             limits:
-              memory: 22Gi
+              memory: 12Gi
       imagePullSecrets:
         - name: registry-secret
