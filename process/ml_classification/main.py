@@ -14,6 +14,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+import mlflow
 import argparse as ap
 from inspect import getsourcefile
 
@@ -24,7 +25,9 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import ExtraTreesClassifier
 
 from scipy import stats
-from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, classification_report
+from sklearn.model_selection import learning_curve, ShuffleSplit
+from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, classification_report, roc_auc_score, precision_score, recall_score, log_loss
+
 
 current_dir = os.path.dirname(os.path.abspath(getsourcefile(lambda: 0)))
 sys.path.insert(0, os.path.sep.join(current_dir.split(os.path.sep)[:-2]))
@@ -32,17 +35,32 @@ sys.path.insert(0, os.path.sep.join(current_dir.split(os.path.sep)[:-2]))
 from utilities.utils import local_print
 from load_data_from_h5 import load_data_from_h5
 
+from pathlib import Path
+
 scaler_dict = {
                 'NORM_MINMAX'        : MinMaxScaler(), 
                 'NORM_STANDARSCALER' : StandardScaler()
                 }
 
 def set_models_dict(classType, classModels, verbose):
-  xgc = xgb.XGBClassifier(use_label_encoder=False, objective='binary:logistic' if classType == 'HEALTHY' else 'multi:softmax', eval_metric=f1_score, n_estimators=500, n_jobs=-1, verbosity=1*verbose)
+  xgc = xgb.XGBClassifier(use_label_encoder=False, eval_metric=['error','logloss','auc'], objective='binary:logistic' if classType == 'HEALTHY' else 'multi:softmax', 
+                          n_estimators=500, n_jobs=-1)
   rfc = RandomForestClassifier(n_estimators=500, n_jobs=-1, verbose=verbose)
   etc = ExtraTreesClassifier(n_estimators=500, n_jobs=-1, verbose=verbose)
   _dict = dict([('xgc', xgc), ('rfc', rfc), ('etc', etc)])
   return { md: _dict[md.lower()] for md in classModels}
+
+def create_mlruns_folder(dir, run_name=""):
+    mlflow.set_tracking_uri(os.path.join(os.getcwd(), dir, "mlruns"))
+    mlflow.set_experiment(run_name)
+    print('Path.cwd().joinpath(dir, "mlruns").as_uri() = ', Path.cwd().joinpath(dir, "mlruns").as_uri())
+    try:
+        # creating a new experiment
+        exp_id = mlflow.create_experiment(name=run_name, artifact_location=Path.cwd().joinpath(dir, "mlruns").as_uri())
+    except Exception as e:
+        exp_id = mlflow.get_experiment_by_name(run_name).experiment_id
+
+    return exp_id
 
 def split_data(df):
     features = [f for f in df.columns if f not in ['classes','split']]
@@ -114,8 +132,77 @@ def load_model_func(md_label, class_type, dst_path, verbose):
 
     return model, scaler, le, features, options_dataset
 
+# XGC Learning Curve function
+def xgc_learning_curve(model, filename):
+    results = model.evals_result()
+    _, ax = plt.subplots(1,3,figsize=(12,3))
+    i = 0
+    for eval_metric in model.get_params()['eval_metric']:
+      ax[i].plot(results['validation_0'][eval_metric], label='train')
+      ax[i].plot(results['validation_1'][eval_metric], label='test')
+      ax[i].title.set_text(eval_metric)
+      ax[i].legend()
+      i+=1
+    plt.savefig(filename, bbox_inches='tight', orientation='landscape')
+    plt.close()     
+
+# Cross validation learning curve
+def plot_learning_curve(estimator, X, y, title, filename, ylim=(0.7, 1.01), cv=ShuffleSplit(n_splits=5, test_size=0.3, random_state=0), 
+                        n_jobs=-1, scoring="accuracy", train_sizes=np.linspace(0.1, 1.0, 10)):
+    """
+    Generate 3 plots: the test and training learning curve, 
+                      the training samples vs fit times curve, 
+                      the fit times vs score curve.
+    """
+    _, axes = plt.subplots(1, 3, figsize=(20, 5))
+
+    axes[0].set_title(title)
+    axes[0].set_ylim(*ylim)
+    axes[0].set_xlabel("Training obs")
+    axes[0].set_ylabel("Score")
+
+    train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(estimator, X, y, scoring=scoring, cv=cv, n_jobs=n_jobs, train_sizes=train_sizes, return_times=True)
+
+    train_scores_mean = np.mean(train_scores, axis=1)
+    train_scores_std  = np.std(train_scores, axis=1)
+    test_scores_mean  = np.mean(test_scores, axis=1)
+    test_scores_std   = np.std(test_scores, axis=1)
+    fit_times_mean    = np.mean(fit_times, axis=1)
+    fit_times_std     = np.std(fit_times, axis=1)
+
+    # Plot learning curve
+    axes[0].grid()
+    axes[0].fill_between(train_sizes, train_scores_mean - train_scores_std, train_scores_mean + train_scores_std, alpha=0.1, color="r")
+    axes[0].fill_between(train_sizes, test_scores_mean - test_scores_std, test_scores_mean + test_scores_std, alpha=0.1, color="g")
+    axes[0].plot(train_sizes, train_scores_mean, "o-", color="r", label="Training score")
+    axes[0].plot(train_sizes, test_scores_mean, "o-", color="g", label="Cross-validation score")
+    axes[0].legend(loc="best")
+
+    # Plot n_samples vs fit_times
+    axes[1].grid()
+    axes[1].set_title("Scalability of the model")
+    axes[1].plot(train_sizes, fit_times_mean, "o-")
+    axes[1].fill_between(train_sizes, fit_times_mean - fit_times_std, fit_times_mean + fit_times_std, alpha=0.1)
+    axes[1].set_xlabel("Training examples")
+    axes[1].set_ylabel("fit_times")
+
+    # Plot fit_time vs score
+    fit_time_argsort = fit_times_mean.argsort()
+    fit_time_sorted = fit_times_mean[fit_time_argsort]
+    test_scores_mean_sorted = test_scores_mean[fit_time_argsort]
+    test_scores_std_sorted = test_scores_std[fit_time_argsort]
+    axes[2].grid()
+    axes[2].set_title("Performance of the model")
+    axes[2].plot(fit_time_sorted, test_scores_mean_sorted, "o-")
+    axes[2].fill_between(fit_time_sorted, test_scores_mean_sorted - test_scores_std_sorted, test_scores_mean_sorted + test_scores_std_sorted, alpha=0.1)
+    axes[2].set_xlabel("fit_times")
+    axes[2].set_ylabel("Score")
+
+    plt.savefig(filename, bbox_inches='tight', orientation='landscape')
+    plt.close()
+
 # fit models
-def fit_models(X_train, y_orig, classification_models, classification_types, options_dataset, save ,md_dst, verbose):
+def fit_models(X_train, y_orig, classification_models, classification_types, options_dataset, save ,md_dst, dst_path, dtest, expid, verbose):
   # Data normalization
   scaler, X_train = data_normalization(X_train, scaler_dict[normalize_type], save=save, fit=True)
 
@@ -124,18 +211,58 @@ def fit_models(X_train, y_orig, classification_models, classification_types, opt
   for class_type in classification_types:
     # Label encoding
     le, yl_train = label_encoding(y_orig, LabelEncoder(), class_type, fit=True)
+    _, yl_test = label_encoding(dtest[1], le, class_type)
 
     # Set models dictionary
     models_dict[class_type] = set_models_dict(class_type, classification_models, verbose)
 
     # Fit models
     for md_label in models_dict[class_type].keys():
-        start = dt.now()
-        local_print(f'\033[92m+++++++++++      Fitting for model {md_label} and class type {class_type} started     ++++++++++\033[0m\n', verbose)
-        models_dict[class_type][md_label].fit(X_train, yl_train.classes)
-        if save:
-          save_model_func( md_label, models_dict[class_type][md_label], scaler, le, X_train.columns, class_type,options_dataset, md_dst, verbose)
-        local_print(f'\033[93mInfo : The training of the models finished, it took {dt.now() - start}\033[0m\n', verbose)
+        # create a training output file if not exist
+        if not os.path.exists(os.path.join(dst_path, 'training', f'{md_label.upper()}_{class_type.upper()}')):
+          os.makedirs(os.path.join(dst_path, 'training', f'{md_label.upper()}_{class_type.upper()}'))
+
+        # create a subfolder
+        if not os.path.exists(os.path.join(dst_path, 'training', f'{md_label.upper()}_{class_type.upper()}')):
+          os.mkdir(os.path.join(dst_path, 'training', f'{md_label.upper()}_{class_type.upper()}'))
+
+        filename = os.path.join(dst_path, 'training', f'{md_label.upper()}_{class_type.upper()}', f'Training_Plot_EvalPerfs_{md_label.upper()}_{class_type.upper()}.jpeg')
+        if os.path.exists(filename):
+            os.remove(filename)
+
+        with mlflow.start_run(experiment_id=expid) as r:
+            mlflow.set_tags({"mlflow.runName": f'MLC {md_label.upper()} {class_type.upper()}',
+                            'mlflow.note.content': f'This is the output of the ML CLassification model training : model ({md_label}) and class type ({class_type})'})
+            
+            start = dt.now()
+            local_print(f'\033[92m+++++++++++      Fitting for model {md_label} and class type {class_type} started     ++++++++++\033[0m\n', verbose)
+            if md_label == 'xgc':
+              models_dict[class_type][md_label].fit(X_train, yl_train.classes, eval_set=[(X_train,yl_train.classes),(X_test,yl_test.classes)], 
+                                                    verbose=max(1,models_dict[class_type][md_label].get_params()['n_estimators']//10 + 1)*10)
+              # plot learning curves
+              xgc_learning_curve(models_dict[class_type][md_label], filename)
+
+            else:
+              models_dict[class_type][md_label].fit(X_train, yl_train.classes)
+              
+              # plot learning curve
+              plot_learning_curve(models_dict[class_type][md_label], X_train, yl_train.classes, f"Learning curve for the {md_label} model and class type {class_type}", 
+                                  filename, ylim=(0.7, 1.01), cv=ShuffleSplit(n_splits=5, test_size=0.2, random_state=42), 
+                                  n_jobs=-1, scoring="accuracy", train_sizes=np.linspace(0.1, 1.0, 10))
+
+            if save:
+              save_model_func( md_label, models_dict[class_type][md_label], scaler, le, X_train.columns, class_type,options_dataset, md_dst, verbose)
+            local_print(f'\033[93mInfo : The training of the models finished, it took {dt.now() - start}\033[0m\n', verbose)
+
+            mlflow.set_tags({'ProblemType': 'ML Classification', 
+                            'ModelType': md_label, 
+                            'ModelLibrary': 'XGBoost' if md_label=='xgc' else 'Scikit-Learn'})
+
+            mlflow.log_params(models_dict[class_type][md_label].get_params(deep=False))
+
+            mlflow.log_artifacts(os.path.join(dst_path, 'plots_reports', f'{md_label.upper()}_{class_type.upper()}'))
+
+            mlflow.end_run()
 
 # Accuracy Classification Report
 def accuracy_classification_report(y_test, y_pred, classes, msg = '', filename=''):
@@ -145,18 +272,28 @@ def accuracy_classification_report(y_test, y_pred, classes, msg = '', filename='
                 }
 
   confusion_df = pd.DataFrame(confusion_mtx, columns=['y_Actual','y_Predicted'])    
-  score = (stats.spearmanr(confusion_df['y_Actual'], confusion_df['y_Predicted']))[0]
+
+  metrics = {}
+
+  metrics['spearmanr']       = 100 * (stats.spearmanr(confusion_df['y_Actual'], confusion_df['y_Predicted']))[0]
+  metrics['accuracy']        = 100 * accuracy_score(confusion_df['y_Actual'], confusion_df['y_Predicted'])
+  # metrics['auc score']       = 100 * roc_auc_score(confusion_df['y_Actual'], confusion_df['y_Predicted'], multi_class='ovo')
+  metrics['precision score'] = 100 * precision_score(confusion_df['y_Actual'], confusion_df['y_Predicted'], average='macro')
+  metrics['recall score']    = 100 * recall_score(confusion_df['y_Actual'], confusion_df['y_Predicted'], average='macro')
+  metrics['f1 score']        = 100 * f1_score(confusion_df['y_Actual'], confusion_df['y_Predicted'], average='macro')
 
   if filename == '':
     print(f'\n==================     {msg}    ================\n')
-    print(f'\033[96mSpearmnr score (っಠ‿ಠ)っ\t{100*score:.2f}')
-    print(f"Accuracy Score         :\t{100 * accuracy_score(confusion_df['y_Actual'], confusion_df['y_Predicted']):.2f}")
+    print(f"\033[96mSpearmnr score (っಠ‿ಠ)っ\t{metrics['spearmanr']:.2f}")
+    print(f"Accuracy Score         :\t{metrics['accuracy']:.2f}")
     print(f"{classification_report(confusion_df['y_Actual'], confusion_df['y_Predicted'], target_names=classes)}\033[0m")
   else:
     print(f'\n==================     {msg}    ================\n', file = open(filename, 'w'))
-    print(f'Spearmnr score (っಠ‿ಠ)っ\t{100*score:.2f}', file = open(filename, 'a'))
-    print(f"Accuracy Score         :\t{100 * accuracy_score(confusion_df['y_Actual'], confusion_df['y_Predicted']):.2f}", file = open(filename, 'a'))
+    print(f"Spearmnr score (っಠ‿ಠ)っ\t{metrics['spearmanr']:.2f}", file = open(filename, 'a'))
+    print(f"Accuracy Score         :\t{metrics['accuracy']:.2f}", file = open(filename, 'a'))
     print(classification_report(confusion_df['y_Actual'], confusion_df['y_Predicted'], target_names=classes, zero_division=0), file = open(filename, 'a'))    
+
+  return metrics
 
 # Heat map : show the confusion matrix
 def heat_map(y_pred, y_test, classes, title='', filename=''): 
@@ -191,16 +328,12 @@ def heat_map(y_pred, y_test, classes, title='', filename=''):
       plt.close()
 
 # predict models
-def predict_models(X_test_orig, y_test, classification_models, classification_types, md_dst, dst_path, save_report, save_plot, verbose):
+def predict_models(X_test_orig, y_test, classification_models, classification_types, md_dst, dst_path, save_report, save_plot, expid, verbose):
    
-  if save_plot:
-    if not os.path.exists(os.path.join(dst_path, 'plots')):
-      os.mkdir(os.path.join(dst_path, 'plots'))
+  if save_plot or save_report:
+    if not os.path.exists(os.path.join(dst_path, 'plots_reports')):
+      os.mkdir(os.path.join(dst_path, 'plots_reports'))
   
-  if save_report:
-    if not os.path.exists(os.path.join(dst_path, 'reports')):
-      os.mkdir(os.path.join(dst_path, 'reports'))
-
   # Load models
   for class_type in classification_types:
     # Set models dictionary
@@ -217,13 +350,33 @@ def predict_models(X_test_orig, y_test, classification_models, classification_ty
       # predict model on the data test
       y_pred = model.predict(X_test[features])
 
-      # Compute Accuracy Classification report
-      accuracy_classification_report(yl_test.classes, y_pred, le.classes_, msg = f'Accuracy classification report for model {md_label} and class type {class_type}', 
-                                      filename=os.path.join(dst_path, 'reports', f'ML_report_{md_label.upper()}_{class_type.upper()}.txt') if save_report else '')
+      # create a subfolder
+      if save_plot or save_report:
+        if not os.path.exists(os.path.join(dst_path, 'plots_reports', f'{md_label.upper()}_{class_type.upper()}')):
+          os.mkdir(os.path.join(dst_path, 'plots_reports', f'{md_label.upper()}_{class_type.upper()}'))
 
-      # Compute heat map for the ML classification
-      heat_map(y_pred, yl_test.classes, le.classes_, title=f'Heatmap for model {md_label} and class type {class_type}', 
-                                      filename=os.path.join(dst_path, 'plots', f'ML_heatmap_{md_label.upper()}_{class_type.upper()}') if save_plot else '')
+      with mlflow.start_run(experiment_id=expid) as r:
+          mlflow.set_tags({"mlflow.runName": f'MLC {md_label.upper()} {class_type.upper()}',
+                           'mlflow.note.content': f'This is the output of the test for the ML CLassification model : model ({md_label}) and class type ({class_type})'})
+
+          # Compute Accuracy Classification report
+          metrics = accuracy_classification_report(yl_test.classes, y_pred, le.classes_, msg = f'Accuracy classification report for model {md_label} and class type {class_type}', 
+                                          filename=os.path.join(dst_path, 'plots_reports', f'{md_label.upper()}_{class_type.upper()}', f'ML_report_{md_label.upper()}_{class_type.upper()}.txt') if save_report else '')
+
+          # Compute heat map for the ML classification
+          heat_map(y_pred, yl_test.classes, le.classes_, title=f'Heatmap for model {md_label} and class type {class_type}', 
+                                          filename=os.path.join(dst_path, 'plots_reports', f'{md_label.upper()}_{class_type.upper()}', f'ML_heatmap_{md_label.upper()}_{class_type.upper()}') if save_plot else '')
+
+          mlflow.set_tags({'ProblemType': 'ML Classification', 
+                           'ModelType': md_label, 
+                           'ModelLibrary': 'XGBoost' if md_label=='xgc' else 'Scikit-Learn'})
+
+          mlflow.log_params(model.get_params(deep=False))
+          mlflow.log_metrics(metrics)
+
+          mlflow.log_artifacts(os.path.join(dst_path, 'plots_reports', f'{md_label.upper()}_{class_type.upper()}'))
+
+          mlflow.end_run()
 
 # MAIN
 if __name__ == '__main__':
@@ -331,9 +484,12 @@ if __name__ == '__main__':
     # Split data
     X_train, y_train, X_test, y_test = split_data(df_features)
 
+    # Create a mlruns folder for the MLFLOW 
+    exp_id = create_mlruns_folder(process_output, run_name="ML Classification")
+
     if classification_step != 'PREDICT_MODEL':
       # fit models
-      fit_models(X_train, y_train, classification_models, classification_types, options_dataset, save_model, models_saved, verbose)
+      fit_models(X_train, y_train, classification_models, classification_types, options_dataset, save_model, models_saved, process_output, (X_test, y_test), exp_id, verbose)
       if classification_step == 'FIT_MODEL':
           local_print('\033[93mInfo : Models fit step ended\033[0m', verbose)
           exit(0)
@@ -345,6 +501,6 @@ if __name__ == '__main__':
         exit(1)
 
     # Predict model
-    predict_models(X_test, y_test, classification_models, classification_types, models_saved, process_output, save_reports, save_plots, verbose)
+    predict_models(X_test, y_test, classification_models, classification_types, models_saved, process_output, save_reports, save_plots, exp_id, verbose)
     local_print(f"\033[93mInfo : {'Prediction step' if classification_step == 'PREDICT_MODEL' else 'Classification job'} ended\033[0m", verbose)
     exit(0)
