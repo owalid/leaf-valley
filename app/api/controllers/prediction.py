@@ -282,7 +282,7 @@ class PredictionController:
         return df
 
     def class_split(ldf):
-        ldf['species'] = ldf.index.to_series().apply(lambda f: f.split('___')[0])
+        ldf['species'] = ldf.index.to_series().apply(lambda f: f.split('___')[0].split('/')[-1])
         ldf['desease'] = ldf.index.to_series().apply(lambda f: f.split('___')[-1].split('/')[-2])
         ldf['img_num'] = ldf.index.to_series().apply(lambda f: f.split('(')[-1].split(')')[0])
 
@@ -397,7 +397,7 @@ class PredictionController:
         output = []
         for f in folders:
             img_dict = {}
-            img_dict['img_species'] = f.split('___')[0]
+            img_dict['img_species'] = f.split('___')[0].split('/')[-1]
             img_dict['img_desease'] = f.split('___')[-1].split('/')[-2]
             img_dict['img_num'] = f.split('(')[-1].split(')')[0]
 
@@ -540,7 +540,7 @@ class PredictionController:
 
         img_dict = {}
         if class_name:
-            img_dict['img_species'] = class_name.split('___')[0]
+            img_dict['img_species'] = class_name.split('___')[0].split('/')[-1]
             img_dict['img_desease'] = class_name.split('___')[-1].split('/')[-2]
             img_dict['img_num'] = class_name.split('(')[-1].split(')')[0]
         else:
