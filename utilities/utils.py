@@ -9,15 +9,6 @@ from plantcv import plantcv as pcv
 import h5py
 import json
 
-# import os.path as path
-# import sys
-# from inspect import getsourcefile
-# current_dir = path.dirname(path.abspath(getsourcefile(lambda:0)))
-# current_dir = current_dir[:current_dir.rfind(path.sep)]
-# sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
-# from utilities.prepare_features import prepare_features
-# from utilities.remove_background_functions import remove_bg
-# from utilities.image_transformation import rgbtobgr
 
 CV_NORMALIZE_TYPE = {
     'NORM_INF': cv.NORM_INF,
@@ -44,26 +35,6 @@ def safe_get_item(dictionary, key, default=None):
       dictionary: dictionary
     '''
     return dictionary[key] if key in dictionary else default
-
-# def preprocess_pipeline_prediction(rgb_img, options):
-#   '''
-#     Preprocess image before prediction
-#   '''
-  
-#   normalize_type = None
-#   if 'normalize_type' in options.keys() and options['normalize_type'] and isinstance(options['normalize_type'], str) and options['normalize_type'] in CV_NORMALIZE_TYPE.keys():
-#     normalize_type = CV_NORMALIZE_TYPE[options['normalize_type']]
-
-#   norm_type = safe_get_item(options, 'normalize_type', None)
-#   norm_type = CV_NORMALIZE_TYPE[norm_type] if norm_type is not None else None
-#   data = {}
-#   img = prepare_features(data, rgb_img, safe_get_item(options,'features',{}), safe_get_item(options, 'should_remove_bg'),
-#                         size_img=safe_get_item(options, 'size_img', None),\
-#                         normalize_type=normalize_type,\
-#                         crop_img=safe_get_item(options, 'crop_img', False),\
-#                         is_deep_learning_features=safe_get_item(options, 'crop_img', False))
-    
-#   return img
   
 
 def chunks(arr, chunk_size):

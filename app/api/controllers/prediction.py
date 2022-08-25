@@ -398,7 +398,7 @@ class PredictionController:
         for f in folders:
             img_dict = {}
             img_dict['img_species'] = f.split('___')[0]
-            img_dict['img_desease'] = f.split('___')[1].split('/')[0]
+            img_dict['img_desease'] = f.split('___')[-1].split('/')[-2]
             img_dict['img_num'] = f.split('(')[-1].split(')')[0]
 
             # add comment if it exits
