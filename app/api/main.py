@@ -1,9 +1,12 @@
-from flask import jsonify
+import concurrent.futures
+from dotenv import load_dotenv, find_dotenv
 import os
 from flask import Flask
 from flask_cors import CORS
+from flask import g
 
-ENV = os.environ.get("FLASK_ENV", "dev")
+load_dotenv(find_dotenv())
+FLASK_ENV = os.environ.get("FLASK_ENV", "dev")
 
 def create_app(test_config=None):
     """
@@ -16,14 +19,16 @@ def create_app(test_config=None):
         app.run()
     """
     app = Flask(__name__)
+    
 
     CORS(app, origins=r"*")  # add CORS
-
+    
     # import and register blueprints
-    from routes import predict_bp
+    from routes import comment_bp, predict_bp
 
     # why blueprints http://flask.pocoo.org/docs/1.0/blueprints/
     app.register_blueprint(predict_bp.mod)
+    app.register_blueprint(comment_bp.mod)
 
     return app
 
@@ -32,5 +37,19 @@ def create_app(test_config=None):
 app = create_app()
 
 if __name__ == '__main__':
-    port = 5000 if ENV != "prod" else 80
-    app.run(host='0.0.0.0', debug=True, port=port)
+    try:
+        print("FLASK_ENV:", FLASK_ENV)
+        port = 5000 if FLASK_ENV != "prod" else 80
+        debug = FLASK_ENV == "dev"
+        
+        # import s3module
+        from modules.s3_module import S3Module
+        print("[main] init s3 end")
+        s3_module = S3Module()
+        print("[main] end init s3 end")
+        
+        app._executor = concurrent.futures.ProcessPoolExecutor(max_workers=((1+os.cpu_count()//5)*5))
+        app.run(host='0.0.0.0', debug=debug, port=port)
+    except KeyboardInterrupt:
+        if app._executor:
+            app._executor.shutdown()

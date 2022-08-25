@@ -6,11 +6,17 @@
     <h1 v-else>
       {{ otherError }}
     </h1>
+    <div v-if="alert">
+      <v-snackbar right left dense type="error">
+        {{ alert }}
+      </v-snackbar>
+    </div>
     <NuxtLink to="/"> Home page </NuxtLink>
   </v-app>
 </template>
 
 <script>
+import { mapGetters } from 'vuex'
 export default {
   name: 'EmptyLayout',
   layout: 'empty',
@@ -32,6 +38,11 @@ export default {
     return {
       title,
     }
+  },
+  computed: {
+    ...mapGetters({
+      alert: 'alert',
+    }),
   },
 }
 </script>

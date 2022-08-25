@@ -7,6 +7,8 @@
           :disabled="processingPrediction"
           label="Select a model"
           :items="models"
+          hint="Please note, machine learning models (ML-*) are unstable and took long to execute"
+          persistent-hint
         />
       </v-col>
       <v-col>
@@ -29,6 +31,7 @@
         </v-btn>
       </v-col>
     </v-row>
+
     <v-row v-for="result in results" :key="result.indexPayload">
       <render-prediction-result :result="result" />
     </v-row>
@@ -45,7 +48,7 @@ export default {
     const res = await $axios.get('/models/')
     const { result } = res.data
     return {
-      models: result.models,
+      models: [...result.models.DL, ...result.models.ML],
     }
   },
   data() {
@@ -115,6 +118,7 @@ export default {
         this.results.forEach((result, indexResult) => {
           if (result.indexPayload === indexPayload) {
             const { result } = error.response.data
+            this.$store.dispatch('ACTION_SET_ALERT', result.error)
             this.results[indexResult] = {
               ...this.results[indexResult],
               error: result,
@@ -131,12 +135,22 @@ export default {
       this.processingPrediction = true
 
       // Post to server each images in parallel
-      await Promise.all(
-        this.payloads.map((payload, indexPayload) =>
-          this.sendPostAndAddToResults(payload, indexPayload)
+      try {
+        await Promise.all(
+          this.payloads.map((payload, indexPayload) =>
+            this.sendPostAndAddToResults(payload, indexPayload)
+          )
         )
-      )
-      this.processingPrediction = false
+      } catch (error) {
+        const { result } = error.response.data
+        let errorMessage = 'Unknow error'
+        if ('error' in result) {
+          errorMessage = result.error
+        }
+        this.$store.dispatch('ACTION_SET_ALERT', errorMessage)
+      } finally {
+        this.processingPrediction = false
+      }
     },
   },
 }

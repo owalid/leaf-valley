@@ -5,6 +5,9 @@ COPY . /home/app
 WORKDIR /home/app
 
 ENV NODE_OPTIONS --openssl-legacy-provider
+ENV NUXT_BASE_API_URL https://api.leaf-valley.com/api
+ENV HOST 0.0.0.0
+ENV NUXT_HOST 0.0.0.0
 RUN npm install
 RUN npm run build
 

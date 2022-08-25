@@ -1,0 +1,65 @@
+name: Deploy api to scaleway.
+
+
+# Run workflow on every push to master branch.
+on:
+  push:
+    branches: [main]
+
+# Your workflows jobs.
+jobs:
+  deploy_scw:
+    runs-on: ubuntu-latest
+    steps:
+      # Check-out your repository.
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # We need to do that because docker build can't copy parent directory inside a docker.
+      - name: Copy utilities in api folder
+        run: cp -r utilities app/api/
+
+      - name: Copy process in api folder
+        run: cp -r process app/api/
+
+      - name: Copy env file
+        run: echo ${{ secrets.API_ENV_FILE }} | base64 -d > app/api/.env
+
+      - name: Env exist ?
+        run: ls -al app/api
+
+      - name: Env number of lines
+        run: cat app/api/.env | wc -l
+      
+      - name: Login to scaleway
+        run: docker login rg.fr-par.scw.cloud/leaf-api -u nologin --password-stdin <<< ${{ secrets.SCW_SECRET_KEY }}
+
+      - name: Docker build
+        run: cd app/api && docker build -t leaf_api:latest -f Dockerfile.prod .
+
+      - name: Docker tag
+        run: docker tag leaf_api:latest rg.fr-par.scw.cloud/leaf-api/leaf_api:latest
+
+      - name: Docker push in namespace
+        run: docker push rg.fr-par.scw.cloud/leaf-api/leaf_api:latest
+
+      - name: Get kubeconfig
+        run: echo ${{ secrets.KUBECONFIG }} | base64 -d > app/api/kubeconfig.yaml
+
+      - name: Cp kubeconfig
+        run: mkdir -p $HOME/.kube/ && cp app/api/kubeconfig.yaml $HOME/.kube/config
+
+      - name: Export KUBECONFIG
+        run: export KUBECONFIG=$(pwd)/app/api/kubeconfig.yaml
+            
+      - name: Scale 0 replicas
+        run: kubectl scale deployment leafapideploy --replicas=0
+
+      - name: Apply deployment
+        run: kubectl apply -f app/api/deployment.yaml
+
+      - name: scale 1 replicas
+        run: kubectl scale deployment leafapideploy --replicas=1
+
+      - name: Rollout restart
+        run: kubectl rollout restart deployment leafapideploy
