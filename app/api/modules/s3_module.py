@@ -42,7 +42,6 @@ class S3Module():
         return self.session.client('s3', endpoint_url=self.S3_BASE_ENDPOINT_URL)
     
     def get_s3_resource(self):
-        # session = boto3.Session(aws_access_key_id=self.S3_ACCESS_KEY_ID, aws_secret_access_key=self.S3_SECRET_ACCESS_KEY)
         return self.session.resource('s3', endpoint_url=self.S3_BASE_ENDPOINT_URL)
     
     def get_models_list(self):
