@@ -1,7 +1,10 @@
 name: Deploy api to scaleway.
 
+
 # Run workflow on every push to master branch.
-on: ['push']
+on:
+  push:
+    branches: [main]
 
 # Your workflows jobs.
 jobs:
@@ -46,18 +49,17 @@ jobs:
       - name: Cp kubeconfig
         run: mkdir -p $HOME/.kube/ && cp app/api/kubeconfig.yaml $HOME/.kube/config
 
-      - name: export KUBECONFIG
+      - name: Export KUBECONFIG
         run: export KUBECONFIG=$(pwd)/app/api/kubeconfig.yaml
-
             
-      - name: scale 0 pods
+      - name: Scale 0 replicas
         run: kubectl scale deployment leafapideploy --replicas=0
 
-      - name: export KUBECONFIG
+      - name: Apply deployment
         run: kubectl apply -f app/api/deployment.yaml
 
-      - name: scale 1 pods
+      - name: scale 1 replicas
         run: kubectl scale deployment leafapideploy --replicas=1
 
-      - name: Restart pods
+      - name: Rollout restart
         run: kubectl rollout restart deployment leafapideploy

@@ -1,7 +1,9 @@
 name: Deploy client to heroku.
 
 # Run workflow on every push to master branch.
-on: ['push']
+on:
+  push:
+    branches: [main]
 
 # Your workflows jobs.
 jobs:
