@@ -186,15 +186,15 @@ class PredictionController:
             
             model, options_dataset, class_names = model_loaded
             PredictionController.models_dict[model_name] = { 'model': model, 'options_dataset': options_dataset, 'class_names': class_names }
-            
+            return PredictionController.models_dict[model_name]
+
         else:
             ml_model = PredictionController.load_ml_model(model_path, model_name)
             
             if not ml_model:
                 return None
-            PredictionController.models_dict[model_name] = ml_model
-    
-        return PredictionController.models_dict[model_name]
+
+            return ml_model
 
     def get_models():
         '''
