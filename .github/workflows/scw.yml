@@ -49,5 +49,8 @@ jobs:
       - name: export KUBECONFIG
         run: export KUBECONFIG=$(pwd)/app/api/kubeconfig.yaml
 
+      - name: export KUBECONFIG
+        run: kubectl apply -f app/api/deployment.yaml
+
       - name: Restart pods
         run: kubectl rollout restart deployment leafapideploy

@@ -7,6 +7,8 @@
           :disabled="processingPrediction"
           label="Select a model"
           :items="models"
+          hint="Please note, machine learning models are unstable and took long to execute"
+          persistent-hint
         />
       </v-col>
       <v-col>
@@ -133,12 +135,22 @@ export default {
       this.processingPrediction = true
 
       // Post to server each images in parallel
-      await Promise.all(
-        this.payloads.map((payload, indexPayload) =>
-          this.sendPostAndAddToResults(payload, indexPayload)
+      try {
+        await Promise.all(
+          this.payloads.map((payload, indexPayload) =>
+            this.sendPostAndAddToResults(payload, indexPayload)
+          )
         )
-      )
-      this.processingPrediction = false
+      } catch (error) {
+        const { result } = error.response.data
+        let errorMessage = 'Unknow error'
+        if ('error' in result) {
+          errorMessage = result.error
+        }
+        this.$store.dispatch('ACTION_SET_ALERT', errorMessage)
+      } finally {
+        this.processingPrediction = false
+      }
     },
   },
 }

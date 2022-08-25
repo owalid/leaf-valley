@@ -45,6 +45,8 @@
           :items="mlModels"
           :disabled="predictionInProgress"
           :error-messages="selectedModelsErrors"
+          hint="Please note, machine learning models are unstable and took long to execute"
+          persistent-hint
           dense
         ></v-select>
       </v-col>
@@ -184,7 +186,11 @@ export default {
           // eslint-disable-next-line no-console
           console.error(error)
           const { result } = error.response.data
-          this.$store.dispatch('ACTION_SET_ALERT', result.error)
+          let errorMessage = 'Unknow error'
+          if ('error' in result) {
+            errorMessage = result.error
+          }
+          this.$store.dispatch('ACTION_SET_ALERT', errorMessage)
         } finally {
           this.isLoading = false
           this.predictionInProgress = false
