@@ -10,7 +10,6 @@ WORKDIR /home/api
 
 RUN apt-get update -y
 RUN apt-get install python3-opencv -y
-RUN apt-get install vim -y
 RUN apt-get install libgl1-mesa-glx -y
 RUN pip install -U --upgrade pip
 RUN pip install --upgrade setuptools pip

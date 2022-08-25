@@ -18,8 +18,10 @@ spec:
           image: rg.fr-par.scw.cloud/leaf-api/leaf_api:latest
           resources:
             requests:
-              memory: 15Gi
+              memory: "14Gi"
+              cpu: "2000m"
             limits:
-              memory: 15Gi
+              memory: "14Gi"
+              cpu: "2000m"
       imagePullSecrets:
         - name: registry-secret

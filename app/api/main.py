@@ -40,7 +40,7 @@ if __name__ == '__main__':
     try:
         print("FLASK_ENV:", FLASK_ENV)
         port = 5000 if FLASK_ENV != "prod" else 80
-        # debug = FLASK_ENV == "dev"
+        debug = FLASK_ENV == "dev"
         
         # import s3module
         from modules.s3_module import S3Module
@@ -49,7 +49,7 @@ if __name__ == '__main__':
         print("[main] end init s3 end")
         
         app._executor = concurrent.futures.ProcessPoolExecutor(max_workers=((1+os.cpu_count()//5)*5))
-        app.run(host='0.0.0.0', debug=True, port=port)
+        app.run(host='0.0.0.0', debug=debug, port=port)
     except KeyboardInterrupt:
         if app._executor:
             app._executor.shutdown()

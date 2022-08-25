@@ -45,7 +45,7 @@
           :items="mlModels"
           :disabled="predictionInProgress"
           :error-messages="selectedModelsErrors"
-          hint="Please note, machine learning models are unstable and took long to execute"
+          hint="Please note, machine learning models (ML-*) are unstable and took long to execute"
           persistent-hint
           dense
         ></v-select>

@@ -51,6 +51,12 @@ jobs:
 
       - name: export KUBECONFIG
         run: kubectl apply -f app/api/deployment.yaml
+      
+      - name: scale 0 pods
+        run: kubectl scale deployment leafapideploy --replicas=0
+      
+      - name: scale 1 pods
+        run: kubectl scale deployment leafapideploy --replicas=1
 
       - name: Restart pods
         run: kubectl rollout restart deployment leafapideploy
