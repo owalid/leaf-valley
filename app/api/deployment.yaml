@@ -19,9 +19,9 @@ spec:
           resources:
             requests:
               memory: "14Gi"
-              cpu: "2000m"
+              cpu: "1000m"
             limits:
               memory: "14Gi"
-              cpu: "2000m"
+              cpu: "1000m"
       imagePullSecrets:
         - name: registry-secret

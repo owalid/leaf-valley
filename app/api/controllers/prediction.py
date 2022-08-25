@@ -170,9 +170,12 @@ class PredictionController:
         if model_name in PredictionController.models_dict.keys():
             return PredictionController.models_dict[model_name]
 
-        if PredictionController.is_production() and len(PredictionController.models_dict.keys()) >= 3:
-            PredictionController.models_dict = dict(list(PredictionController.models_dict.items())[-2:])
-            
+        if PredictionController.is_production():
+            if md_grp == 'ML':
+               PredictionController.models_dict = dict()
+            else:
+                PredictionController.models_dict = {k: v for k, v in list(PredictionController.models_dict.items())[-2:] if k.startswith('DL')}
+    
         ext = '.h5' if md_grp == 'DL' else '.pkl.z'
         model_path = f'../../data/models_saved/{model_name}{ext}'
         
@@ -186,7 +189,6 @@ class PredictionController:
             
             model, options_dataset, class_names = model_loaded
             PredictionController.models_dict[model_name] = { 'model': model, 'options_dataset': options_dataset, 'class_names': class_names }
-            return PredictionController.models_dict[model_name]
 
         else:
             ml_model = PredictionController.load_ml_model(model_path, model_name)
@@ -194,7 +196,9 @@ class PredictionController:
             if not ml_model:
                 return None
 
-            return ml_model
+            PredictionController.models_dict[model_name] = ml_model
+    
+        return PredictionController.models_dict[model_name]
 
     def get_models():
         '''
