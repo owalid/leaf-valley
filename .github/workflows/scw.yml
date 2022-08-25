@@ -49,12 +49,13 @@ jobs:
       - name: export KUBECONFIG
         run: export KUBECONFIG=$(pwd)/app/api/kubeconfig.yaml
 
-      - name: export KUBECONFIG
-        run: kubectl apply -f app/api/deployment.yaml
-      
+            
       - name: scale 0 pods
         run: kubectl scale deployment leafapideploy --replicas=0
-      
+
+      - name: export KUBECONFIG
+        run: kubectl apply -f app/api/deployment.yaml
+
       - name: scale 1 pods
         run: kubectl scale deployment leafapideploy --replicas=1
 
