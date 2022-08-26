@@ -1,0 +1,21 @@
+name: Deploy client to Render.
+
+# Run workflow on every push to master branch.
+on: ['push']
+  # push:
+  #   branches: [main]
+
+# Your workflows jobs.
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # Check-out your repository.
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Deploy client
+        uses: johnbeynon/render-deploy-action
+        with:
+          service-id: ${{ secrets.RENDER_SERVICE_ID }}
+          api-key: ${{ secrets.RENDER_API_KEY }}
