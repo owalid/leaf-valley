@@ -263,7 +263,7 @@ def fit_models(X_train, y_orig, classification_models, classification_types, opt
 
             mlflow.log_params(models_dict[class_type][md_label].get_params(deep=False))
 
-            mlflow.log_artifacts(os.path.join(dst_path, 'plots_reports', f'{md_label.upper()}_{class_type.upper()}'))
+            mlflow.log_artifacts(os.path.join(dst_path, 'training', f'{md_label.upper()}_{class_type.upper()}'))
 
             mlflow.end_run()
 
@@ -332,10 +332,6 @@ def heat_map(y_pred, y_test, classes, title='', filename=''):
 
 # predict models
 def predict_models(X_test_orig, y_test, classification_models, classification_types, md_dst, dst_path, save_report, save_plot, expid):
-   
-  if save_plot or save_report:
-    if not os.path.exists(os.path.join(dst_path, 'plots_reports')):
-      os.mkdir(os.path.join(dst_path, 'plots_reports'))
   
   # Load models
   for class_type in classification_types:
@@ -354,9 +350,8 @@ def predict_models(X_test_orig, y_test, classification_models, classification_ty
       y_pred = model.predict(X_test[features])
 
       # create a subfolder
-      if save_plot or save_report:
-        if not os.path.exists(os.path.join(dst_path, 'plots_reports', f'{md_label.upper()}_{class_type.upper()}')):
-          os.mkdir(os.path.join(dst_path, 'plots_reports', f'{md_label.upper()}_{class_type.upper()}'))
+      if not os.path.exists(os.path.join(dst_path, 'plots_reports', f'{md_label.upper()}_{class_type.upper()}')):
+        os.makedirs(os.path.join(dst_path, 'plots_reports', f'{md_label.upper()}_{class_type.upper()}'))
 
       with mlflow.start_run(experiment_id=expid) as r:
           mlflow.set_tags({"mlflow.runName": f'MLC {md_label.upper()} {class_type.upper()}',
