@@ -1,6 +1,8 @@
 <template>
-  <div class="pa-2">
-    <v-card :width="$vuetify.breakpoint.mdAndDown ? '200' : '300'">
+  <div 
+    :class="[{'pa-2': $vuetify.breakpoint.mdAndUp}]"
+  >
+    <v-card :width="$vuetify.breakpoint.mdAndDown ? '400' : '300'">
       <v-col>
         <div class="text-subtitle-1 mb-1">
           Species : {{ result.img_species }}
@@ -15,15 +17,15 @@
           contain
           :src="`data:image/png;base64,${result.rgb_img}`"
           class="ml-auto img-prediction"
-          :width="$vuetify.breakpoint.mdAndDown ? '70' : '130'"
-          :height="$vuetify.breakpoint.mdAndDown ? '70' : '130'"
+          :width="$vuetify.breakpoint.mdAndDown ? '150' : '130'"
+          :height="$vuetify.breakpoint.mdAndDown ? '150' : '130'"
         />
         <v-img
           contain
           :src="`data:image/png;base64,${result.masked_img}`"
           class="ml-auto img-prediction"
-          :width="$vuetify.breakpoint.mdAndDown ? '70' : '130'"
-          :height="$vuetify.breakpoint.mdAndDown ? '70' : '130'"
+          :width="$vuetify.breakpoint.mdAndDown ? '150' : '130'"
+          :height="$vuetify.breakpoint.mdAndDown ? '150' : '130'"
         />
       </v-row>
       <v-col v-if="isDLModel">
@@ -334,17 +336,10 @@ export default {
   height: 200px;
 }
 
-@media (max-width: 768px) {
-  .img-prediction {
-    max-width: 100px;
-    height: 100px;
-  }
-}
-
 @media (max-width: 576px) {
   .img-prediction {
-    max-width: 70px;
-    height: 70px;
+    max-width: 300px;
+    height: 300px;
   }
 
   .progress-prediction {

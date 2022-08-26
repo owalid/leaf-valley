@@ -468,8 +468,6 @@ class PredictionController:
             - ml_model: machine learning model name (string)
             - dl_model: deep learning model name (string)
         '''
-        global models, class_names
-
         if not (nb_img and species and desease and (ml_model or dl_model)):
             return create_response(data={'error': 'Incorrect date input \n Please select the correct ones !!!'}, status=500)
 
