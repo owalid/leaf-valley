@@ -1,7 +1,5 @@
 <template>
-  <div 
-    :class="[{'pa-2': $vuetify.breakpoint.mdAndUp}]"
-  >
+  <div :class="[{ 'pa-2': $vuetify.breakpoint.mdAndUp }]">
     <v-card :width="$vuetify.breakpoint.mdAndDown ? '400' : '300'">
       <v-col>
         <div class="text-subtitle-1 mb-1">
