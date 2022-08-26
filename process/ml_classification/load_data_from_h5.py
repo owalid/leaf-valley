@@ -6,7 +6,6 @@
 '''
 
 import os
-import sys
 from timeit import repeat
 import h5py
 import json
@@ -18,12 +17,11 @@ from itertools import repeat
 from sklearn.utils import shuffle
 from datetime import datetime as dt
 
-from inspect import getsourcefile
-current_dir = os.path.dirname(os.path.abspath(getsourcefile(lambda: 0)))
-sys.path.insert(0, os.path.sep.join(current_dir.split(os.path.sep)[:-2]))
 
-from utilities.utils import local_print
-
+def local_print(msg, verbose):
+    if verbose:
+        print(msg)
+ 
 def convert_to_df(lst, filename):
     with h5py.File(filename, 'r') as hf:
         try:

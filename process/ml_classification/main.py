@@ -32,28 +32,31 @@ from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, classifi
 current_dir = os.path.dirname(os.path.abspath(getsourcefile(lambda: 0)))
 sys.path.insert(0, os.path.sep.join(current_dir.split(os.path.sep)[:-2]))
 
-from utilities.utils import local_print
 from load_data_from_h5 import load_data_from_h5
 
 from pathlib import Path
 
+VERBOSE = False
 scaler_dict = {
                 'NORM_MINMAX'        : MinMaxScaler(), 
                 'NORM_STANDARSCALER' : StandardScaler()
                 }
 
-def set_models_dict(classType, classModels, verbose):
+def local_print(msg):
+    if VERBOSE:
+        print(msg)
+
+def set_models_dict(classType, classModels):
   xgc = xgb.XGBClassifier(use_label_encoder=False, eval_metric=['error','logloss','auc'], objective='binary:logistic' if classType == 'HEALTHY' else 'multi:softmax', 
                           n_estimators=500, n_jobs=-1)
-  rfc = RandomForestClassifier(n_estimators=500, n_jobs=-1, verbose=verbose)
-  etc = ExtraTreesClassifier(n_estimators=500, n_jobs=-1, verbose=verbose)
+  rfc = RandomForestClassifier(n_estimators=500, n_jobs=-1, verbose=VERBOSE)
+  etc = ExtraTreesClassifier(n_estimators=500, n_jobs=-1, verbose=VERBOSE)
   _dict = dict([('xgc', xgc), ('rfc', rfc), ('etc', etc)])
   return { md: _dict[md.lower()] for md in classModels}
 
 def create_mlruns_folder(dir, run_name=""):
     mlflow.set_tracking_uri(os.path.join(os.getcwd(), dir, "mlruns"))
     mlflow.set_experiment(run_name)
-    print('Path.cwd().joinpath(dir, "mlruns").as_uri() = ', Path.cwd().joinpath(dir, "mlruns").as_uri())
     try:
         # creating a new experiment
         exp_id = mlflow.create_experiment(name=run_name, artifact_location=Path.cwd().joinpath(dir, "mlruns").as_uri())
@@ -101,7 +104,7 @@ def label_encoding(df, le, class_type, fit=False):
   return le, _df
 
 # Save model
-def save_model_func(md_label, model, scaler, le, features, class_type, options_dataset, dst_path, verbose):
+def save_model_func(md_label, model, scaler, le, features, class_type, options_dataset, dst_path):
     path = os.path.join(dst_path, f'ML_{md_label.upper()}_{class_type}.pkl.z')
     if os.path.exists(path):
         os.remove(path)
@@ -113,10 +116,10 @@ def save_model_func(md_label, model, scaler, le, features, class_type, options_d
     md_dict['ml_features'] = features
     md_dict['options_dataset'] = options_dataset
     joblib.dump(md_dict, path)
-    local_print(f'\033[93mInfo : model {md_label} has been saved !!!§\033[0m', verbose)
+    local_print(f'\033[93mInfo : model {md_label} has been saved !!!§\033[0m')
 
 # Load model
-def load_model_func(md_label, class_type, dst_path, verbose):
+def load_model_func(md_label, class_type, dst_path):
     path = os.path.join(dst_path, f'ML_{md_label.upper()}_{class_type}.pkl.z')
     if not os.path.exists(path):
         print(f"\033[91mError : the ML_{md_label.upper()}_{class_type}.pkl.z does not exist !!!\033[0m")
@@ -128,7 +131,7 @@ def load_model_func(md_label, class_type, dst_path, verbose):
     le = md_dict['ml_label_encoder']
     features = md_dict['ml_features']
     options_dataset = md_dict['options_dataset']
-    local_print(f'\033[93mInfo : model {md_label} has been loaded !!!§\033[0m', verbose)
+    local_print(f'\033[93mInfo : model {md_label} has been loaded !!!§\033[0m')
 
     return model, scaler, le, features, options_dataset
 
@@ -202,7 +205,7 @@ def plot_learning_curve(estimator, X, y, title, filename, ylim=(0.7, 1.01), cv=S
     plt.close()
 
 # fit models
-def fit_models(X_train, y_orig, classification_models, classification_types, options_dataset, save ,md_dst, dst_path, dtest, expid, verbose):
+def fit_models(X_train, y_orig, classification_models, classification_types, options_dataset, save ,md_dst, dst_path, dtest, expid):
   # Data normalization
   scaler, X_train = data_normalization(X_train, scaler_dict[normalize_type], save=save, fit=True)
 
@@ -214,7 +217,7 @@ def fit_models(X_train, y_orig, classification_models, classification_types, opt
     _, yl_test = label_encoding(dtest[1], le, class_type)
 
     # Set models dictionary
-    models_dict[class_type] = set_models_dict(class_type, classification_models, verbose)
+    models_dict[class_type] = set_models_dict(class_type, classification_models)
 
     # Fit models
     for md_label in models_dict[class_type].keys():
@@ -235,7 +238,7 @@ def fit_models(X_train, y_orig, classification_models, classification_types, opt
                             'mlflow.note.content': f'This is the output of the ML CLassification model training : model ({md_label}) and class type ({class_type})'})
             
             start = dt.now()
-            local_print(f'\033[92m+++++++++++      Fitting for model {md_label} and class type {class_type} started     ++++++++++\033[0m\n', verbose)
+            local_print(f'\033[92m+++++++++++      Fitting for model {md_label} and class type {class_type} started     ++++++++++\033[0m\n')
             if md_label == 'xgc':
               models_dict[class_type][md_label].fit(X_train, yl_train.classes, eval_set=[(X_train,yl_train.classes),(X_test,yl_test.classes)], 
                                                     verbose=max(1,models_dict[class_type][md_label].get_params()['n_estimators']//10 + 1)*10)
@@ -251,8 +254,8 @@ def fit_models(X_train, y_orig, classification_models, classification_types, opt
                                   n_jobs=-1, scoring="accuracy", train_sizes=np.linspace(0.1, 1.0, 10))
 
             if save:
-              save_model_func( md_label, models_dict[class_type][md_label], scaler, le, X_train.columns, class_type,options_dataset, md_dst, verbose)
-            local_print(f'\033[93mInfo : The training of the models finished, it took {dt.now() - start}\033[0m\n', verbose)
+              save_model_func( md_label, models_dict[class_type][md_label], scaler, le, X_train.columns, class_type,options_dataset, md_dst)
+            local_print(f'\033[93mInfo : The training of the models finished, it took {dt.now() - start}\033[0m\n')
 
             mlflow.set_tags({'ProblemType': 'ML Classification', 
                             'ModelType': md_label, 
@@ -328,7 +331,7 @@ def heat_map(y_pred, y_test, classes, title='', filename=''):
       plt.close()
 
 # predict models
-def predict_models(X_test_orig, y_test, classification_models, classification_types, md_dst, dst_path, save_report, save_plot, expid, verbose):
+def predict_models(X_test_orig, y_test, classification_models, classification_types, md_dst, dst_path, save_report, save_plot, expid):
    
   if save_plot or save_report:
     if not os.path.exists(os.path.join(dst_path, 'plots_reports')):
@@ -338,8 +341,8 @@ def predict_models(X_test_orig, y_test, classification_models, classification_ty
   for class_type in classification_types:
     # Set models dictionary
     for md_label in classification_models:
-      local_print(f'\033[92m+++++++++++      Prediction for model {md_label} and class type {class_type} started     ++++++++++\033[0m\n', verbose)
-      model, scaler, le, features, _ = load_model_func(md_label, class_type, md_dst, verbose)
+      local_print(f'\033[92m+++++++++++      Prediction for model {md_label} and class type {class_type} started     ++++++++++\033[0m\n')
+      model, scaler, le, features, _ = load_model_func(md_label, class_type, md_dst)
 
       # Label encoding
       _, yl_test = label_encoding(y_test, le, class_type)
@@ -430,13 +433,13 @@ if __name__ == '__main__':
     save_model            = args.save_model
     save_plots            = args.save_plots
     save_reports          = args.save_reports
-    verbose               = args.verbose
+    VERBOSE               = args.verbose
     
     random.seed(42)
 
     # Display the arguments set for the programm
     os.system('clear')
-    print("\n===========    Script arguemnts    ===========\n")
+    print("\n===========    Script arguements    ===========\n")
     for k in ['src_directory','file_basename']+[k for k in vars(args).keys() if k !='filename']:
       print(f'[+] {k.ljust(22)}: {vars()[k]}')
 
@@ -447,14 +450,14 @@ if __name__ == '__main__':
 
     if not os.path.exists(process_output):
       os.makedirs(process_output)
-      local_print(f'\n\033[93mInfo : folder {process_output} was created successfully !!\033[0m\n', verbose)
+      local_print(f'\n\033[93mInfo : folder {process_output} was created successfully !!\033[0m\n')
 
     if classification_step in ['ALL', 'LOAD_DATA'] :
       if not os.path.exists(os.path.join(src_directory, f'{file_basename}.h5')):
         print(f'\033[91mError : filename ({file_basename}.h5) not a h5 file or doesn\'t exist\033[0m')
         exit(1)
       else:
-        df_features, options_dataset = load_data_from_h5(src_directory, f'{file_basename}.h5', verbose)
+        df_features, options_dataset = load_data_from_h5(src_directory, f'{file_basename}.h5', VERBOSE)
 
         # Fill NaN values
         df_features.fillna(0, inplace=True)
@@ -470,7 +473,7 @@ if __name__ == '__main__':
           joblib.dump(options_dataset, os.path.join(process_output, 'data', file_basename+"_options_dataset.joblib"))
         
         if classification_step == 'LOAD_DATA':
-          local_print('\033[93mInfo : Load data job ended\033[0m', verbose)
+          local_print('\033[93mInfo : Load data job ended\033[0m')
           exit(0)
 
     # load data if not yet loaded
@@ -489,9 +492,9 @@ if __name__ == '__main__':
 
     if classification_step != 'PREDICT_MODEL':
       # fit models
-      fit_models(X_train, y_train, classification_models, classification_types, options_dataset, save_model, models_saved, process_output, (X_test, y_test), exp_id, verbose)
+      fit_models(X_train, y_train, classification_models, classification_types, options_dataset, save_model, models_saved, process_output, (X_test, y_test), exp_id)
       if classification_step == 'FIT_MODEL':
-          local_print('\033[93mInfo : Models fit step ended\033[0m', verbose)
+          local_print('\033[93mInfo : Models fit step ended\033[0m')
           exit(0)
 
     # Check if the process output exists
@@ -501,6 +504,6 @@ if __name__ == '__main__':
         exit(1)
 
     # Predict model
-    predict_models(X_test, y_test, classification_models, classification_types, models_saved, process_output, save_reports, save_plots, exp_id, verbose)
-    local_print(f"\033[93mInfo : {'Prediction step' if classification_step == 'PREDICT_MODEL' else 'Classification job'} ended\033[0m", verbose)
+    predict_models(X_test, y_test, classification_models, classification_types, models_saved, process_output, save_reports, save_plots, exp_id)
+    local_print(f"\033[93mInfo : {'Prediction step' if classification_step == 'PREDICT_MODEL' else 'Classification job'} ended\033[0m")
     exit(0)

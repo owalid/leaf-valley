@@ -29,10 +29,6 @@ def update_data_dict(data_dict, key, value):
   data_dict[key].append(value)
   return data_dict
 
-def local_print(msg, verbose):
-    if verbose:
-        print(f'\n[+] {msg}\n')
-
 def safe_get_item(dictionary, key, default=None):
     '''
       Get item from dictionary
