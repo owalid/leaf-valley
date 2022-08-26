@@ -438,9 +438,8 @@ if __name__ == '__main__':
     random.seed(42)
 
     # Display the arguments set for the programm
-    os.system('clear')
     print("\n===========    Script arguements    ===========\n")
-    for k in ['src_directory','file_basename']+[k for k in vars(args).keys() if k !='filename']:
+    for k in ['src_directory','file_basename']+[k for k in vars(args).keys() if k != 'filename' and k != 'verbose']:
       print(f'[+] {k.ljust(22)}: {vars()[k]}')
 
     # Check if the classification step is correct
