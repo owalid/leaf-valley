@@ -4,13 +4,7 @@
       {{ errorMessage }}
     </v-alert>
     <v-row class="mt-2" justify="center">
-      <v-col
-        class="mx-3"
-        cols="12"
-        sm="12"
-        md="6"
-        lg="2"
-      >
+      <v-col class="mx-3" cols="12" sm="12" md="6" lg="2">
         <v-combobox
           v-model="selectedClass"
           label="Class"
@@ -21,13 +15,7 @@
           dense
         />
       </v-col>
-      <v-col
-        class="mx-3"
-        cols="12"
-        sm="12"
-        md="6"
-        lg="2"
-      >
+      <v-col class="mx-3" cols="12" sm="12" md="6" lg="2">
         <v-file-input
           v-model="selectdFile"
           label="Upload a file"
@@ -41,13 +29,7 @@
           @change="onChangeFileInput"
         />
       </v-col>
-      <v-col
-        class="mx-8"
-        cols="12"
-        sm="12"
-        md="6"
-        lg="2"
-      >
+      <v-col class="mx-8" cols="12" sm="12" md="6" lg="2">
         <v-select
           v-model="dlModelSelected"
           label="DL model"
@@ -57,13 +39,7 @@
           dense
         ></v-select>
       </v-col>
-      <v-col
-        class="mx-8"
-        cols="12"
-        sm="12"
-        md="6"
-        lg="2"
-      >
+      <v-col class="mx-8" cols="12" sm="12" md="6" lg="2">
         <v-select
           v-model="mlModelSelected"
           label="ML model"
@@ -76,13 +52,7 @@
         ></v-select>
       </v-col>
 
-      <v-col
-        class="mx-8"
-        cols="12"
-        sm="12"
-        md="6"
-        lg="2"
-      >
+      <v-col class="mx-8" cols="12" sm="12" md="6" lg="2">
         <v-btn
           color="green lighten-1"
           :disabled="predictionInProgress"
@@ -100,7 +70,11 @@
       ></v-progress-circular>
     </v-row>
     <v-row v-else justify="center" class="mt-15">
-      <v-col v-for="result in results" :key="result.indexPayload" align="center">
+      <v-col
+        v-for="result in results"
+        :key="result.indexPayload"
+        align="center"
+      >
         <display-images-and-prediction :result="result" />
       </v-col>
     </v-row>

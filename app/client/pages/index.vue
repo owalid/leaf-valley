@@ -1,12 +1,7 @@
 <template>
   <v-container>
     <v-row align="baseline">
-      <v-col
-        cols="12"
-        sm="12"
-        md="6"
-        lg="3"
-      >
+      <v-col cols="12" sm="12" md="6" lg="3">
         <v-select
           v-model="modelSelected"
           :disabled="processingPrediction"
@@ -16,12 +11,7 @@
           persistent-hint
         />
       </v-col>
-      <v-col
-        cols="12"
-        sm="12"
-        md="6"
-        lg="4"
-      >
+      <v-col cols="12" sm="12" md="6" lg="4">
         <v-file-input
           v-model="rawFiles"
           multiple
@@ -33,20 +23,10 @@
           @change="onChangeFileInput"
         />
       </v-col>
-      <v-col
-        cols="12"
-        sm="12"
-        md="6"
-        lg="2"
-      >
+      <v-col cols="12" sm="12" md="6" lg="2">
         <v-switch v-model="shouldRemoveBg" label="Remove background ?" />
       </v-col>
-      <v-col
-        cols="12"
-        sm="12"
-        md="6"
-        lg="2"
-      >
+      <v-col cols="12" sm="12" md="6" lg="2">
         <v-btn
           color="green lighten-1"
           :disabled="processingPrediction"
@@ -185,5 +165,4 @@ export default {
   border-radius: 5px;
   width: 25%;
 }
-
 </style>

@@ -4,12 +4,7 @@
       {{ errorMessage }}
     </v-alert>
     <v-row class="mt-2">
-      <v-col
-        cols="12"
-        sm="12"
-        md="6"
-        lg="2"
-      >
+      <v-col cols="12" sm="12" md="6" lg="2">
         <v-select
           v-model="selectedSpecies"
           label="Species"
@@ -20,12 +15,7 @@
           @change="changeSpecies"
         />
       </v-col>
-      <v-col
-        cols="12"
-        sm="12"
-        md="6"
-        lg="2"
-      >
+      <v-col cols="12" sm="12" md="6" lg="2">
         <v-select
           v-model="selectedDesease"
           label="Deseases"
@@ -35,12 +25,7 @@
           :error-messages="selectedDeseaseErrors"
         ></v-select>
       </v-col>
-      <v-col
-        cols="12"
-        sm="12"
-        md="6"
-        lg="2"
-      >
+      <v-col cols="12" sm="12" md="6" lg="2">
         <v-select
           v-model="dlModelSelected"
           label="DL model"
@@ -50,12 +35,7 @@
           dense
         ></v-select>
       </v-col>
-      <v-col
-        cols="12"
-        sm="12"
-        md="6"
-        lg="2"
-      >
+      <v-col cols="12" sm="12" md="6" lg="2">
         <v-select
           v-model="mlModelSelected"
           label="ML model"
@@ -69,15 +49,12 @@
       </v-col>
       <v-col
         class="ml-8 pa-0"
-        :class="[{'mt-5': $vuetify.breakpoint.mdAndDown}]"
+        :class="[{ 'mt-5': $vuetify.breakpoint.mdAndDown }]"
         sm="1"
       >
         <v-subheader class="pt-1">Number of images</v-subheader>
       </v-col>
-      <v-col
-        class="pl-0"
-        :class="[{'mt-5': $vuetify.breakpoint.mdAndDown}]"
-      >
+      <v-col class="pl-0" :class="[{ 'mt-5': $vuetify.breakpoint.mdAndDown }]">
         <v-card-text class="pl-0">
           <v-slider
             v-model="selectedSlider"
@@ -94,10 +71,7 @@
         </v-card-text>
       </v-col>
 
-      <v-col
-        class="mx-8"
-        :class="[{'mt-5': $vuetify.breakpoint.mdAndDown}]"
-      >
+      <v-col class="mx-8" :class="[{ 'mt-5': $vuetify.breakpoint.mdAndDown }]">
         <v-btn
           color="green lighten-1"
           :disabled="predictionInProgress"
@@ -115,7 +89,11 @@
       ></v-progress-circular>
     </v-row>
     <v-row v-else>
-      <v-col v-for="result in results" :key="result.indexPayload" align="center">
+      <v-col
+        v-for="result in results"
+        :key="result.indexPayload"
+        align="center"
+      >
         <display-images-and-prediction :result="result" />
       </v-col>
     </v-row>
