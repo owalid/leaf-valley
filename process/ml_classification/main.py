@@ -150,8 +150,8 @@ def xgc_learning_curve(model, filename):
     plt.close()     
 
 # Cross validation learning curve
-def plot_learning_curve(estimator, X, y, title, filename, ylim=(0.7, 1.01), cv=ShuffleSplit(n_splits=5, test_size=0.3, random_state=0), 
-                        n_jobs=-1, scoring="accuracy", train_sizes=np.linspace(0.1, 1.0, 10)):
+def plot_learning_curve(estimator, X, y, title, filename, ylim=(0.7, 1.01), cv=ShuffleSplit(n_splits=3, test_size=0.3, random_state=0), 
+                        n_jobs=-1, scoring="accuracy", train_sizes=np.linspace(0.1, 1.0, 5)):
     """
     Generate 3 plots: the test and training learning curve, 
                       the training samples vs fit times curve, 
@@ -250,8 +250,8 @@ def fit_models(X_train, y_orig, classification_models, classification_types, opt
               
               # plot learning curve
               plot_learning_curve(models_dict[class_type][md_label], X_train, yl_train.classes, f"Learning curve for the {md_label} model and class type {class_type}", 
-                                  filename, ylim=(0.7, 1.01), cv=ShuffleSplit(n_splits=5, test_size=0.2, random_state=42), 
-                                  n_jobs=-1, scoring="accuracy", train_sizes=np.linspace(0.1, 1.0, 10))
+                                  filename, ylim=(0.7, 1.01), cv=ShuffleSplit(n_splits=3, test_size=0.2, random_state=42), 
+                                  n_jobs=-1, scoring="accuracy", train_sizes=np.linspace(0.1, 1.0, 5))
 
             if save:
               save_model_func( md_label, models_dict[class_type][md_label], scaler, le, X_train.columns, class_type,options_dataset, md_dst)
@@ -268,7 +268,7 @@ def fit_models(X_train, y_orig, classification_models, classification_types, opt
             mlflow.end_run()
 
 # Accuracy Classification Report
-def accuracy_classification_report(y_test, y_pred, classes, msg = '', filename=''):
+def accuracy_classification_report(y_test, y_pred, y_score, classes, msg = '', filename=''):
   confusion_mtx = {
                     'y_Actual': np.array(y_test),
                     'y_Predicted': y_pred
@@ -280,21 +280,25 @@ def accuracy_classification_report(y_test, y_pred, classes, msg = '', filename='
 
   metrics['spearmanr']       = 100 * (stats.spearmanr(confusion_df['y_Actual'], confusion_df['y_Predicted']))[0]
   metrics['accuracy']        = 100 * accuracy_score(confusion_df['y_Actual'], confusion_df['y_Predicted'])
-  # metrics['auc score']       = 100 * roc_auc_score(confusion_df['y_Actual'], confusion_df['y_Predicted'], multi_class='ovo')
+  metrics['auc score']       = 100 * roc_auc_score(confusion_df['y_Actual'], y_score, multi_class='ovo')
+  metrics['log loss']        = 100 * log_loss(confusion_df['y_Actual'], y_score)
   metrics['precision score'] = 100 * precision_score(confusion_df['y_Actual'], confusion_df['y_Predicted'], average='macro')
   metrics['recall score']    = 100 * recall_score(confusion_df['y_Actual'], confusion_df['y_Predicted'], average='macro')
   metrics['f1 score']        = 100 * f1_score(confusion_df['y_Actual'], confusion_df['y_Predicted'], average='macro')
 
+  output_metrics  = f"Spearmnr score (っಠ‿ಠ)っ\t{metrics['spearmanr']:.2f}"
+  output_metrics += f"Accuracy Score         :\t{metrics['accuracy']:.2f}"
+  output_metrics += f"auc score              :\t{metrics['auc score']:.2f}"
+  output_metrics += f"log loss               :\t{metrics['log loss']:.2f}"
+  output_metrics += f"precision score        :\t{metrics['precision score']:.2f}"
+  output_metrics += f"recall score           :\t{metrics['recall score']:.2f}"
+  output_metrics += f"f1 score               :\t{metrics['f1 score']:.2f}\n"
+  output_metrics += f"{classification_report(confusion_df['y_Actual'], confusion_df['y_Predicted'], target_names=classes)}"
+
   if filename == '':
-    print(f'\n==================     {msg}    ================\n')
-    print(f"\033[96mSpearmnr score (っಠ‿ಠ)っ\t{metrics['spearmanr']:.2f}")
-    print(f"Accuracy Score         :\t{metrics['accuracy']:.2f}")
-    print(f"{classification_report(confusion_df['y_Actual'], confusion_df['y_Predicted'], target_names=classes)}\033[0m")
+    print(f'\n==================     {msg}    ================\n\033[96m{output_metrics}\033[0m')
   else:
-    print(f'\n==================     {msg}    ================\n', file = open(filename, 'w'))
-    print(f"Spearmnr score (っಠ‿ಠ)っ\t{metrics['spearmanr']:.2f}", file = open(filename, 'a'))
-    print(f"Accuracy Score         :\t{metrics['accuracy']:.2f}", file = open(filename, 'a'))
-    print(classification_report(confusion_df['y_Actual'], confusion_df['y_Predicted'], target_names=classes, zero_division=0), file = open(filename, 'a'))    
+    print(f'\n==================     {msg}    ================\n{output_metrics}', file = open(filename, 'w'))
 
   return metrics
 
@@ -330,6 +334,16 @@ def heat_map(y_pred, y_test, classes, title='', filename=''):
       plt.savefig(filename, bbox_inches='tight', orientation='landscape')
       plt.close()
 
+def plot_perf_model(y_test, y_preds, y_score, basename=''):
+
+    if basename == '':
+      plt.show()
+    else:
+      if os.path.exists(f"{basename}.png"):
+          os.remove(f"{basename}.png")
+      plt.savefig(f"{basename}.png", bbox_inches='tight', orientation='landscape')
+      plt.close()
+
 # predict models
 def predict_models(X_test_orig, y_test, classification_models, classification_types, md_dst, dst_path, save_report, save_plot, expid):
   
@@ -347,7 +361,8 @@ def predict_models(X_test_orig, y_test, classification_models, classification_ty
       _, X_test = data_normalization(X_test_orig[features], scaler)
 
       # predict model on the data test
-      y_pred = model.predict(X_test[features])
+      y_pred  = model.predict(X_test[features])
+      y_score = model.predict_proba(X_test[features])
 
       # create a subfolder
       if not os.path.exists(os.path.join(dst_path, 'plots_reports', f'{md_label.upper()}_{class_type.upper()}')):
@@ -358,7 +373,7 @@ def predict_models(X_test_orig, y_test, classification_models, classification_ty
                            'mlflow.note.content': f'This is the output of the test for the ML CLassification model : model ({md_label}) and class type ({class_type})'})
 
           # Compute Accuracy Classification report
-          metrics = accuracy_classification_report(yl_test.classes, y_pred, le.classes_, msg = f'Accuracy classification report for model {md_label} and class type {class_type}', 
+          metrics = accuracy_classification_report(yl_test.classes, y_pred, y_score, le.classes_, msg = f'Accuracy classification report for model {md_label} and class type {class_type}', 
                                           filename=os.path.join(dst_path, 'plots_reports', f'{md_label.upper()}_{class_type.upper()}', f'ML_report_{md_label.upper()}_{class_type.upper()}.txt') if save_report else '')
 
           # Compute heat map for the ML classification
@@ -386,7 +401,7 @@ if __name__ == '__main__':
     parser.add_argument("-dst", "--process-output", required=False, type=str, default='data/process/ml_classification',
                         help='Path to save or to get the preprocessed data, plots and reports. default: data/process/ml_classification')
     parser.add_argument("-sd", "--save-data", required=False,
-                        action='store_true', default=True, help='Save options_datasets json file and converted data from h5 format to DataFrame one with flag train/test flag')
+                        action='store_true', default=True, help='Save options_datasets json file and converted data from h5 format to DataFrame one with flag train/test flag, default True')
     parser.add_argument("-nortype", "--normalize-type", required=False, type=str, default='NORM_MINMAX',
                         help='Normalize data (NORM_STANDARSCALER or NORM_MINMAX normalization) (Default: NORM_MINMAX)')
     parser.add_argument("-cm", "--classification-models", required=False, type=str, default="ALL",
@@ -394,15 +409,15 @@ if __name__ == '__main__':
     parser.add_argument("-ct", "--classification-types", required=False, type=str, default="ALL",
                         help='Classification type: PLANTS, HEALTHY, PLANTS_DESEASES classes, ALL (default)')
     parser.add_argument("-sm", "--save-model", required=False,
-                        action='store_true', default=True, help='Save model')
+                        action='store_true', default=True, help='Save model, default True')
     parser.add_argument("-dms", "--models_saved", required=False, type=str, default='data/models_saved',
                         help='Path to save models. default: data/models_saved')
     parser.add_argument("-sp", "--save-plots", required=False,
-                        action='store_true', default=False, help='Save heatmap plots')
+                        action='store_true', default=True, help='Save plots, default True')
     parser.add_argument("-sr", "--save-reports", required=False,
-                        action='store_true', default=False, help='Save report')
+                        action='store_true', default=True, help='Save report, default True')
     parser.add_argument("-v", "--verbose", required=False,
-                        action='store_true', default=False, help='Verbose')
+                        action='store_true', default=True, help='Verbose')
 
     args = parser.parse_args()
 
