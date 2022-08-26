@@ -1,6 +1,8 @@
 <template>
   <div class="pa-2">
-    <v-card width="300">
+    <v-card
+      :width="($vuetify.breakpoint.mdAndDown) ? '200' : '300'"
+    >
       <v-col>
         <div class="text-subtitle-1 mb-1">
           Species : {{ result.img_species }}
@@ -15,15 +17,15 @@
           contain
           :src="`data:image/png;base64,${result.rgb_img}`"
           class="ml-auto img-prediction"
-          width="130"
-          height="130"
+          :width="($vuetify.breakpoint.mdAndDown) ? '70' : '130'"
+          :height="($vuetify.breakpoint.mdAndDown) ? '70' : '130'"
         />
         <v-img
           contain
           :src="`data:image/png;base64,${result.masked_img}`"
           class="ml-auto img-prediction"
-          width="130"
-          height="130"
+          :width="($vuetify.breakpoint.mdAndDown) ? '70' : '130'"
+          :height="($vuetify.breakpoint.mdAndDown) ? '70' : '130'"
         />
       </v-row>
       <v-col v-if="isDLModel">
