@@ -1,7 +1,7 @@
 name: Deploy client to Render.
 
 # Run workflow on every push to master branch.
-on: ['push']
+on: 'push'
   # push:
   #   branches: [main]
 
