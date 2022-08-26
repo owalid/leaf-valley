@@ -1,7 +1,7 @@
 <template>
   <v-container>
     <v-row align="baseline">
-      <v-col>
+      <v-col cols="12" sm="12" md="6" lg="3">
         <v-select
           v-model="modelSelected"
           :disabled="processingPrediction"
@@ -11,27 +11,31 @@
           persistent-hint
         />
       </v-col>
-      <v-col>
+      <v-col cols="12" sm="12" md="6" lg="4">
         <v-file-input
           v-model="rawFiles"
           multiple
           label="Upload a file(s) (maximum 5)"
           accept="image/*"
           placeholder="No file chosen"
+          prepend-icon="fas fa-file-image"
           :disabled="processingPrediction"
           @change="onChangeFileInput"
         />
       </v-col>
-      <v-col>
+      <v-col cols="12" sm="12" md="6" lg="2">
         <v-switch v-model="shouldRemoveBg" label="Remove background ?" />
       </v-col>
-      <v-col>
-        <v-btn :disabled="processingPrediction" @click="getPredictions">
+      <v-col cols="12" sm="12" md="6" lg="2">
+        <v-btn
+          color="green lighten-1"
+          :disabled="processingPrediction"
+          @click="getPredictions"
+        >
           Predict
         </v-btn>
       </v-col>
     </v-row>
-
     <v-row v-for="result in results" :key="result.indexPayload">
       <render-prediction-result :result="result" />
     </v-row>

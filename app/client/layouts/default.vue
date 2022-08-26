@@ -15,7 +15,6 @@
         </v-toolbar-items>
       </v-bottom-navigation>
     </div>
-
     <v-main>
       <nuxt />
     </v-main>

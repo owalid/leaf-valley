@@ -532,7 +532,7 @@ class PredictionController:
         # Load Images and comments if exists
         output = PredictionController.process_images(folders, data_dir, comments, ml_df if ml_model else None, dl_df if dl_model else None)
 
-        return create_response(data={str(k): v for k, v in enumerate(output)})
+        return create_response(data={'result_list': [v for _, v in enumerate(output)]})
 
     def get_selectedimage(class_name, b64File, ml_model, dl_model):
         if not (b64File and (ml_model or dl_model)):
@@ -580,7 +580,7 @@ class PredictionController:
                 df_features = PredictionController.get_ml_features(options_dataset=ml_model_dict['options_dataset'], bgr_img=bgr_img)
                 df_features.index = [class_name] if class_name else ['___/(0)']
                 ml_df = PredictionController.ml_predict(ml_model_dict, df_features)
-                PredictionController.get_prediction_output(ml_df, img_dict, 'ML')
+                PredictionController.get_prediction_output(ml_df, img_dict, 'ml_prediction')
             else:
                 return create_response(data={'error': f'{ml_model} model not found'}, status=500)
 
@@ -593,7 +593,7 @@ class PredictionController:
             
             if data_model_loaded:
                 dl_df = PredictionController.dl_predict(data_model_loaded['model'], data_model_loaded['class_names'], data_model_loaded['options_dataset'], img_lst=[rgb_img], class_name=[class_name] if class_name else ['___/(0)'])
-                PredictionController.get_prediction_output(dl_df, img_dict, 'DL')
+                PredictionController.get_prediction_output(dl_df, img_dict, 'dl_prediction')
             else:
                 return create_response(data={'error': f'{dl_model} model not found'}, status=500)
 
@@ -609,7 +609,7 @@ class PredictionController:
 
         del bgr_img, rgb_img, masked_img
 
-        return create_response(data={str(k): v for k, v in enumerate([img_dict])})
+        return create_response(data={'result_list': [v for _, v in enumerate([img_dict])]})
 
     def predict(b64img, model_name, should_remove_bg):
         
