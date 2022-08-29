@@ -1,9 +1,9 @@
 name: Lint checker
 
-on:
-  pull_request:
-    paths:
-      - 'app/client/**'
+on: 'push'
+  # pull_request:
+  #   paths:
+  #     - 'app/client/**'
 jobs:
   js-lint:
     runs-on: ubuntu-latest
