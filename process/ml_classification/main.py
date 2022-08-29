@@ -53,7 +53,7 @@ def local_print(msg):
         print(msg)
 
 def set_models_dict(classType, classModels):
-  xgc = xgb.XGBClassifier(use_label_encoder=False, eval_metric=['error','logloss','auc'], objective='binary:logistic' if classType == 'HEALTHY' else 'multi:softmax', 
+  xgc = xgb.XGBClassifier(use_label_encoder=False, eval_metric=['error','logloss','auc'], objective='binary:logistic' if classType == 'HEALTHY' else 'multi:softproba', 
                           n_estimators=500, n_jobs=-1)
   rfc = RandomForestClassifier(n_estimators=500, n_jobs=-1, verbose=VERBOSE)
   etc = ExtraTreesClassifier(n_estimators=500, n_jobs=-1, verbose=VERBOSE)
@@ -286,25 +286,28 @@ def accuracy_classification_report(y_test, y_pred, y_score, classes, msg = '', f
 
   metrics['spearmanr']       = 100 * (stats.spearmanr(confusion_df['y_Actual'], confusion_df['y_Predicted']))[0]
   metrics['accuracy']        = 100 * accuracy_score(confusion_df['y_Actual'], confusion_df['y_Predicted'])
-  metrics['auc score']       = 100 * roc_auc_score(confusion_df['y_Actual'], y_score, multi_class='ovo')
+  if len(np.unique(confusion_df['y_Actual']))== 2:
+    metrics['auc score']       = 100 * roc_auc_score(confusion_df['y_Actual'], y_pred, average='macro')
+  else:
+    metrics['auc score']       = 100 * roc_auc_score(confusion_df['y_Actual'], y_score, multi_class='ovr', average='macro')
   metrics['log loss']        = 100 * log_loss(confusion_df['y_Actual'], y_score)
   metrics['precision score'] = 100 * precision_score(confusion_df['y_Actual'], confusion_df['y_Predicted'], average='macro')
   metrics['recall score']    = 100 * recall_score(confusion_df['y_Actual'], confusion_df['y_Predicted'], average='macro')
   metrics['f1 score']        = 100 * f1_score(confusion_df['y_Actual'], confusion_df['y_Predicted'], average='macro')
 
-  output_metrics  = f"Spearmnr score (っಠ‿ಠ)っ\t{metrics['spearmanr']:.2f}"
-  output_metrics += f"Accuracy Score         :\t{metrics['accuracy']:.2f}"
-  output_metrics += f"auc score              :\t{metrics['auc score']:.2f}"
-  output_metrics += f"log loss               :\t{metrics['log loss']:.2f}"
-  output_metrics += f"precision score        :\t{metrics['precision score']:.2f}"
-  output_metrics += f"recall score           :\t{metrics['recall score']:.2f}"
-  output_metrics += f"f1 score               :\t{metrics['f1 score']:.2f}\n"
+  output_metrics  = f"Spearmnr score (っಠ‿ಠ)っ\t{metrics['spearmanr']:.2f}\n"
+  output_metrics += f"Accuracy Score         :\t{metrics['accuracy']:.2f}\n"
+  output_metrics += f"auc score              :\t{metrics['auc score']:.2f}\n"
+  output_metrics += f"log loss               :\t{metrics['log loss']:.2f}\n"
+  output_metrics += f"precision score        :\t{metrics['precision score']:.2f}\n"
+  output_metrics += f"recall score           :\t{metrics['recall score']:.2f}\n"
+  output_metrics += f"f1 score               :\t{metrics['f1 score']:.2f}\n\n"
   output_metrics += f"{classification_report(confusion_df['y_Actual'], confusion_df['y_Predicted'], target_names=classes)}"
 
   if filename == '':
-    print(f'\n==================     {msg}    ================\n\033[96m{output_metrics}\033[0m')
+    print(f'\n==================     {msg}    ================\n\n\033[96m{output_metrics}\033[0m')
   else:
-    print(f'\n==================     {msg}    ================\n{output_metrics}', file = open(filename, 'w'))
+    print(f'\n==================     {msg}    ================\n\n{output_metrics}', file = open(filename, 'w'))
 
   return metrics
 
@@ -340,7 +343,7 @@ def heat_map(y_pred, y_test, classes, title='', filename=''):
 
 # Precision Recal and Feature Importances curves
 def prec_recal_roc_curves(est, y_test, y_score, features_top_n, filename=''):
-    _, ax = plt.subplots(1,3, figsize=(14,3))
+    _, ax = plt.subplots(1,3, figsize=(16,3))
     plt.rcParams['xtick.labelsize'] = 6
     plt.rcParams['ytick.labelsize'] = 6
 
@@ -368,7 +371,7 @@ def prec_recal_roc_curves(est, y_test, y_score, features_top_n, filename=''):
         ax[i].legend().remove()
 
 
-    plt.subplots_adjust(wspace=.4)
+    plt.subplots_adjust(wspace=.8)
 
     if filename == '':
       plt.show()
