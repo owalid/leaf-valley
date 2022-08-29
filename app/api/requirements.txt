@@ -3,7 +3,6 @@ numpy
 flask
 flask_cors
 jsonify
-tensorflow==2.8.0
 opencv-python
 plantcv
 tqdm
@@ -12,5 +11,4 @@ joblib==1.1.0
 python-dotenv
 scikit-learn==1.0.2
 scikit-image==0.19.2
-tf-estimator-nightly==2.10.0.dev2022072808
 tf-nightly==2.10.0.dev20220711 # for convnext models
