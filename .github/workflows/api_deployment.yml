@@ -2,9 +2,9 @@ name: Deploy api to scaleway.
 
 
 # Run workflow on every push to master branch.
-on:
-  push:
-    branches: [main]
+on: 'push'
+  # push:
+  #   branches: [main]
 
 # Your workflows jobs.
 jobs:
