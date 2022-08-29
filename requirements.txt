@@ -18,3 +18,4 @@ transformers
 tf-nightly==2.10.0.dev20220711 # for convnext models
 h5py
 mlflow
+sklearn-evaluation

@@ -2,6 +2,7 @@
   CLI used to manage ML classification.
 '''
 from datetime import datetime
+from fileinput import filename
 import os
 import sys
 import random
@@ -18,7 +19,7 @@ import mlflow
 import argparse as ap
 from inspect import getsourcefile
 
-from sklearn.preprocessing import MinMaxScaler, StandardScaler, LabelEncoder
+from sklearn.preprocessing import MinMaxScaler, StandardScaler, LabelEncoder, label_binarize
 
 import xgboost as xgb
 from sklearn.ensemble import RandomForestClassifier
@@ -26,7 +27,12 @@ from sklearn.ensemble import ExtraTreesClassifier
 
 from scipy import stats
 from sklearn.model_selection import learning_curve, ShuffleSplit
-from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, classification_report, roc_auc_score, precision_score, recall_score, log_loss
+from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, classification_report, roc_auc_score, \
+                            precision_score, recall_score, log_loss, average_precision_score, auc, roc_curve
+
+from sklearn_evaluation.plot.roc import roc
+from sklearn_evaluation.plot.precision_recall import precision_recall
+from sklearn_evaluation.plot.classification import feature_importances
 
 
 current_dir = os.path.dirname(os.path.abspath(getsourcefile(lambda: 0)))
@@ -248,10 +254,10 @@ def fit_models(X_train, y_orig, classification_models, classification_types, opt
             else:
               models_dict[class_type][md_label].fit(X_train, yl_train.classes)
               
-              # plot learning curve
-              plot_learning_curve(models_dict[class_type][md_label], X_train, yl_train.classes, f"Learning curve for the {md_label} model and class type {class_type}", 
-                                  filename, ylim=(0.7, 1.01), cv=ShuffleSplit(n_splits=3, test_size=0.2, random_state=42), 
-                                  n_jobs=-1, scoring="accuracy", train_sizes=np.linspace(0.1, 1.0, 5))
+            # plot learning curve
+            plot_learning_curve(models_dict[class_type][md_label], X_train, yl_train.classes, f"Learning curve for the {md_label} model and class type {class_type}", 
+                                filename, ylim=(0.7, 1.01), cv=ShuffleSplit(n_splits=3, test_size=0.2, random_state=42), 
+                                n_jobs=-1, scoring="accuracy", train_sizes=np.linspace(0.1, 1.0, 5))
 
             if save:
               save_model_func( md_label, models_dict[class_type][md_label], scaler, le, X_train.columns, class_type,options_dataset, md_dst)
@@ -329,23 +335,49 @@ def heat_map(y_pred, y_test, classes, title='', filename=''):
     if filename == '':
       plt.show()
     else:
-      if os.path.exists(filename):
-          os.remove(filename)
       plt.savefig(filename, bbox_inches='tight', orientation='landscape')
       plt.close()
 
-def plot_perf_model(y_test, y_preds, y_score, basename=''):
+# Precision Recal and Feature Importances curves
+def prec_recal_roc_curves(est, y_test, y_score, features_top_n, filename=''):
+    _, ax = plt.subplots(1,3, figsize=(14,3))
+    plt.rcParams['xtick.labelsize'] = 6
+    plt.rcParams['ytick.labelsize'] = 6
 
-    if basename == '':
+    ax[0] = precision_recall(y_test, y_score, ax=ax[0])
+    ax[1] = roc(y_test, y_score, ax=ax[1])
+    ax[2] = feature_importances(est, top_n=features_top_n, feature_names=est.feature_names_in_.tolist(), ax=ax[2])
+
+    # Compute the area under curve
+    n_classes = len(np.unique(y_test))
+
+    if n_classes > 2:
+        y_test_bin = label_binarize(y_test, classes=np.unique(y_test))
+        avg_prec = average_precision_score(y_test_bin, y_score, average="micro")
+        fpr, tpr, _ = roc_curve(y_test_bin.ravel(), y_score.ravel())
+    else:
+        avg_prec = average_precision_score(y_test, y_score[:,1], average="micro")
+        fpr, tpr, _ = roc_curve(y_test, y_score[:,1])
+
+    roc_auc = auc(fpr, tpr)
+
+    ax[0].set_xlim([-0.05, 1.05]), ax[0].set_ylim([-0.05, 1.05]), ax[0].set_title(f'Precision-Recall\n (area = {avg_prec:.2f})')
+    ax[1].set_xlim([-0.05, 1.05]), ax[1].set_ylim([-0.05, 1.05]), ax[1].set_title(f'ROC\n (area = {roc_auc:.2f})')
+    ax[2].set_title(f'The {features_top_n} importance\nfeatures')
+    for i in range(2):
+        ax[i].legend().remove()
+
+
+    plt.subplots_adjust(wspace=.4)
+
+    if filename == '':
       plt.show()
     else:
-      if os.path.exists(f"{basename}.png"):
-          os.remove(f"{basename}.png")
-      plt.savefig(f"{basename}.png", bbox_inches='tight', orientation='landscape')
+      plt.savefig(filename, bbox_inches='tight', orientation='landscape')
       plt.close()
 
 # predict models
-def predict_models(X_test_orig, y_test, classification_models, classification_types, md_dst, dst_path, save_report, save_plot, expid):
+def predict_models(X_test_orig, y_test, classification_models, classification_types, md_dst, dst_path, expid):
   
   # Load models
   for class_type in classification_types:
@@ -374,11 +406,17 @@ def predict_models(X_test_orig, y_test, classification_models, classification_ty
 
           # Compute Accuracy Classification report
           metrics = accuracy_classification_report(yl_test.classes, y_pred, y_score, le.classes_, msg = f'Accuracy classification report for model {md_label} and class type {class_type}', 
-                                          filename=os.path.join(dst_path, 'plots_reports', f'{md_label.upper()}_{class_type.upper()}', f'ML_report_{md_label.upper()}_{class_type.upper()}.txt') if save_report else '')
+                                          filename=os.path.join(dst_path, 'plots_reports', f'{md_label.upper()}_{class_type.upper()}', f'ML_report_{md_label.upper()}_{class_type.upper()}.txt'))
 
           # Compute heat map for the ML classification
           heat_map(y_pred, yl_test.classes, le.classes_, title=f'Heatmap for model {md_label} and class type {class_type}', 
-                                          filename=os.path.join(dst_path, 'plots_reports', f'{md_label.upper()}_{class_type.upper()}', f'ML_heatmap_{md_label.upper()}_{class_type.upper()}') if save_plot else '')
+                                          filename=os.path.join(dst_path, 'plots_reports', f'{md_label.upper()}_{class_type.upper()}', f'ML_heatmap_{md_label.upper()}_{class_type.upper()}.png'))
+
+
+          # Model performances
+          prec_recal_roc_curves(model, yl_test.classes, y_score, 20,
+                                filename=os.path.join(dst_path, 'plots_reports', f'{md_label.upper()}_{class_type.upper()}', f'ML_model_perfs_{md_label.upper()}_{class_type.upper()}.png'))
+
 
           mlflow.set_tags({'ProblemType': 'ML Classification', 
                            'ModelType': md_label, 
@@ -401,7 +439,7 @@ if __name__ == '__main__':
     parser.add_argument("-dst", "--process-output", required=False, type=str, default='data/process/ml_classification',
                         help='Path to save or to get the preprocessed data, plots and reports. default: data/process/ml_classification')
     parser.add_argument("-sd", "--save-data", required=False,
-                        action='store_true', default=True, help='Save options_datasets json file and converted data from h5 format to DataFrame one with flag train/test flag, default True')
+                        action='store_false', default=True, help='Save options_datasets json file and converted data from h5 format to DataFrame one with flag train/test flag, default True')
     parser.add_argument("-nortype", "--normalize-type", required=False, type=str, default='NORM_MINMAX',
                         help='Normalize data (NORM_STANDARSCALER or NORM_MINMAX normalization) (Default: NORM_MINMAX)')
     parser.add_argument("-cm", "--classification-models", required=False, type=str, default="ALL",
@@ -409,15 +447,11 @@ if __name__ == '__main__':
     parser.add_argument("-ct", "--classification-types", required=False, type=str, default="ALL",
                         help='Classification type: PLANTS, HEALTHY, PLANTS_DESEASES classes, ALL (default)')
     parser.add_argument("-sm", "--save-model", required=False,
-                        action='store_true', default=True, help='Save model, default True')
+                        action='store_false', default=True, help='Save model, default True')
     parser.add_argument("-dms", "--models_saved", required=False, type=str, default='data/models_saved',
                         help='Path to save models. default: data/models_saved')
-    parser.add_argument("-sp", "--save-plots", required=False,
-                        action='store_true', default=True, help='Save plots, default True')
-    parser.add_argument("-sr", "--save-reports", required=False,
-                        action='store_true', default=True, help='Save report, default True')
     parser.add_argument("-v", "--verbose", required=False,
-                        action='store_true', default=True, help='Verbose')
+                        action='store_true', default=False, help='Verbose')
 
     args = parser.parse_args()
 
@@ -441,8 +475,6 @@ if __name__ == '__main__':
     normalize_type        = args.normalize_type
     save_data             = args.save_data
     save_model            = args.save_model
-    save_plots            = args.save_plots
-    save_reports          = args.save_reports
     VERBOSE               = args.verbose
     
     random.seed(42)
@@ -507,12 +539,11 @@ if __name__ == '__main__':
           exit(0)
 
     # Check if the process output exists
-    if save_plots or save_reports:
-      if not os.path.exists(process_output):
-        print(f"\033[91mError : the path to save data '{process_output}' should exist\033[0m")
-        exit(1)
+    if not os.path.exists(process_output):
+      print(f"\033[91mError : the path to save data '{process_output}' should exist\033[0m")
+      exit(1)
 
     # Predict model
-    predict_models(X_test, y_test, classification_models, classification_types, models_saved, process_output, save_reports, save_plots, exp_id)
+    predict_models(X_test, y_test, classification_models, classification_types, models_saved, process_output, exp_id)
     local_print(f"\033[93mInfo : {'Prediction step' if classification_step == 'PREDICT_MODEL' else 'Classification job'} ended\033[0m")
     exit(0)
