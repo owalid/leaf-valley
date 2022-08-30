@@ -16,6 +16,7 @@ We have try different models to classify the images.
 - CLASSIC CNN
 - CONVNEXT
 - LAB AND HSV PROCESS [see this link](https://github.com/joaopauloschuler/two-path-noise-lab-plant-disease)
+- VGG16 / VGG19
 
 
 
