@@ -35,14 +35,10 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
     w.Write(response)
 }
 
-func isAlive(w http.ResponseWriter, r *http.Request) {
-	var res isAliveResponse
-
+func clusterIsRunning() bool {
     serverId := goDotEnvVariable("SCW_SERVER_ID")
     zone := goDotEnvVariable("SCW_SERVER_ZONE")
     authToken := goDotEnvVariable("SCW_AUTH_TOKEN")
-
-    res.IsAlive = true
     
     url := "https://api.scaleway.com/instance/v1/zones/" + zone + "/servers/" + serverId
 
@@ -50,18 +46,16 @@ func isAlive(w http.ResponseWriter, r *http.Request) {
     reqServerAlive, err := http.NewRequest("GET", url, nil)
     
     if err != nil {
-        res.IsAlive = false
-        respondWithJSON(w, 200, res)
-        return
+        fmt.Println("first err")
+        return false
     }
     
     reqServerAlive.Header.Set("X-Auth-Token", authToken)
     resServerAlive, err := client.Do(reqServerAlive)
 
     if err != nil {
-        res.IsAlive = false
-        respondWithJSON(w, 200, res)
-        return
+        fmt.Println("second err")
+        return false
     }
 
     // GET STATE FROM RESPONSE
@@ -69,13 +63,12 @@ func isAlive(w http.ResponseWriter, r *http.Request) {
     json.NewDecoder(resServerAlive.Body).Decode(&parsedResponse)
     state := string(parsedResponse.Server.State)
 
-    if state != "running" {
-        res.IsAlive = false
-        respondWithJSON(w, 200, res)
-        return
-    }
-    fmt.Println(string(parsedResponse.Server.State))
+    return state == "running"
+}
 
+func isAlive(w http.ResponseWriter, r *http.Request) {
+	var res isAliveResponse
+    res.IsAlive = clusterIsRunning()
     respondWithJSON(w, 200, res)
 }
 
