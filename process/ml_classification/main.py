@@ -260,6 +260,8 @@ def fit_models(X_train, y_orig, classification_models, classification_types, opt
                                 n_jobs=-1, scoring="accuracy", train_sizes=np.linspace(0.1, 1.0, 5))
 
             if save:
+              if not os.path.exists(md_dst):
+                os.makedirs(md_dst)              
               save_model_func( md_label, models_dict[class_type][md_label], scaler, le, X_train.columns, class_type,options_dataset, md_dst)
             local_print(f'\033[93mInfo : The training of the models finished, it took {dt.now() - start}\033[0m\n')
 
