@@ -240,7 +240,7 @@ def fit_models(X_train, y_orig, classification_models, classification_types, opt
             os.remove(filename)
 
         with mlflow.start_run(experiment_id=expid) as r:
-            mlflow.set_tags({"mlflow.runName": f'MLC {md_label.upper()} {class_type.upper()}',
+            mlflow.set_tags({"mlflow.runName": f'MLC Training {md_label.upper()} {class_type.upper()}',
                             'mlflow.note.content': f'This is the output of the ML CLassification model training : model ({md_label}) and class type ({class_type})'})
             
             start = dt.now()
@@ -406,7 +406,7 @@ def predict_models(X_test_orig, y_test, classification_models, classification_ty
         os.makedirs(os.path.join(dst_path, 'plots_reports', f'{md_label.upper()}_{class_type.upper()}'))
 
       with mlflow.start_run(experiment_id=expid) as r:
-          mlflow.set_tags({"mlflow.runName": f'MLC {md_label.upper()} {class_type.upper()}',
+          mlflow.set_tags({"mlflow.runName": f'MLC Testing {md_label.upper()} {class_type.upper()}',
                            'mlflow.note.content': f'This is the output of the test for the ML CLassification model : model ({md_label}) and class type ({class_type})'})
 
           # Compute Accuracy Classification report
@@ -443,8 +443,10 @@ if __name__ == '__main__':
                         help='path and file name of the input data')
     parser.add_argument("-dst", "--process-output", required=False, type=str, default='data/process/ml_classification',
                         help='Path to save or to get the preprocessed data, plots and reports. default: data/process/ml_classification')
-    parser.add_argument("-sd", "--save-data", required=False,
-                        action='store_false', default=True, help='Save options_datasets json file and converted data from h5 format to DataFrame one with flag train/test flag, default True')
+    parser.add_argument("-sd", "--save-data", required=False, action='store_false', default=True, 
+                        help='Save options_datasets json file and converted data from h5 format to DataFrame one with flag train/test flag, default True')
+    parser.add_argument("-th", "--threshold", required=False, default=0.1, 
+                        help='Threshold used for the filter method to select features')
     parser.add_argument("-nortype", "--normalize-type", required=False, type=str, default='NORM_MINMAX',
                         help='Normalize data (NORM_STANDARSCALER or NORM_MINMAX normalization) (Default: NORM_MINMAX)')
     parser.add_argument("-cm", "--classification-models", required=False, type=str, default="ALL",
@@ -453,12 +455,13 @@ if __name__ == '__main__':
                         help='Classification type: PLANTS, HEALTHY, PLANTS_DESEASES classes, ALL (default)')
     parser.add_argument("-sm", "--save-model", required=False,
                         action='store_false', default=True, help='Save model, default True')
-    parser.add_argument("-dms", "--models_saved", required=False, type=str, default='data/models_saved',
+    parser.add_argument("-dms", "--dest-models-saved", required=False, type=str, default='data/models_saved',
                         help='Path to save models. default: data/models_saved')
     parser.add_argument("-v", "--verbose", required=False,
                         action='store_true', default=False, help='Verbose')
 
     args = parser.parse_args()
+
 
     # Function to check if arguments are into the list
     def list_check(arg, ref):
@@ -474,20 +477,21 @@ if __name__ == '__main__':
     src_directory         = os.path.dirname(args.filename)
     file_basename         = os.path.splitext(os.path.basename(args.filename))[0]
     process_output        = args.process_output
-    models_saved          = args.models_saved
+    dest_models_saved     = args.dest_models_saved
     classification_types  = list_check(args.classification_types, ['HEALTHY', 'PLANTS', 'PLANTS_DESEASES'])
     classification_models = list_check(args.classification_models, ['XGC', 'RFC', 'ETC'])
     normalize_type        = args.normalize_type
     save_data             = args.save_data
     save_model            = args.save_model
+    threshold             = float(args.threshold)
     VERBOSE               = args.verbose
     
     random.seed(42)
 
     # Display the arguments set for the programm
     print("\n===========    Script arguements    ===========\n")
-    for k in ['src_directory','file_basename']+[k for k in vars(args).keys() if k != 'filename' and k != 'verbose']:
-      print(f'[+] {k.ljust(22)}: {vars()[k]}')
+    for k in ['src_directory','file_basename']+[k for k in vars(args).keys() if k not in ['filename', 'verbose']]:
+      print(f'[+] {k.ljust(max([len(a) for a in vars(args).keys()])+2)}: {vars()[k]}')
 
     # Check if the classification step is correct
     if classification_step not in ['LOAD_DATA', 'FIT_MODEL', 'PREDICT_MODEL', 'FIT_PREDICT_MODEL', 'ALL']:
@@ -503,7 +507,7 @@ if __name__ == '__main__':
         print(f'\033[91mError : filename ({file_basename}.h5) not a h5 file or doesn\'t exist\033[0m')
         exit(1)
       else:
-        df_features, options_dataset = load_data_from_h5(src_directory, f'{file_basename}.h5', VERBOSE)
+        df_features, options_dataset = load_data_from_h5(src_directory, f'{file_basename}.h5', threshold, VERBOSE)
 
         # Fill NaN values
         df_features.fillna(0, inplace=True)
@@ -538,7 +542,7 @@ if __name__ == '__main__':
 
     if classification_step != 'PREDICT_MODEL':
       # fit models
-      fit_models(X_train, y_train, classification_models, classification_types, options_dataset, save_model, models_saved, process_output, (X_test, y_test), exp_id)
+      fit_models(X_train, y_train, classification_models, classification_types, options_dataset, save_model, dest_models_saved, process_output, (X_test, y_test), exp_id)
       if classification_step == 'FIT_MODEL':
           local_print('\033[93mInfo : Models fit step ended\033[0m')
           exit(0)
@@ -549,6 +553,6 @@ if __name__ == '__main__':
       exit(1)
 
     # Predict model
-    predict_models(X_test, y_test, classification_models, classification_types, models_saved, process_output, exp_id)
+    predict_models(X_test, y_test, classification_models, classification_types, dest_models_saved, process_output, exp_id)
     local_print(f"\033[93mInfo : {'Prediction step' if classification_step == 'PREDICT_MODEL' else 'Classification job'} ended\033[0m")
     exit(0)

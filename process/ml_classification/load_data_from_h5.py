@@ -16,6 +16,7 @@ import concurrent.futures
 from itertools import repeat
 from sklearn.utils import shuffle
 from datetime import datetime as dt
+from sklearn.feature_selection import VarianceThreshold
 
 
 def local_print(msg, verbose):
@@ -35,7 +36,7 @@ def convert_to_df(lst, filename):
            hf.close()
            
 
-def load_data_from_h5(path, file, verbose):
+def load_data_from_h5(path, file, threshold, verbose):
     try:
         start = dt.now()
         local_print(f'Job to convert h5 file to DataFrame started at : {start}', verbose)
@@ -64,6 +65,14 @@ def load_data_from_h5(path, file, verbose):
             df_features = pd.concat([df_features, df], axis=1)
 
         df_features['classes'] = df_features.classes.apply(lambda l: l.decode("utf-8"))
+
+        # Feature selection : apply a filter method 
+        sel = VarianceThreshold(threshold=threshold)
+        sel.fit(df_features[[f for f in df.columns if f !='classes']])
+        df_features = df_features[['classes'] + sel.get_feature_names_out().tolist()].copy()
+
+        # Drop duplicate rows
+        df_features.drop_duplicates(inplace=True)
 
         # SPlit manually data into train/test
         df_features = shuffle(df_features)
