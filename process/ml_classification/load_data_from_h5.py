@@ -66,13 +66,16 @@ def load_data_from_h5(path, file, threshold, verbose):
 
         df_features['classes'] = df_features.classes.apply(lambda l: l.decode("utf-8"))
 
-        # Feature selection : apply a filter method 
-        sel = VarianceThreshold(threshold=threshold)
-        sel.fit(df_features[[f for f in df.columns if f !='classes']])
-        df_features = df_features[['classes'] + sel.get_feature_names_out().tolist()].copy()
+        # Fill NaN values
+        df_features.fillna(0, inplace=True)
 
         # Drop duplicate rows
         df_features.drop_duplicates(inplace=True)
+
+        # Feature selection : apply a filter method 
+        sel = VarianceThreshold(threshold=threshold)
+        sel.fit(df_features[[f for f in df_features.columns if f !='classes']])
+        df_features = df_features[['classes'] + sel.get_feature_names_out().tolist()].copy()
 
         # SPlit manually data into train/test
         df_features = shuffle(df_features)

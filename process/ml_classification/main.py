@@ -508,9 +508,6 @@ if __name__ == '__main__':
         exit(1)
       else:
         df_features, options_dataset = load_data_from_h5(src_directory, f'{file_basename}.h5', threshold, VERBOSE)
-
-        # Fill NaN values
-        df_features.fillna(0, inplace=True)
         
         if save_data:
           if not os.path.exists(process_output):
