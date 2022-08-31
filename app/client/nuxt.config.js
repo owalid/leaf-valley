@@ -18,7 +18,12 @@ export default {
   css: [],
 
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
-  plugins: ['~/plugins/vuetify', '~/plugins/axios', '~/plugins/axios-instances/api.js', '~/plugins/axios-instances/econome.js'],
+  plugins: [
+    '~/plugins/vuetify',
+    '~/plugins/axios',
+    '~/plugins/axios-instances/api.js',
+    '~/plugins/axios-instances/econome.js',
+  ],
 
   // Auto import components: https://go.nuxtjs.dev/config-components
   components: true,
@@ -50,7 +55,8 @@ export default {
       },
     },
     '/econome': {
-      target: process.env.NUXT_ECONOME_MS_URL || 'http://127.0.0.1:8080/econome',
+      target:
+        process.env.NUXT_ECONOME_MS_URL || 'http://127.0.0.1:8080/econome',
       pathRewrite: {
         '^/econome': '/econome',
       },
