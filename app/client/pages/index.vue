@@ -48,8 +48,9 @@ import RenderPredictionResult from '~/components/RenderPredictionResult'
 export default {
   name: 'IndexPage',
   components: { RenderPredictionResult },
-  async asyncData({ $axios }) {
-    const res = await $axios.get('/models/')
+  middleware: 'cluster-status',
+  async asyncData({ $api }) {
+    const res = await $api.get('/models/')
     const { result } = res.data
     return {
       models: [...result.models.DL, ...result.models.ML],
@@ -105,7 +106,7 @@ export default {
     async sendPostAndAddToResults(payload, indexPayload) {
       try {
         this.results.push({ indexPayload, source_img: payload.img })
-        const request = await this.$axios.post('/models/predict', payload)
+        const request = await this.$api.post('/models/predict', payload)
         const prediction = request.data.result
 
         this.results.forEach((result, indexResult) => {

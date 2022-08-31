@@ -1,79 +1,37 @@
 package main
 
 import (
-    "encoding/json"
-    "fmt"
     "log"
     "net/http"
-    // "io"
-    "os"
-    "econome/structs"
+    "econome/ws"
+    "econome/utils"
+    "econome/clusterManager"
     "github.com/gorilla/mux"
-    "github.com/joho/godotenv"
+    "github.com/rs/cors"
 )
 
-func goDotEnvVariable(key string) string {
-    err := godotenv.Load()
-    
-    if err != nil {
-      log.Fatalf("Error loading .env file")
-      return ""
-    }
-  
-    return os.Getenv(key)
-}
+func getClusterStatus(w http.ResponseWriter, r *http.Request) {
+    var res = cluster.ClusterStatusResponse{State: cluster.GetStateCluster()}
 
-type isAliveResponse struct {
-	IsAlive          bool `json: "isAlive"`
-}
-
-func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
-    response, _ := json.Marshal(payload)
-    fmt.Println(string(response))
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(code)
-    w.Write(response)
-}
-
-func clusterIsRunning() bool {
-    serverId := goDotEnvVariable("SCW_SERVER_ID")
-    zone := goDotEnvVariable("SCW_SERVER_ZONE")
-    authToken := goDotEnvVariable("SCW_AUTH_TOKEN")
-    
-    url := "https://api.scaleway.com/instance/v1/zones/" + zone + "/servers/" + serverId
-
-    client := &http.Client{}
-    reqServerAlive, err := http.NewRequest("GET", url, nil)
-    
-    if err != nil {
-        fmt.Println("first err")
-        return false
-    }
-    
-    reqServerAlive.Header.Set("X-Auth-Token", authToken)
-    resServerAlive, err := client.Do(reqServerAlive)
-
-    if err != nil {
-        fmt.Println("second err")
-        return false
+    if res.State == "" {
+        utils.RespondWithJSON(w, 500, res)
     }
 
-    // GET STATE FROM RESPONSE
-    parsedResponse := scwResponses.ScwServerResponse{}
-    json.NewDecoder(resServerAlive.Body).Decode(&parsedResponse)
-    state := string(parsedResponse.Server.State)
-
-    return state == "running"
-}
-
-func isAlive(w http.ResponseWriter, r *http.Request) {
-	var res isAliveResponse
-    res.IsAlive = clusterIsRunning()
-    respondWithJSON(w, 200, res)
+    utils.RespondWithJSON(w, 200, res)
 }
 
 func main() {
+    addr := ":8080"
 	router := mux.NewRouter().StrictSlash(true)
-	router.HandleFunc("/is-alive", isAlive)
-	log.Fatal(http.ListenAndServe(":8080", router))
+	router.HandleFunc("/econome/get-status", getClusterStatus)
+    router.HandleFunc("/econome/ws", websocketWorker.WsSubscriber)
+
+    corsConfig := cors.New(cors.Options{
+        AllowedOrigins: []string{"http://localhost:3000"},
+        AllowCredentials: true,
+    })
+    handler := corsConfig.Handler(router)
+
+    log.Println("listen on", addr)
+	log.Fatal(http.ListenAndServe(addr, handler))
 }

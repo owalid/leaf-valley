@@ -18,7 +18,7 @@ export default {
   css: [],
 
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
-  plugins: ['~/plugins/vuetify'],
+  plugins: ['~/plugins/vuetify', '~/plugins/axios', '~/plugins/axios-instances/api.js', '~/plugins/axios-instances/econome.js'],
 
   // Auto import components: https://go.nuxtjs.dev/config-components
   components: true,
@@ -49,12 +49,19 @@ export default {
         '^/api': '/api',
       },
     },
+    '/econome': {
+      target: process.env.NUXT_ECONOME_MS_URL || 'http://127.0.0.1:8080/econome',
+      pathRewrite: {
+        '^/econome': '/econome',
+      },
+    },
   },
 
   // Axios module configuration: https://go.nuxtjs.dev/config-axios
   axios: {
     // Workaround to avoid enforcing hard-coded localhost:3000: https://github.com/nuxt-community/axios-module/issues/308
     baseURL: process.env.NUXT_BASE_API_URL || 'http://127.0.0.1:5000/api',
+    // proxy: true
   },
 
   // PWA module configuration: https://go.nuxtjs.dev/pwa

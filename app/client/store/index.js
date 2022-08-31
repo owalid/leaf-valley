@@ -1,7 +1,7 @@
-export const state = {
+export const state = () => ({
   alert: null,
   currentTimeout: null,
-}
+})
 
 export const mutations = {
   SET_ALERT(state, alert) {
