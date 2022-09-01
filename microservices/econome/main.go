@@ -47,7 +47,7 @@ func main() {
     var goEnv = utils.GoDotEnvVariable("GO_ENV")
     var addr = ":8080"
     if goEnv == "production" {
-        addr = ":80"
+        addr = "0.0.0.0:80"
     }
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/econome/get-status", getClusterStatus)
