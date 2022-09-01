@@ -11,7 +11,7 @@ export default function ({ $axios }, inject) {
 
   // Set baseURL
   econome.setBaseURL(
-    process.env.NUXT_BASE_API_URL || 'http://127.0.0.1:8080/econome'
+    process.env.NUXT_ECONOME_MS_URL || 'http://127.0.0.1:8080/econome'
   )
 
   if (process.env.NODE_ENV !== 'production') {
