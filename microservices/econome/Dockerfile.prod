@@ -9,6 +9,11 @@ COPY go.sum ./
 RUN go mod download
 
 COPY . ./
+
+# Access to render deployment .env file
+COPY /etc/secrets/.env .
+
+RUN ls -al
 RUN go build -o /econome
 
 EXPOSE 80
