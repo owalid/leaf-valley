@@ -65,6 +65,9 @@ export default {
   },
 
   publicRuntimeConfig: {
+    NUXT_BASE_API_URL: process.env.NUXT_BASE_API_URL,
+    NUXT_ECONOME_MS_URL: process.env.NUXT_ECONOME_MS_URL,
+    NUXT_ECONOME_MS_WS: process.env.NUXT_ECONOME_MS_WS,
     recaptcha: {
       hideBadge: false,
       mode: 'base',
