@@ -312,7 +312,7 @@ export default {
             comment: this.commentText,
           },
         }
-        await this.$axios.post('/comment', payload)
+        await this.$api.post('/comment', payload)
         this.msgSuccess = ['Done with success']
         setInterval(() => {
           this.msgSuccess = []

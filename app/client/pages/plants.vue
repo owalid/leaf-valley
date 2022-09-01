@@ -126,9 +126,9 @@ export default {
       },
     }
   },
-  async asyncData({ $axios }) {
-    const resModels = await $axios.get('/models/')
-    const resPlants = await $axios.get('/models/plants')
+  async asyncData({ $api }) {
+    const resModels = await $api.get('/models/')
+    const resPlants = await $api.get('/models/plants')
     const species = Object.keys(resPlants.data.result.plants)
     return {
       species,
@@ -210,7 +210,7 @@ export default {
             ml_model: this.mlModelSelected,
             dl_model: this.dlModelSelected,
           }
-          const request = await this.$axios.post('/models/random-img', payload)
+          const request = await this.$api.post('/models/random-img', payload)
 
           this.results = request.data.result.result_list
           this.isLoading = false

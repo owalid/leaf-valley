@@ -105,9 +105,9 @@ export default {
       },
     }
   },
-  async asyncData({ $axios }) {
-    const resModels = await $axios.get('/models/')
-    const resClasses = await $axios.get('/models/classes')
+  async asyncData({ $api }) {
+    const resModels = await $api.get('/models/')
+    const resClasses = await $api.get('/models/classes')
     return {
       classes: resClasses.data.result.classes,
       dlModels: resModels.data.result.models.DL,
@@ -179,7 +179,7 @@ export default {
             ml_model: this.mlModelSelected,
             dl_model: this.dlModelSelected,
           }
-          const request = await this.$axios.post('/models/select-img', payload)
+          const request = await this.$api.post('/models/select-img', payload)
 
           this.results = request.data.result.result_list
           this.isLoading = false
