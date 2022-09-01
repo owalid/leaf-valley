@@ -64,20 +64,20 @@ export default {
     },
   },
 
-  // publicRuntimeConfig: {
-  //   recaptcha: {
-  //     hideBadge: false,
-  //     mode: 'base',
-  //     version: 2,
-  //     siteKey: process.env.NUXT_RECAPTCHA_SITE_KEY
-  //   },
-  // },
+  publicRuntimeConfig: {
+    recaptcha: {
+      hideBadge: false,
+      mode: 'base',
+      version: 3,
+      siteKey: process.env.NUXT_RECAPTCHA_SITE_KEY,
+    },
+  },
 
   recaptcha: {
     hideBadge: false,
     mode: 'base',
     version: 3,
-    siteKey: process.env.NUXT_RECAPTCHA_SITE_KEY
+    siteKey: process.env.NUXT_RECAPTCHA_SITE_KEY,
   },
 
   // Axios module configuration: https://go.nuxtjs.dev/config-axios

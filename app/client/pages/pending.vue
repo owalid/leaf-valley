@@ -29,18 +29,13 @@ export default {
       resultWs: 'lol',
       interval: null,
       recaptchaResponse: null,
-      shouldValidateRecaptcha: false
+      shouldValidateRecaptcha: false,
     }
   },
   async mounted() {
-    try {
-      await this.$recaptcha.init()
-    } catch (error) {
-      console.error(error);
-    } finally {
-      this.socket = new WebSocket('ws://localhost:8080/econome/ws')
-      this.runListenerWs()
-    }
+    await this.$recaptcha.init()
+    this.socket = new WebSocket('ws://localhost:8080/econome/ws')
+    this.runListenerWs()
   },
   beforeDestroy() {
     this.interval = null
@@ -58,7 +53,9 @@ export default {
                 const recaptchaResponse = res
                 this.shouldValidateRecaptcha = false
                 await this.$recaptcha.reset()
-                this.$econome.post('/start-cluster', {'g-recaptcha-response': recaptchaResponse})
+                this.$econome.post('/start-cluster', {
+                  'g-recaptcha-response': recaptchaResponse,
+                })
               })
             }
             if (data === 'running') {
