@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-export default function ({ $axios, config }, inject) {
+export default function ({ $axios, $config }, inject) {
   // Create a custom axios instance
   const api = $axios.create({
     headers: {
@@ -12,7 +12,7 @@ export default function ({ $axios, config }, inject) {
   // Set baseURL
   api.setBaseURL(
     process.env.NUXT_BASE_API_URL ||
-      config.NUXT_BASE_API_URL ||
+      $config.NUXT_BASE_API_URL ||
       'http://127.0.0.1:5000/api'
   )
 

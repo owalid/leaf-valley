@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-export default function ({ $axios, config }, inject) {
+export default function ({ $axios, $config }, inject) {
   // Create a custom axios instance
   const econome = $axios.create({
     headers: {
@@ -12,7 +12,7 @@ export default function ({ $axios, config }, inject) {
   // Set baseURL
   econome.setBaseURL(
     process.env.NUXT_ECONOME_MS_URL ||
-      config.NUXT_ECONOME_MS_URL ||
+      $config.NUXT_ECONOME_MS_URL ||
       'http://127.0.0.1:8080/econome'
   )
 
