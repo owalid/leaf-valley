@@ -9,11 +9,15 @@ import (
 	"econome/structs"
 )
 
+type StartClusterResponse struct {
+	Status      string    `json:"status"`
+}
+
 type ClusterStatusResponse struct {
 	State          string `json: "state"`
 }
 
-func StartCluster() {
+func StartCluster() string {
     serverId := utils.GoDotEnvVariable("SCW_SERVER_ID")
     zone := utils.GoDotEnvVariable("SCW_SERVER_ZONE")
     authToken := utils.GoDotEnvVariable("SCW_AUTH_TOKEN")
@@ -21,13 +25,21 @@ func StartCluster() {
     url := "https://api.scaleway.com/instance/v1/zones/" + zone + "/servers/" + serverId + "/action"
 
     var body = []byte(`{"action":"poweron"}`)
-    reqServerAlive, _ := http.NewRequest("POST", url, bytes.NewBuffer(body))
+    reqServerAlive, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+
+    if err != nil {
+        return ""
+    }
 
     reqServerAlive.Header.Set("X-Auth-Token", authToken)
     reqServerAlive.Header.Set("Content-Type", "application/json")
 
     client := &http.Client{}
-    client.Do(reqServerAlive)
+    _, err = client.Do(reqServerAlive)
+    if err != nil {
+        return ""
+    }
+    return "OK"
 }
 
 func GetStateCluster() string {
@@ -57,10 +69,6 @@ func GetStateCluster() string {
     parsedResponse := scwResponses.ScwServerResponse{}
     json.NewDecoder(resServerAlive.Body).Decode(&parsedResponse)
     state := string(parsedResponse.Server.State)
-
-    if state == "stopped" {
-        StartCluster()
-    }
 
     return state
 }

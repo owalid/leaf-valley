@@ -45,6 +45,7 @@ export default {
     // https://go.nuxtjs.dev/pwa
     '@nuxtjs/pwa',
     '@nuxtjs/proxy',
+    '@nuxtjs/recaptcha',
   ],
 
   proxy: {
@@ -61,6 +62,22 @@ export default {
         '^/econome': '/econome',
       },
     },
+  },
+
+  // publicRuntimeConfig: {
+  //   recaptcha: {
+  //     hideBadge: false,
+  //     mode: 'base',
+  //     version: 2,
+  //     siteKey: process.env.NUXT_RECAPTCHA_SITE_KEY
+  //   },
+  // },
+
+  recaptcha: {
+    hideBadge: false,
+    mode: 'base',
+    version: 3,
+    siteKey: process.env.NUXT_RECAPTCHA_SITE_KEY
   },
 
   // Axios module configuration: https://go.nuxtjs.dev/config-axios
