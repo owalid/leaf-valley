@@ -34,7 +34,7 @@ export default {
   },
   async mounted() {
     await this.$recaptcha.init()
-    this.socket = new WebSocket('ws://localhost:8080/econome/ws')
+    this.socket = new WebSocket(process.env.NUXT_ECONOME_MS_WS)
     this.runListenerWs()
   },
   beforeDestroy() {
