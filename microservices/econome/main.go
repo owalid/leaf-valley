@@ -55,7 +55,7 @@ func main() {
     router.HandleFunc("/econome/ws", websocketWorker.WsSubscriber)
 
     corsConfig := cors.New(cors.Options{
-        AllowedOrigins: []string{"http://localhost:3000"},
+        AllowedOrigins: []string{"http://localhost:3000", "https://leaf-valley.com"},
         AllowCredentials: true,
     })
     handler := corsConfig.Handler(router)
