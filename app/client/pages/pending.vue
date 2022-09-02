@@ -32,14 +32,16 @@ export default {
       shouldValidateRecaptcha: false,
     }
   },
-  async mounted() {
+  async fetch() {
     await this.$recaptcha.init()
-    this.socket = new WebSocket(
-      process.env.NUXT_ECONOME_MS_WS ||
-        this.$config.NUXT_ECONOME_MS_WS ||
-        'ws://127.0.0.1:8080/econome/ws'
-    )
-    this.runListenerWs()
+    if (process.client) {
+      this.socket = new WebSocket(
+        process.env.NUXT_ECONOME_MS_WS ||
+          this.$config.NUXT_ECONOME_MS_WS ||
+          'ws://127.0.0.1:8080/econome/ws'
+      )
+      this.runListenerWs()
+    }
   },
   beforeDestroy() {
     this.interval = null
