@@ -35,6 +35,7 @@ export default {
   async fetch() {
     await this.$recaptcha.init()
     if (process.client) {
+      console.log(process.env.NUXT_ECONOME_MS_WS || this.$config.NUXT_ECONOME_MS_WS || 'ws://127.0.0.1:8080/econome/ws')
       this.socket = new WebSocket(
         process.env.NUXT_ECONOME_MS_WS ||
           this.$config.NUXT_ECONOME_MS_WS ||
