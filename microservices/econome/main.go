@@ -52,7 +52,7 @@ func main() {
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/econome/get-status", getClusterStatus)
 	router.HandleFunc("/econome/start-cluster", startCluster).Methods("POST")
-    router.HandleFunc("/econome/ws", websocketWorker.WsSubscriber)
+  router.HandleFunc("/econome/ws", websocketWorker.WsSubscriber)
 
     corsConfig := cors.New(cors.Options{
         AllowedOrigins: []string{"http://localhost:3000", "https://leaf-valley.com"},
