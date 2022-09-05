@@ -2274,6 +2274,13 @@ base@^0.11.1:
     mixin-deep "^1.2.0"
     pascalcase "^0.1.1"
 
+basic-auth@~2.0.1:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/basic-auth/-/basic-auth-2.0.1.tgz#b998279bf47ce38344b4f3cf916d4679bbf51e3a"
+  integrity sha512-NF+epuEdnUYVlGuhaxbbq+dvJttwLnGY+YixlXlME5KpQ5W3CnXA5cVTneY3SPbPDRkcjMbifrwmFYcClgOZeg==
+  dependencies:
+    safe-buffer "5.1.2"
+
 big.js@^5.2.2:
   version "5.2.2"
   resolved "https://registry.npmjs.org/big.js/-/big.js-5.2.2.tgz"
@@ -3442,7 +3449,7 @@ defu@^6.0.0:
   resolved "https://registry.npmjs.org/defu/-/defu-6.0.0.tgz"
   integrity sha512-t2MZGLf1V2rV4VBZbWIaXKdX/mUcYW0n2znQZoADBkGGxYL8EWqCuCZBmJPJ/Yy9fofJkyuuSuo5GSwo0XdEgw==
 
-depd@2.0.0:
+depd@2.0.0, depd@~2.0.0:
   version "2.0.0"
   resolved "https://registry.npmjs.org/depd/-/depd-2.0.0.tgz"
   integrity sha512-g7nH6P6dyDioJogAAGprGpCtVImJhpPk/roCzdb3fIh61/s/nPsfR6onyMwkCAR/OlC3yBC0lESvUoQEAssIrw==
@@ -6112,6 +6119,17 @@ mkdirp@^1.0.3, mkdirp@^1.0.4:
   resolved "https://registry.npmjs.org/mkdirp/-/mkdirp-1.0.4.tgz"
   integrity sha512-vVqVZQyf3WLx2Shd0qJ9xuvqgAyKPLAiqITEtqW0oIUjzo3PePDd6fW9iFz30ef7Ysp/oiWqbhszeGWW2T6Gzw==
 
+morgan@^1.10.0:
+  version "1.10.0"
+  resolved "https://registry.yarnpkg.com/morgan/-/morgan-1.10.0.tgz#091778abc1fc47cd3509824653dae1faab6b17d7"
+  integrity sha512-AbegBVI4sh6El+1gNwvD5YIck7nSA36weD7xvIxG4in80j/UoK8AEGaWnnz8v1GxonMCltmlNs5ZKbGvl9b1XQ==
+  dependencies:
+    basic-auth "~2.0.1"
+    debug "2.6.9"
+    depd "~2.0.0"
+    on-finished "~2.3.0"
+    on-headers "~1.0.2"
+
 move-concurrently@^1.0.1:
   version "1.0.1"
   resolved "https://registry.npmjs.org/move-concurrently/-/move-concurrently-1.0.1.tgz"
@@ -7979,6 +7997,11 @@ ripemd160@^2.0.0, ripemd160@^2.0.1:
   dependencies:
     hash-base "^3.0.0"
     inherits "^2.0.1"
+
+rotating-file-stream@^3.0.4:
+  version "3.0.4"
+  resolved "https://registry.yarnpkg.com/rotating-file-stream/-/rotating-file-stream-3.0.4.tgz#158e21aa229020b1443607e771c634f00bd7bbf1"
+  integrity sha512-Zd+IA5soqBUKtCa7KfMRnF7GKEaRav/dJFU7UHc+r1FMd8VvMLUFE0q1HX5s6XJO1cZ6jAqtTa/ZFnjc7IqlJA==
 
 run-async@^2.4.0:
   version "2.4.1"
