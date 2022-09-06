@@ -5,7 +5,7 @@ type ScwServerResponse struct {
 }
 
 type ScwListServerResponse struct {
-	Server []Server `json:"server"`
+	Servers []Server `json:"servers"`
 }
 
 type Server struct {

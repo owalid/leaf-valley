@@ -14,39 +14,54 @@ type StartClusterResponse struct {
 }
 
 type ClusterStatusResponse struct {
-	State          string `json: "state"`
+	State       string `json: "state"`
 }
 
-func getServerDetail() scwResponses.ScwServerResponse {
+func getServerDetail() (scwResponses.ScwServerResponse, error) {
 	zone := utils.GoDotEnvVariable("SCW_SERVER_ZONE")
 	authToken := utils.GoDotEnvVariable("SCW_AUTH_TOKEN")
-	var nameInstance = "instance-cluster-api-leaf"
+	nameInstance := utils.GoDotEnvVariable("SCW_NAME_INSTANCE")
 
-	url := "https://api.scaleway.com/instance/v1/zones/" + zone + "/servers/?name=" + nameInstance
+	var defaultParsedResult = scwResponses.ScwServerResponse{}
+	url := "https://api.scaleway.com/instance/v1/zones/" + zone + "/servers?name=" + nameInstance
 
 	client := &http.Client{}
 	reqServerAlive, err := http.NewRequest("GET", url, nil)
 
 	if err != nil {
 		fmt.Println("first err")
-		return nil
+		return defaultParsedResult, err
 	}
 
 	reqServerAlive.Header.Set("X-Auth-Token", authToken)
 	resServerAlive, err := client.Do(reqServerAlive)
 
-	parsedResponse := scwResponses.ScwListServerResponse{}
+	if err != nil {
+		return defaultParsedResult, err
+	}
+
+	var parsedResponse = scwResponses.ScwListServerResponse{}
 	json.NewDecoder(resServerAlive.Body).Decode(&parsedResponse)
 
-	return parsedResponse[0]
+	fmt.Println("parsedResponse: %v\n", parsedResponse)
+	if len(parsedResponse.Servers) == 0 {
+		return defaultParsedResult, nil
+	}
+	finalResult := scwResponses.ScwServerResponse{Server: parsedResponse.Servers[0]}
+	return finalResult, nil
 }
 
 func StartCluster() string {
     zone := utils.GoDotEnvVariable("SCW_SERVER_ZONE")
     authToken := utils.GoDotEnvVariable("SCW_AUTH_TOKEN")
 
-	parsedResponse := scwResponses.ScwServerResponse{Server: getServerDetail()}
-	serverId = string(parsedResponse.Server.id)
+	var parsedResponse, err = getServerDetail()
+
+	if err != nil {
+		return ""
+	}
+
+	var serverId = string(parsedResponse.Server.ID)
 
     url := "https://api.scaleway.com/instance/v1/zones/" + zone + "/servers/" + serverId + "/action"
 
@@ -71,12 +86,8 @@ func StartCluster() string {
 }
 
 func GetStateCluster() string {
-    serverId := utils.GoDotEnvVariable("SCW_SERVER_ID")
-    zone := utils.GoDotEnvVariable("SCW_SERVER_ZONE")
-    authToken := utils.GoDotEnvVariable("SCW_AUTH_TOKEN")
-
-	parsedResponse := scwResponses.ScwServerResponse{Server: getServerDetail()}
-	if parsedResponse == nil {
+	var parsedResponse, err = getServerDetail()
+	if err != nil {
 		return ""
 	}
 

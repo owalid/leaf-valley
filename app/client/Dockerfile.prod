@@ -4,13 +4,14 @@ RUN mkdir -p /home/app
 COPY . /home/app
 WORKDIR /home/app
 
-RUN apk update && apk add cron
-COPY config/cronjob-econome /etc/cron.d/cronjob-econome
-COPY config/cronjob-econome/run.sh /cronjob-econome/run.sh
-RUN chmod +x /cronjob-econome/run.sh
-RUN chmod 0644 /etc/cron.d/cronjob-econome
-RUN crontab /etc/cron.d/cronjob-econome
-RUN cron
+RUN apk update
+RUN apk add --update apk-cron
+RUN apk add jq curl
+
+RUN chmod +x entry.prod.sh
+RUN chmod +x config/run.sh
+RUN /usr/bin/crontab config/crontab.txt
+
 ENV NODE_OPTIONS --openssl-legacy-provider
 ENV NUXT_BASE_API_URL https://api.leaf-valley.com/api
 ENV HOST 0.0.0.0
@@ -18,4 +19,5 @@ ENV NUXT_HOST 0.0.0.0
 RUN npm install
 RUN npm run build
 
-CMD ["npm", "start"]
+
+ENTRYPOINT ["/home/app/entry.prod.sh"]
