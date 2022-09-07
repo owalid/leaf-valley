@@ -1,1 +1,1 @@
-* * * * * /home/app/run.sh &>&-
+* * * * * /home/app/run.sh >&- 2>&1
