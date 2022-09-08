@@ -69,26 +69,24 @@ class PredictionController:
                 normalize_type = safe_get_item(options, 'normalize_type', None)
 
         data = {}
-        img, _ = prepare_features(data, rgb_img, safe_get_item(options,'features',{}), safe_get_item(options, 'should_remove_bg'),
+        data, _ = prepare_features(data, rgb_img, safe_get_item(options,'features',{}), safe_get_item(options, 'should_remove_bg'),
                                 size_img=safe_get_item(options, 'size_img', None),\
                                 normalize_type=normalize_type,\
                                 crop_img=safe_get_item(options, 'crop_img', False),\
                                 is_deep_learning_features=safe_get_item(options, 'is_deep_learning_features', False) or is_deep_learning_model)
             
-        return img
+        return data
         
     def is_production():
         '''
             Description: Check if the application is in production mode and have s3 information
         '''
-        
-        return PredictionController.FLASK_ENV == 'prod' or not PredictionController.have_s3_information()
+        return PredictionController.FLASK_ENV == 'prod' and PredictionController.have_s3_information()
     
     def have_s3_information():
         '''
             Description: Check if s3 information is available
         '''
-        
         return PredictionController.s3_module.S3_ACCESS_KEY_ID and PredictionController.s3_module.S3_SECRET_ACCESS_KEY and PredictionController.s3_module.S3_BASE_ENDPOINT_URL and PredictionController.s3_module.S3_BUCKET_NAME
         
     def load_deeplearning_model(model_path, model_name):
@@ -271,13 +269,15 @@ class PredictionController:
             if PredictionController.is_production():
                 bgr_img = PredictionController.s3_module.get_image_from_path(os.path.join(path, f))
             else:
-                bgr_img, _, _ = pcv.readimage(os.path.join(path, f), mode='bgr')
+                bgr_img, _, _ = pcv.readimage(os.path.join(path, f), mode='rgb')
 
-        rgb_img = cv.cvtColor(bgr_img, cv.COLOR_BGR2RGB)
-        data = PredictionController.preprocess_pipeline_prediction(rgb_img, options_dataset)
+        data = PredictionController.preprocess_pipeline_prediction(bgr_img, options_dataset)
  
         df = pd.DataFrame.from_dict(data)
         df.index = [f]
+        df.columns = [str(f) for f in df.columns]
+        df.fillna(0, inplace=True)
+        df = df.copy()
 
         return df
 
@@ -297,16 +297,15 @@ class PredictionController:
         # Get ML model components
         model = model_dict['ml_model']
         le = model_dict['ml_label_encoder']
-        model_feature = model_dict['ml_features']
-        scaler = model_dict['ml_scaler']
-        
+        model_feature = [str(f) for f in model_dict['ml_features'].tolist()]
+        scaler = model_dict['ml_scaler']      
         classes = list(le.classes_)
 
         # Data Normalization
         df_features[model_feature] = scaler.transform(df_features[model_feature]).astype(np.float32)
 
-        df = pd.DataFrame(index=df_features.index)
         # get prediction labels
+        df = pd.DataFrame(index=df_features.index)
         df['preds'] = model.predict(df_features[model_feature])
         df['prediction_label'] = le.inverse_transform(df['preds'])
         df['proba'] = model.predict_proba(df_features[model_feature]).max(axis=1).tolist()
@@ -316,10 +315,13 @@ class PredictionController:
 
         # prediction matching
         if len(classes) == 2:
-            df['matching'] = df.apply(lambda r: ((r['prediction_label'] == 'healthy') and (r['desease'] =='healthy')) or ((r['prediction_label'] == 'not healthy') and (r['desease'] !='healthy')), axis=1)
+            df['matching'] = df.apply(lambda r: ((r['prediction_label'] == 'healthy') and (r['desease'] =='healthy')) or ((r['prediction_label'] == 'not_healthy') and (r['desease'] !='healthy')), axis=1)
+        elif len([c for c in classes if '_' in c]) == 0:
+            df['matching'] = df.apply(lambda r: (r['prediction_label'].lower() == r['species'].lower()), axis=1)
         else:
             df['matching'] = df.apply(lambda r: (r['prediction_label'].lower() == f"{r['species']}_{r['desease']}".lower()), axis=1)
-            
+
+        print(df)    
         return df
 
     def dl_predict(model, class_names, options_dataset, folders=[], data_dir='', img_lst=[], class_name=['']):
@@ -509,6 +511,7 @@ class PredictionController:
                 return create_response(data={'error': 'Incorrect model name.'}, status=500)
         
             ml_model_dict = PredictionController.load_models(ml_model, 'ML')
+
             if ml_model_dict:
                 df_features = pd.concat(list(tqdm(current_app._executor.map(PredictionController.get_ml_features, folders, repeat(data_dir), repeat(ml_model_dict['options_dataset'])), total=len(folders))))
                 ml_df = PredictionController.ml_predict(ml_model_dict, df_features)
@@ -521,7 +524,7 @@ class PredictionController:
                 return create_response(data={'error': 'Incorrect model name.'}, status=500)
         
             data_model_loaded = PredictionController.load_models(dl_model, 'DL')
-            
+
             if data_model_loaded:
                 dl_df = PredictionController.dl_predict(data_model_loaded['model'], data_model_loaded['class_names'], data_model_loaded['options_dataset'], folders=folders, data_dir=data_dir)
             else:
