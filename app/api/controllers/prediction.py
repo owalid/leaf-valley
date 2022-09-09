@@ -254,7 +254,7 @@ class PredictionController:
         classes.sort()
         return create_response(data={'classes': classes})
 
-    def get_ml_features(f='', path='', options_dataset={}, bgr_img=None):
+    def get_ml_features(f='', path='', options_dataset={}, rgb_img=None):
         '''
             Description: Utility function to get the features of a given image for machine learning models
             
@@ -262,16 +262,16 @@ class PredictionController:
                 f: name of the image (str)
                 path: path of the image (str)
                 options_dataset: options dataset of the model (dict)
-                bgr_img: image in BGR format (np.array)
+                rgb_img: image in RGB format (np.array)
         '''
         # Image processing
-        if bgr_img is None:
+        if rgb_img is None:
             if PredictionController.is_production():
-                bgr_img = PredictionController.s3_module.get_image_from_path(os.path.join(path, f))
+                rgb_img = PredictionController.s3_module.get_image_from_path(os.path.join(path, f))
             else:
-                bgr_img, _, _ = pcv.readimage(os.path.join(path, f), mode='rgb')
+                rgb_img, _, _ = pcv.readimage(os.path.join(path, f), mode='rgb')
 
-        data = PredictionController.preprocess_pipeline_prediction(bgr_img, options_dataset)
+        data = PredictionController.preprocess_pipeline_prediction(rgb_img, options_dataset)
  
         df = pd.DataFrame.from_dict(data)
         df.index = [f]
@@ -315,10 +315,14 @@ class PredictionController:
 
         # prediction matching
         if len(classes) == 2:
+            '''Matching binary classes [Healthy, Not Healthy] with the predicted one'''
             df['matching'] = df.apply(lambda r: ((r['prediction_label'] == 'healthy') and (r['desease'] =='healthy')) or ((r['prediction_label'] == 'not_healthy') and (r['desease'] !='healthy')), axis=1)
         elif len([c for c in classes if '_' in c]) == 0:
+            '''Matching Plantes classes ['Apple', 'Background', 'Blueberry', 'Cherry', 'Corn', 'Grape', 'Orange', 'Peach', 'Pepper,', 
+                                         'Potato', 'Raspberry', 'Soybean', 'Squash', 'Strawberry', 'Tomato'] with the predicted ones'''
             df['matching'] = df.apply(lambda r: (r['prediction_label'].lower() == r['species'].lower()), axis=1)
         else:
+            '''Matching Plantes/Diseases classes with the predicted ones'''
             df['matching'] = df.apply(lambda r: (r['prediction_label'].lower() == f"{r['species']}_{r['desease']}".lower()), axis=1)
 
         print(df)    
