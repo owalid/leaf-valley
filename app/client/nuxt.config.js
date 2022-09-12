@@ -16,6 +16,7 @@ export default {
 
   // Global CSS: https://go.nuxtjs.dev/config-css
   css: [],
+  serverMiddleware: ['~/server-middleware/morgan'],
 
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
   plugins: [
@@ -45,7 +46,7 @@ export default {
     // https://go.nuxtjs.dev/pwa
     '@nuxtjs/pwa',
     '@nuxtjs/proxy',
-    '@nuxtjs/recaptcha',
+    ...(process.env.NODE_ENV === 'production' ? ['@nuxtjs/recaptcha'] : []),
   ],
 
   proxy: {

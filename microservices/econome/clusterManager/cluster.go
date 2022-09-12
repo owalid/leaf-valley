@@ -14,13 +14,54 @@ type StartClusterResponse struct {
 }
 
 type ClusterStatusResponse struct {
-	State          string `json: "state"`
+	State       string `json: "state"`
+}
+
+func getServerDetail() (scwResponses.ScwServerResponse, error) {
+	zone := utils.GoDotEnvVariable("SCW_SERVER_ZONE")
+	authToken := utils.GoDotEnvVariable("SCW_AUTH_TOKEN")
+	nameInstance := utils.GoDotEnvVariable("SCW_NAME_INSTANCE")
+
+	var defaultParsedResult = scwResponses.ScwServerResponse{}
+	url := "https://api.scaleway.com/instance/v1/zones/" + zone + "/servers?name=" + nameInstance
+
+	client := &http.Client{}
+	reqServerAlive, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+		fmt.Println("first err")
+		return defaultParsedResult, err
+	}
+
+	reqServerAlive.Header.Set("X-Auth-Token", authToken)
+	resServerAlive, err := client.Do(reqServerAlive)
+
+	if err != nil {
+		return defaultParsedResult, err
+	}
+
+	var parsedResponse = scwResponses.ScwListServerResponse{}
+	json.NewDecoder(resServerAlive.Body).Decode(&parsedResponse)
+
+	fmt.Println("parsedResponse: %v\n", parsedResponse)
+	if len(parsedResponse.Servers) == 0 {
+		return defaultParsedResult, nil
+	}
+	finalResult := scwResponses.ScwServerResponse{Server: parsedResponse.Servers[0]}
+	return finalResult, nil
 }
 
 func StartCluster() string {
-    serverId := utils.GoDotEnvVariable("SCW_SERVER_ID")
     zone := utils.GoDotEnvVariable("SCW_SERVER_ZONE")
     authToken := utils.GoDotEnvVariable("SCW_AUTH_TOKEN")
+
+	var parsedResponse, err = getServerDetail()
+
+	if err != nil {
+		return ""
+	}
+
+	var serverId = string(parsedResponse.Server.ID)
 
     url := "https://api.scaleway.com/instance/v1/zones/" + zone + "/servers/" + serverId + "/action"
 
@@ -36,39 +77,20 @@ func StartCluster() string {
 
     client := &http.Client{}
     _, err = client.Do(reqServerAlive)
+
     if err != nil {
         return ""
     }
+
     return "OK"
 }
 
 func GetStateCluster() string {
-    serverId := utils.GoDotEnvVariable("SCW_SERVER_ID")
-    zone := utils.GoDotEnvVariable("SCW_SERVER_ZONE")
-    authToken := utils.GoDotEnvVariable("SCW_AUTH_TOKEN")
-    
-    url := "https://api.scaleway.com/instance/v1/zones/" + zone + "/servers/" + serverId
+	var parsedResponse, err = getServerDetail()
+	if err != nil {
+		return ""
+	}
 
-    client := &http.Client{}
-    reqServerAlive, err := http.NewRequest("GET", url, nil)
-    
-    if err != nil {
-        fmt.Println("first err")
-        return ""
-    }
-    
-    reqServerAlive.Header.Set("X-Auth-Token", authToken)
-    resServerAlive, err := client.Do(reqServerAlive)
-
-    if err != nil {
-        fmt.Println("second err")
-        return ""
-    }
-
-    // GET STATE FROM RESPONSE
-    parsedResponse := scwResponses.ScwServerResponse{}
-    json.NewDecoder(resServerAlive.Body).Decode(&parsedResponse)
     state := string(parsedResponse.Server.State)
-
     return state
 }

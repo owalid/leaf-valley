@@ -26,28 +26,36 @@ export default {
   middleware: 'cluster-status',
   data() {
     return {
-      resultWs: 'lol',
+      resultWs: '',
       interval: null,
       recaptchaResponse: null,
       shouldValidateRecaptcha: false,
     }
   },
-  async mounted() {
-    await this.$recaptcha.init()
-    this.socket = new WebSocket(
-      process.env.NUXT_ECONOME_MS_WS ||
-        this.$config.NUXT_ECONOME_MS_WS ||
-        'ws://127.0.0.1:8080/econome/ws'
-    )
-    this.runListenerWs()
+  async fetch() {
+    if (process.env.NODE_ENV === 'production') {
+      await this.$recaptcha.init()
+    } else {
+      this.$router.push('/')
+    }
+    if (process.client) {
+      this.socket = new WebSocket(
+        process.env.NUXT_ECONOME_MS_WS ||
+          this.$config.NUXT_ECONOME_MS_WS ||
+          'ws://127.0.0.1:8080/econome/ws'
+      )
+      this.runListenerWs()
+    }
   },
   beforeDestroy() {
     this.interval = null
-    this.$recaptcha.destroy()
+    if (process.env.NODE_ENV === 'production') {
+      this.$recaptcha.destroy()
+    }
   },
   methods: {
     runListenerWs() {
-      if (!this.interval) {
+      if (!this.interval && process.env.NODE_ENV === 'production') {
         this.interval = setInterval(() => {
           this.socket.send('getStatus')
           this.socket.onmessage = ({ data }) => {

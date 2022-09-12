@@ -4,6 +4,10 @@ type ScwServerResponse struct {
 	Server Server `json:"server"`
 }
 
+type ScwListServerResponse struct {
+	Servers []Server `json:"servers"`
+}
+
 type Server struct {
 	ID                string         	`json:"id"`                 
 	Name              string         	`json:"name"`               
