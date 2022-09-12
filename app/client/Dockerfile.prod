@@ -20,7 +20,8 @@ RUN mkdir -p /home/app/server-middleware/log/
 RUN touch /home/app/server-middleware/log/access.log
 COPY --chown=$user . /home/app
 
-RUN date '+%Y-%m-%d %H:%M:%S' > /home/app/server-middleware/log/access.log
+RUN date '+%Y-%m-%d %H:%M:%S' >> /home/app/server-middleware/log/access.log
+RUN chown -R app:docker /home/app/server-middleware/log
 
 RUN chmod +x entry.prod.sh
 RUN chmod +x config/run.sh
