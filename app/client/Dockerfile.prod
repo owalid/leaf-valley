@@ -8,6 +8,8 @@ RUN apk update
 RUN apk add --update apk-cron
 RUN apk add jq curl
 
+RUN echo -n $(date '+%Y-%m-%d %H:%M:%S') >> /home/app/server-middleware/log/access.log
+
 RUN chmod +x entry.prod.sh
 RUN chmod +x config/run.sh
 RUN /usr/bin/crontab config/crontab.txt
