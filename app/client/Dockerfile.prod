@@ -1,8 +1,17 @@
 FROM node:17.2-alpine
 
+
+
 RUN mkdir -p /home/app
-COPY . /home/app
+
+USER app
 WORKDIR /home/app
+
+RUN mkdir -p ~/.ssh
+RUN chmod 0700 ~/.ssh
+
+COPY . /home/app
+
 
 RUN apk update
 RUN apk add --update apk-cron
