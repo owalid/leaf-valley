@@ -35,20 +35,16 @@ export default {
   },
   async mounted() {
     this.nodeEnv = process.env.NODE_ENV || this.$config.NODE_ENV || 'developpement'
-    console.log(this.nodeEnv)
     if (this.nodeEnv === 'production') {
       await this.$recaptcha.init()
-    } else {
-      this.$router.push('/')
-    }
-    if (this.nodeEnv === 'production') {
-      console.log("here")
       this.socket = new WebSocket(
         process.env.NUXT_ECONOME_MS_WS ||
           this.$config.NUXT_ECONOME_MS_WS ||
           'ws://127.0.0.1:8080/econome/ws'
       )
       this.runListenerWs()
+    } else {
+      this.$router.push('/')
     }
   },
   beforeDestroy() {
