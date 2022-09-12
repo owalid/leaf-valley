@@ -53,10 +53,10 @@ jobs:
         run: export KUBECONFIG=$(pwd)/app/api/kubeconfig.yaml
             
       - name: Scale 0 replicas
-        run: kubectl scale deployment leafapideploy --replicas=0
+        run: kubectl scale deployment leafapi --replicas=0
 
       - name: Sleep
         run: sleep 5
 
       - name: scale 1 replicas
-        run: kubectl scale deployment leafapideploy --replicas=1
+        run: kubectl scale deployment leafapi --replicas=1
