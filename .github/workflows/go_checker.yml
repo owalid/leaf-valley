@@ -1,0 +1,16 @@
+name: Go Lint checker
+
+on:
+  pull_request:
+    paths:
+      - 'microservices/econome/**'
+jobs:
+  go-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      
+      - name: Build microservice
+        working-directory: ./microservices/econome
+        run: go build
