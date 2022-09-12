@@ -10,8 +10,10 @@ app/ -> web part
 data/ -> Data sources
   augmentation/ -> Data augmented
   no_augmentation/ -> Data not augmented
+microservices/
+  econome/ -> Micro service which manage api instance
 preprocess/ -> scripts for preprocessing
-process/ -> scripts for training
+process/ -> scripts for training (machine learning and deep learning)
 utilities/ -> global utilities functions
 ```
 
@@ -124,39 +126,6 @@ optional arguments:
   -v, --verbose         Verbose
 ```
 
-
-## ML CLassification process
-
-This program allows you to train a ML classification models with the data preprocessed
-
-```
-python process/ml_classification/main.py -h                                                                                                           
-usage: main.py [-h] [-cs CLASSIFICATION_STEP] -f FILENAME [-dst PROCESS_OUTPUT] [-sd] [-th THRESHOLD] [-nortype NORMALIZE_TYPE] [-cm CLASSIFICATION_MODELS] [-ct CLASSIFICATION_TYPES] [-sm]
-               [-dms DEST_MODELS_SAVED] [-v]
-
-options:
-  -h, --help            show this help message and exit
-  -cs CLASSIFICATION_STEP, --classification-step CLASSIFICATION_STEP
-                        Classification step: LOAD_DATA, FIT_MODEL, PREDICT_MODEL, FIT_PREDICT_MODEL, ALL (default)
-  -f FILENAME, --filename FILENAME
-                        path and file name of the input data
-  -dst PROCESS_OUTPUT, --process-output PROCESS_OUTPUT
-                        Path to save or to get the preprocessed data, plots and reports. default: data/process/ml_classification
-  -sd, --save-data      Save options_datasets json file and converted data from h5 format to DataFrame one with flag train/test flag, default True
-  -th THRESHOLD, --threshold THRESHOLD
-                        Threshold used for the filter method to select features
-  -nortype NORMALIZE_TYPE, --normalize-type NORMALIZE_TYPE
-                        Normalize data (NORM_STANDARSCALER or NORM_MINMAX normalization) (Default: NORM_MINMAX)
-  -cm CLASSIFICATION_MODELS, --classification-models CLASSIFICATION_MODELS
-                        Classification models: XGC, ETC, RFC, ALL (default). Example -cm=RFC,ETC
-  -ct CLASSIFICATION_TYPES, --classification-types CLASSIFICATION_TYPES
-                        Classification type: PLANTS, HEALTHY, PLANTS_DESEASES classes, ALL (default)
-  -sm, --save-model     Save model, default True
-  -dms DEST_MODELS_SAVED, --dest-models-saved DEST_MODELS_SAVED
-                        Path to save models. default: data/models_saved
-  -v, --verbose         Verbose
-```
-
 <details>
   <summary><strong>Deep learning models availables:</strong></summary>
 <br>
@@ -205,6 +174,48 @@ options:
   - <small>LAB_PROCESS</small>
   - <small>LAB_INCEPTIONV3_PROCESS</small>
   - <small>HSV_PROCESS</small>
+</details>
+
+
+## ML CLassification process
+
+This program allows you to train a ML classification models with the data preprocessed
+
+```
+python process/ml_classification/main.py -h                                                                                                           
+usage: main.py [-h] [-cs CLASSIFICATION_STEP] -f FILENAME [-dst PROCESS_OUTPUT] [-sd] [-th THRESHOLD] [-nortype NORMALIZE_TYPE] [-cm CLASSIFICATION_MODELS] [-ct CLASSIFICATION_TYPES] [-sm]
+               [-dms DEST_MODELS_SAVED] [-v]
+
+options:
+  -h, --help            show this help message and exit
+  -cs CLASSIFICATION_STEP, --classification-step CLASSIFICATION_STEP
+                        Classification step: LOAD_DATA, FIT_MODEL, PREDICT_MODEL, FIT_PREDICT_MODEL, ALL (default)
+  -f FILENAME, --filename FILENAME
+                        path and file name of the input data
+  -dst PROCESS_OUTPUT, --process-output PROCESS_OUTPUT
+                        Path to save or to get the preprocessed data, plots and reports. default: data/process/ml_classification
+  -sd, --save-data      Save options_datasets json file and converted data from h5 format to DataFrame one with flag train/test flag, default True
+  -th THRESHOLD, --threshold THRESHOLD
+                        Threshold used for the filter method to select features
+  -nortype NORMALIZE_TYPE, --normalize-type NORMALIZE_TYPE
+                        Normalize data (NORM_STANDARSCALER or NORM_MINMAX normalization) (Default: NORM_MINMAX)
+  -cm CLASSIFICATION_MODELS, --classification-models CLASSIFICATION_MODELS
+                        Classification models: XGC, ETC, RFC, ALL (default). Example -cm=RFC,ETC
+  -ct CLASSIFICATION_TYPES, --classification-types CLASSIFICATION_TYPES
+                        Classification type: PLANTS, HEALTHY, PLANTS_DESEASES classes, ALL (default)
+  -sm, --save-model     Save model, default True
+  -dms DEST_MODELS_SAVED, --dest-models-saved DEST_MODELS_SAVED
+                        Path to save models. default: data/models_saved
+  -v, --verbose         Verbose
+```
+
+<details>
+  <summary><strong>Machine learning models availables:</strong></summary>
+<br>
+
+- <small>XgBoost</small>
+- <small>Extra tree classifier</small>
+- <small>Random forest</small>
 </details>
 
 # Web part
