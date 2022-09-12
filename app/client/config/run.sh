@@ -12,6 +12,6 @@ then
 
   if [[ "$STATE" == "running" ]] ;
   then
-    curl -X POST -d "action=poweroff" -H "X-Auth-Token:$AUTH_TOKEN" "https://api.scaleway.com/instance/v1/zones/$SCW_SERVER_ZONE/servers/$SERVER_ID/action"
+    curl -X POST -d '{"action":"poweroff"}' -H "X-Auth-Token:$SCW_AUTH_TOKEN" -H "Content-Type: application/json" "https://api.scaleway.com/instance/v1/zones/$SCW_SERVER_ZONE/servers/$SERVER_ID/action"
   fi
 fi
