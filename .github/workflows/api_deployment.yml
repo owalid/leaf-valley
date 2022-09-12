@@ -55,11 +55,8 @@ jobs:
       - name: Scale 0 replicas
         run: kubectl scale deployment leafapideploy --replicas=0
 
-      - name: Apply deployment
-        run: kubectl apply -f app/api/deployment.yaml
+      - name: Sleep
+        run: sleep 5
 
       - name: scale 1 replicas
         run: kubectl scale deployment leafapideploy --replicas=1
-
-      - name: Rollout restart
-        run: kubectl rollout restart deployment leafapideploy
