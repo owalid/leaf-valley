@@ -27,18 +27,20 @@ export default {
   data() {
     return {
       resultWs: '',
+      nodeEnv: '',
       interval: null,
       recaptchaResponse: null,
       shouldValidateRecaptcha: false,
     }
   },
   async fetch() {
-    if (process.env.NODE_ENV === 'production') {
+    this.nodeEnv = process.env.NODE_ENV || this.$config.NODE_ENV || 'developpement'
+    if (this.nodeEnv === 'production') {
       await this.$recaptcha.init()
     } else {
       this.$router.push('/')
     }
-    if (process.client && process.env.NODE_ENV === 'production') {
+    if (process.client && this.nodeEnv === 'production') {
       console.log("here")
       this.socket = new WebSocket(
         process.env.NUXT_ECONOME_MS_WS ||
@@ -50,13 +52,13 @@ export default {
   },
   beforeDestroy() {
     this.interval = null
-    if (process.env.NODE_ENV === 'production') {
+    if (this.nodeEnv === 'production') {
       this.$recaptcha.destroy()
     }
   },
   methods: {
     runListenerWs() {
-      if (!this.interval && process.env.NODE_ENV === 'production') {
+      if (!this.interval && this.nodeEnv === 'production') {
         this.interval = setInterval(() => {
           this.socket.send('getStatus')
           this.socket.onmessage = ({ data }) => {
