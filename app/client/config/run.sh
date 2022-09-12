@@ -1,3 +1,4 @@
+#!/bin/sh
 # get last line logs file
 LAST_ACCESS_LOG=$(date -d "$(echo -n $(cat /home/app/server-middleware/log/access.log | tail -1))" +%s)
 NOW=$(date -d "@$(($(date +%s) - 3600))") # now - 1 hour

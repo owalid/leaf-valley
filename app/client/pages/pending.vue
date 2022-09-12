@@ -32,7 +32,7 @@ export default {
       shouldValidateRecaptcha: false,
     }
   },
-  async fetch({ redirect }) {
+  async fetch() {
     if (process.env.NODE_ENV === 'production') {
       await this.$recaptcha.init()
     } else {
