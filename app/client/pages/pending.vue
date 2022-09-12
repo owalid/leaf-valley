@@ -33,14 +33,15 @@ export default {
       shouldValidateRecaptcha: false,
     }
   },
-  async fetch() {
+  async mounted() {
     this.nodeEnv = process.env.NODE_ENV || this.$config.NODE_ENV || 'developpement'
+    console.log(this.nodeEnv)
     if (this.nodeEnv === 'production') {
       await this.$recaptcha.init()
     } else {
       this.$router.push('/')
     }
-    if (process.client && this.nodeEnv === 'production') {
+    if (this.nodeEnv === 'production') {
       console.log("here")
       this.socket = new WebSocket(
         process.env.NUXT_ECONOME_MS_WS ||
