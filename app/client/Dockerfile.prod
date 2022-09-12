@@ -16,10 +16,10 @@ WORKDIR $home
 RUN mkdir -p ~/.ssh
 RUN chmod 0700 ~/.ssh
 RUN mkdir -p /home/app/logs_crontab
-
+RUN mkdir -p /home/app/server-middleware/log/
+RUN touch /home/app/server-middleware/log/access.log
 COPY --chown=$user . /home/app
 
-RUN mkdir -p /home/app/server-middleware/log/
 RUN date '+%Y-%m-%d %H:%M:%S' > /home/app/server-middleware/log/access.log
 
 RUN chmod +x entry.prod.sh
