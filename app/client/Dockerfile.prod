@@ -19,6 +19,7 @@ RUN mkdir -p /home/app/logs_crontab
 
 COPY --chown=$user . /home/app
 
+RUN mkdir -p /home/app/server-middleware/log/
 RUN date '+%Y-%m-%d %H:%M:%S' > /home/app/server-middleware/log/access.log
 
 RUN chmod +x entry.prod.sh
