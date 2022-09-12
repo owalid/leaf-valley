@@ -12,15 +12,14 @@ ARG home=/home/$user
 RUN addgroup -S docker
 RUN adduser --disabled-password --gecos "" --home $home --ingroup docker $user
 WORKDIR $home
-USER $user
 
 RUN mkdir -p ~/.ssh
 RUN chmod 0700 ~/.ssh
 RUN mkdir -p /home/app/logs_crontab
 
-COPY . /home/app
+COPY --chown=$user . /home/app
 
-RUN echo -n $(date '+%Y-%m-%d %H:%M:%S') >> /home/app/server-middleware/log/access.log
+RUN date '+%Y-%m-%d %H:%M:%S' > /home/app/server-middleware/log/access.log
 
 RUN chmod +x entry.prod.sh
 RUN chmod +x config/run.sh
@@ -32,6 +31,6 @@ ENV HOST 0.0.0.0
 ENV NUXT_HOST 0.0.0.0
 RUN npm install
 RUN npm run build
-
+# USER $user
 
 ENTRYPOINT ["/home/app/entry.prod.sh"]
