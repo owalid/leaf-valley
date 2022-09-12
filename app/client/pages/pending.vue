@@ -21,7 +21,7 @@
 </template>
 <script>
 export default {
-  name: 'TestWs',
+  name: 'PendingPage',
   layout: 'pending',
   middleware: 'cluster-status',
   data() {
@@ -38,7 +38,8 @@ export default {
     } else {
       this.$router.push('/')
     }
-    if (process.client) {
+    if (process.client && process.env.NODE_ENV === 'production') {
+      console.log("here")
       this.socket = new WebSocket(
         process.env.NUXT_ECONOME_MS_WS ||
           this.$config.NUXT_ECONOME_MS_WS ||
