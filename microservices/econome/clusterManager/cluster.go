@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"bytes"
 	"fmt"
+	"time"
 	"encoding/json"
 	"econome/utils"
 	"econome/structs"
@@ -89,6 +90,19 @@ func GetStateCluster() string {
 	var parsedResponse, err = getServerDetail()
 	if err != nil {
 		return ""
+	}
+
+	var now = time.Now().Unix()
+
+	creationDate, err := time.Parse(time.RFC3339, parsedResponse.Server.Image.CreationDate)
+	modificationDate, err := time.Parse(time.RFC3339, parsedResponse.Server.Image.ModificationDate)
+
+	fmt.Println(now)
+	fmt.Println(creationDate.Unix())
+	fmt.Println(modificationDate.Unix())
+
+	if (now - creationDate.Unix() < 600 || now - modificationDate.Unix() < 600) {
+		return "starting"
 	}
 
     state := string(parsedResponse.Server.State)
