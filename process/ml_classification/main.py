@@ -1,8 +1,6 @@
 '''
   CLI used to manage ML classification.
 '''
-from datetime import datetime
-from fileinput import filename
 import os
 import sys
 import random
@@ -42,6 +40,10 @@ from load_data_from_h5 import load_data_from_h5
 
 from pathlib import Path
 
+import warnings
+from sklearn.exceptions import UndefinedMetricWarning
+warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
+
 VERBOSE = False
 scaler_dict = {
                 'NORM_MINMAX'        : MinMaxScaler(), 
@@ -55,8 +57,8 @@ def local_print(msg):
 def set_models_dict(classType, classModels):
   xgc = xgb.XGBClassifier(use_label_encoder=False, eval_metric=['error','logloss','auc'], objective='binary:logistic' if classType == 'HEALTHY' else 'multi:softproba', 
                           n_estimators=500, n_jobs=-1)
-  rfc = RandomForestClassifier(n_estimators=500, n_jobs=-1, verbose=VERBOSE)
-  etc = ExtraTreesClassifier(n_estimators=500, n_jobs=-1, verbose=VERBOSE)
+  rfc = RandomForestClassifier(n_estimators=500, n_jobs=-1, verbose=VERBOSE*0)
+  etc = ExtraTreesClassifier(n_estimators=500, n_jobs=-1, verbose=VERBOSE*0)
   _dict = dict([('xgc', xgc), ('rfc', rfc), ('etc', etc)])
   return { md: _dict[md.lower()] for md in classModels}
 
@@ -288,14 +290,15 @@ def accuracy_classification_report(y_test, y_pred, y_score, classes, msg = '', f
 
   metrics['spearmanr']       = 100 * (stats.spearmanr(confusion_df['y_Actual'], confusion_df['y_Predicted']))[0]
   metrics['accuracy']        = 100 * accuracy_score(confusion_df['y_Actual'], confusion_df['y_Predicted'])
-  if len(np.unique(confusion_df['y_Actual']))== 2:
-    metrics['auc score']       = 100 * roc_auc_score(confusion_df['y_Actual'], y_pred, average='macro')
-  else:
-    metrics['auc score']       = 100 * roc_auc_score(confusion_df['y_Actual'], y_score, multi_class='ovr', average='macro')
   metrics['log loss']        = 100 * log_loss(confusion_df['y_Actual'], y_score)
   metrics['precision score'] = 100 * precision_score(confusion_df['y_Actual'], confusion_df['y_Predicted'], average='macro')
   metrics['recall score']    = 100 * recall_score(confusion_df['y_Actual'], confusion_df['y_Predicted'], average='macro')
   metrics['f1 score']        = 100 * f1_score(confusion_df['y_Actual'], confusion_df['y_Predicted'], average='macro')
+
+  if len(np.unique(confusion_df['y_Actual']))== 2:
+    metrics['auc score']       = 100 * roc_auc_score(confusion_df['y_Actual'], y_pred, average='macro')
+  else:
+    metrics['auc score']       = 100 * roc_auc_score(confusion_df['y_Actual'], y_score, multi_class='ovr', average='macro')
 
   output_metrics  = f"Spearmnr score (っಠ‿ಠ)っ\t{metrics['spearmanr']:.2f}\n"
   output_metrics += f"Accuracy Score         :\t{metrics['accuracy']:.2f}\n"
@@ -446,7 +449,7 @@ if __name__ == '__main__':
     parser.add_argument("-sd", "--save-data", required=False, action='store_false', default=True, 
                         help='Save options_datasets json file and converted data from h5 format to DataFrame one with flag train/test flag, default True')
     parser.add_argument("-th", "--threshold", required=False, default=0.1, 
-                        help='Threshold used for the filter method to select features')
+                        help='Threshold used for the filter method to select features, default: 0.1')
     parser.add_argument("-nortype", "--normalize-type", required=False, type=str, default='NORM_MINMAX',
                         help='Normalize data (NORM_STANDARSCALER or NORM_MINMAX normalization) (Default: NORM_MINMAX)')
     parser.add_argument("-cm", "--classification-models", required=False, type=str, default="ALL",

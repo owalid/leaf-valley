@@ -80,7 +80,9 @@ def load_data_from_h5(path, file, threshold, verbose):
         # SPlit manually data into train/test
         df_features = shuffle(df_features)
 
-        df_features.loc[random.sample(df_features.index.to_list(), int(.7*len(df_features))),'split'] = 'train'
+        for cl in df_features.classes.unique():
+            df_features.loc[random.sample(df_features.loc[df_features.classes==cl].index.to_list(), int(.7*len(df_features.loc[df_features.classes==cl]))),'split'] = 'train'
+
         df_features['split'].fillna('test', inplace=True)
 
         df_features = df_features.copy()
