@@ -24,7 +24,7 @@ RUN date '+%Y-%m-%d %H:%M:%S' >> /home/app/server-middleware/log/access.log
 RUN chown -R app:docker /home/app/server-middleware/log
 
 RUN chmod +x entry.prod.sh
-RUN chmod +x config/run.sh
+RUN chmod +x config/run.bash
 RUN /usr/bin/crontab config/crontab.txt
 
 ENV NODE_OPTIONS --openssl-legacy-provider
