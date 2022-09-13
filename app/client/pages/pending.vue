@@ -34,7 +34,8 @@ export default {
     }
   },
   async mounted() {
-    this.nodeEnv = process.env.NODE_ENV || this.$config.NODE_ENV || 'developpement'
+    this.nodeEnv =
+      process.env.NODE_ENV || this.$config.NODE_ENV || 'developpement'
     if (this.nodeEnv === 'production') {
       await this.$recaptcha.init()
       this.socket = new WebSocket(
