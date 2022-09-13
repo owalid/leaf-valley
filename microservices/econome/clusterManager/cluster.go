@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"time"
+	"strings"
 	"encoding/json"
 	"econome/utils"
 	"econome/structs"
@@ -92,16 +93,33 @@ func GetStateCluster() string {
 		return ""
 	}
 
-	var now = time.Now().Unix()
+	parisTz, err := time.LoadLocation("Europe/Paris")
+	if err != nil {
+		return ""
+	}
 
-	creationDate, err := time.Parse(time.RFC3339, parsedResponse.Server.Image.CreationDate)
-	modificationDate, err := time.Parse(time.RFC3339, parsedResponse.Server.Image.ModificationDate)
+	now := time.Now()
 
-	fmt.Println(now)
-	fmt.Println(creationDate.Unix())
-	fmt.Println(modificationDate.Unix())
+	creationDateString := strings.Replace(parsedResponse.Server.CreationDate, "00:00", "02:00" , 1)
+	modificationDateString := strings.Replace(parsedResponse.Server.ModificationDate, "00:00", "02:00" , 1)
 
-	if (now - creationDate.Unix() < 600 || now - modificationDate.Unix() < 600) {
+	creationDate, err := time.ParseInLocation(time.RFC3339, creationDateString, parisTz)
+	if err != nil {
+		return ""
+	}
+
+	modificationDate, err := time.ParseInLocation(time.RFC3339, modificationDateString, parisTz)
+	if err != nil {
+		return ""
+	}
+
+	diffCreation := now.Sub(creationDate)
+	diffModification := now.Sub(modificationDate)
+
+	fmt.Println(diffCreation.Seconds())
+	fmt.Println(diffModification.Seconds())
+
+	if (int(diffCreation.Seconds()) < 600 || int(diffModification.Seconds()) < 600) {
 		return "starting"
 	}
 

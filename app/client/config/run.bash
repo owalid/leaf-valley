@@ -1,7 +1,7 @@
 #!/bin/bash
 # get last line logs file
 LAST_ACCESS_LOG=$(date -d "$(echo -n $(cat /home/app/server-middleware/log/access.log | tail -1))" +%s)
-NOW=$(date -d "@$(($(date +%s) - 300))" +%s) # now - 1 hour
+NOW=$(date -d "@$(($(date +%s) - 3600))" +%s) # now - 1 hour
 
 # compare to now - 1 hour with the last entry in log file.
 if [[ "$LAST_ACCESS_LOG" < "$NOW" ]] ;
