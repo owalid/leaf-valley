@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 	"os"
-	"log"
 	"encoding/json"
 	"econome/utils"
 	"econome/structs"
@@ -19,6 +18,24 @@ type StartClusterResponse struct {
 
 type ClusterStatusResponse struct {
 	State       string `json: "state"`
+}
+
+
+func insertNowInFileLastStarting() {
+	now := time.Now()
+	file, err := os.Create("last_starting_cluster.txt")
+	file.Truncate(0)
+
+    if err != nil {
+        fmt.Println(err)
+    }
+
+    defer file.Close()
+    _, err = file.WriteString(now.Format(time.RFC3339))
+
+    if err != nil {
+        fmt.Println(err)
+    }
 }
 
 
@@ -36,6 +53,10 @@ func getLastRestart() (string, error) {
     for scanner.Scan() {
 		result = scanner.Text()
     }
+
+	if result == "" {
+		insertNowInFileLastStarting()
+	}
 	return result, nil
 }
 
@@ -148,32 +169,13 @@ func StartCluster() string {
         return ""
     }
 
-	
-	now := time.Now()
-	file, err := os.Create("last_starting_cluster.txt")
-	file.Truncate(0)
-
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    defer file.Close()
-    _, err = file.WriteString(now.Format(time.RFC3339))
-
-    if err != nil {
-        log.Fatal(err)
-    }
+	insertNowInFileLastStarting()
 
     return "OK"
 }
 
 func GetStateCluster() string {
 	var parsedResponse, err = getServerDetail()
-	if err != nil {
-		return ""
-	}
-
-	lastRestartStr, err := getLastRestart()
 	if err != nil {
 		return ""
 	}
@@ -185,11 +187,18 @@ func GetStateCluster() string {
 		return stateCluster
 	}
 
+	lastRestartStr, err := getLastRestart()
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	}
+
 	now := time.Now()
 	lastRestartDate, err := time.Parse(time.RFC3339, lastRestartStr)
 	var diffRestartDate = now.Sub(lastRestartDate).Seconds()
 
 	if err != nil {
+		fmt.Println(err)
 		return ""
 	}
 
@@ -205,6 +214,7 @@ func GetStateCluster() string {
 	fmt.Println(err)
 
 	if err != nil {
+		fmt.Println(err)
 		return ""
 	}
 
