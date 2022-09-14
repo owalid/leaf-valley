@@ -22,6 +22,23 @@ type ClusterStatusResponse struct {
 }
 
 
+func getLastRestart() (string, error) {
+	file, err := os.Open("last_starting_cluster.txt")
+
+    if err != nil {
+        return "", err
+    }
+
+    defer file.Close()
+
+    scanner := bufio.NewScanner(file)
+	var result = ""
+    for scanner.Scan() {
+		result = scanner.Text()
+    }
+	return result, nil
+}
+
 func getNodeAvailability() (string, error) {
 	clusterZone := utils.GoDotEnvVariable("SCW_CLUSTER_ZONE")
 	authToken := utils.GoDotEnvVariable("SCW_AUTH_TOKEN")
@@ -150,24 +167,6 @@ func StartCluster() string {
     return "OK"
 }
 
-
-func getLastRestart() (string, error) {
-	file, err := os.Open("last_starting_cluster.txt")
-
-    if err != nil {
-        return "", err
-    }
-
-    defer file.Close()
-
-    scanner := bufio.NewScanner(file)
-	var result = ""
-    for scanner.Scan() {
-		result = scanner.Text()
-    }
-	return result, nil
-}
-
 func GetStateCluster() string {
 	var parsedResponse, err = getServerDetail()
 	if err != nil {
@@ -186,7 +185,7 @@ func GetStateCluster() string {
 	now := time.Now()
 	lastRestartDate, err := time.Parse(time.RFC3339, lastRestartStr)
 	var diffRestartDate = now.Sub(lastRestartDate).Seconds()
-	
+
 	if err != nil {
 		return ""
 	}
