@@ -1,9 +1,13 @@
 package cluster
 
 import (
+	"bufio"
 	"net/http"
 	"bytes"
 	"fmt"
+	"time"
+	"os"
+	"log"
 	"encoding/json"
 	"econome/utils"
 	"econome/structs"
@@ -127,7 +131,41 @@ func StartCluster() string {
         return ""
     }
 
+	
+	now := time.Now()
+	file, err := os.Create("last_starting_cluster.txt")
+	file.Truncate(0)
+
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    defer file.Close()
+    _, err = file.WriteString(now.Format(time.RFC3339))
+
+    if err != nil {
+        log.Fatal(err)
+    }
+
     return "OK"
+}
+
+
+func getLastRestart() (string, error) {
+	file, err := os.Open("last_starting_cluster.txt")
+
+    if err != nil {
+        return "", err
+    }
+
+    defer file.Close()
+
+    scanner := bufio.NewScanner(file)
+	var result = ""
+    for scanner.Scan() {
+		result = scanner.Text()
+    }
+	return result, nil
 }
 
 func GetStateCluster() string {
@@ -136,15 +174,37 @@ func GetStateCluster() string {
 		return ""
 	}
 
-    stateCluster := string(parsedResponse.Server.State)
-	fmt.Println("stateCluster: ", stateCluster)
+	lastRestartStr, err := getLastRestart()
+	if err != nil {
+		return ""
+	}
+
 	if stateCluster != "running" {
 		return stateCluster
 	}
+
+	now := time.Now()
+	lastRestartDate, err := time.Parse(time.RFC3339, lastRestartStr)
+	var diffRestartDate = now.Sub(lastRestartDate).Seconds()
 	
+	if err != nil {
+		return ""
+	}
+
+	fmt.Println("lastRestartDate", lastRestartDate)
+	fmt.Println("lastRestartDate", diffRestartDate)
+
+    stateCluster := string(parsedResponse.Server.State)
+	fmt.Println("stateCluster: ", stateCluster)
+
+	if diffRestartDate < 300 {
+		return ""
+	}
+
 	stateNode, err := getNodeAvailability()
 	fmt.Println("stateNode: ", stateNode)
 	fmt.Println(err)
+
 	if err != nil {
 		return ""
 	}
@@ -152,5 +212,6 @@ func GetStateCluster() string {
 	if stateNode == "ready" {
 		return "running"
 	}
+
 	return stateNode
 }
