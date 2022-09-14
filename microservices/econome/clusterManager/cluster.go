@@ -19,6 +19,41 @@ type ClusterStatusResponse struct {
 	State       string `json: "state"`
 }
 
+
+func getNodeAvailability() (string, error) {
+	zone := utils.GoDotEnvVariable("SCW_SERVER_ZONE")
+	authToken := utils.GoDotEnvVariable("SCW_AUTH_TOKEN")
+	clusterId := utils.GoDotEnvVariable("SCW_CLUSTER_ID")
+	
+	url := "https://api.scaleway.com/k8s/v1/regions/" + zone + "/clusters/" + clusterId + "/nodes"
+
+	client := &http.Client{}
+	reqServerAlive, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+		fmt.Println("first err")
+		return "", err
+	}
+
+	reqServerAlive.Header.Set("X-Auth-Token", authToken)
+	resServerAlive, err := client.Do(reqServerAlive)
+
+	if err != nil {
+		return "", err
+	}
+
+	var parsedResponse = scwResponses.ScwNodesResponse{}
+	json.NewDecoder(resServerAlive.Body).Decode(&parsedResponse)
+
+	if len(parsedResponse.Nodes) == 0 {
+		return "", nil
+	}
+	var finalResult = parsedResponse.Nodes[0]
+	
+	fmt.Println("Node availability: ", finalResult.Status)
+	return finalResult.Status, nil
+}
+
 func getServerDetail() (scwResponses.ScwServerResponse, error) {
 	zone := utils.GoDotEnvVariable("SCW_SERVER_ZONE")
 	authToken := utils.GoDotEnvVariable("SCW_AUTH_TOKEN")
@@ -45,11 +80,13 @@ func getServerDetail() (scwResponses.ScwServerResponse, error) {
 	var parsedResponse = scwResponses.ScwListServerResponse{}
 	json.NewDecoder(resServerAlive.Body).Decode(&parsedResponse)
 
-	fmt.Println("parsedResponse: %v\n", parsedResponse)
 	if len(parsedResponse.Servers) == 0 {
 		return defaultParsedResult, nil
 	}
+
 	finalResult := scwResponses.ScwServerResponse{Server: parsedResponse.Servers[0]}
+	fmt.Println("Instance availability: ", finalResult.Server.State)
+
 	return finalResult, nil
 }
 
@@ -116,6 +153,9 @@ func GetStateCluster() string {
 	diffCreation := now.Sub(creationDate)
 	diffModification := now.Sub(modificationDate)
 
+	fmt.Println(creationDate)
+	fmt.Println(modificationDate)
+	fmt.Println(now)
 	fmt.Println(diffCreation.Seconds())
 	fmt.Println(diffModification.Seconds())
 
@@ -123,6 +163,15 @@ func GetStateCluster() string {
 		return "starting"
 	}
 
-    state := string(parsedResponse.Server.State)
-    return state
+    stateCluster := string(parsedResponse.Server.State)
+	if stateCluster != "running" {
+		return stateCluster
+	}
+	
+	stateNode, err := getNodeAvailability()
+	if err != nil {
+		return ""
+	}
+
+	return stateNode
 }
