@@ -34,8 +34,7 @@ export default {
     }
   },
   async mounted() {
-    this.nodeEnv =
-      process.env.NODE_ENV || this.$config.NODE_ENV || 'developpement'
+    this.nodeEnv = process.env.NODE_ENV || this.$config.NODE_ENV || 'developpement'
     if (this.nodeEnv === 'production') {
       await this.$recaptcha.init()
       this.socket = new WebSocket(
@@ -73,6 +72,7 @@ export default {
             }
             if (data === 'running') {
               this.$router.push('/')
+              this.interval = null
             }
             this.resultWs = data
           }
