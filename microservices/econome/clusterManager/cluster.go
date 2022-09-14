@@ -208,12 +208,11 @@ func GetStateCluster() string {
 	fmt.Println("lastRestartDate", diffRestartDate)
 
 	if diffRestartDate < 300 {
-		return ""
+		return "node_not_ready"
 	}
 
 	stateNode, err := getNodeAvailability()
 	fmt.Println("stateNode: ", stateNode)
-	fmt.Println(err)
 
 	if err != nil {
 		fmt.Println(err)
