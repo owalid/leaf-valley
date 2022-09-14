@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"bytes"
 	"fmt"
-	"time"
-	"strings"
 	"encoding/json"
 	"econome/utils"
 	"econome/structs"
@@ -21,16 +19,18 @@ type ClusterStatusResponse struct {
 
 
 func getNodeAvailability() (string, error) {
-	zone := utils.GoDotEnvVariable("SCW_SERVER_ZONE")
+	clusterZone := utils.GoDotEnvVariable("SCW_CLUSTER_ZONE")
 	authToken := utils.GoDotEnvVariable("SCW_AUTH_TOKEN")
 	clusterId := utils.GoDotEnvVariable("SCW_CLUSTER_ID")
 	
-	url := "https://api.scaleway.com/k8s/v1/regions/" + zone + "/clusters/" + clusterId + "/nodes"
+
+	url := "https://api.scaleway.com/k8s/v1/regions/" + clusterZone + "/clusters/" + clusterId + "/nodes"
 
 	client := &http.Client{}
 	reqServerAlive, err := http.NewRequest("GET", url, nil)
 
 	if err != nil {
+		fmt.Println("err 2")
 		fmt.Println("first err")
 		return "", err
 	}
@@ -39,13 +39,17 @@ func getNodeAvailability() (string, error) {
 	resServerAlive, err := client.Do(reqServerAlive)
 
 	if err != nil {
+		fmt.Println("err 1")
 		return "", err
 	}
 
 	var parsedResponse = scwResponses.ScwNodesResponse{}
 	json.NewDecoder(resServerAlive.Body).Decode(&parsedResponse)
 
+	fmt.Println("%v\n", parsedResponse)
+
 	if len(parsedResponse.Nodes) == 0 {
+		fmt.Println("no Nodes")
 		return "", nil
 	}
 	var finalResult = parsedResponse.Nodes[0]
@@ -74,6 +78,7 @@ func getServerDetail() (scwResponses.ScwServerResponse, error) {
 	resServerAlive, err := client.Do(reqServerAlive)
 
 	if err != nil {
+		fmt.Println("second err")
 		return defaultParsedResult, err
 	}
 
@@ -81,6 +86,7 @@ func getServerDetail() (scwResponses.ScwServerResponse, error) {
 	json.NewDecoder(resServerAlive.Body).Decode(&parsedResponse)
 
 	if len(parsedResponse.Servers) == 0 {
+		fmt.Println("second err")
 		return defaultParsedResult, nil
 	}
 
@@ -130,48 +136,21 @@ func GetStateCluster() string {
 		return ""
 	}
 
-	parisTz, err := time.LoadLocation("Europe/Paris")
-	if err != nil {
-		return ""
-	}
-
-	now := time.Now()
-
-	creationDateString := strings.Replace(parsedResponse.Server.CreationDate, "00:00", "02:00" , 1)
-	modificationDateString := strings.Replace(parsedResponse.Server.ModificationDate, "00:00", "02:00" , 1)
-
-	creationDate, err := time.ParseInLocation(time.RFC3339, creationDateString, parisTz)
-	if err != nil {
-		return ""
-	}
-
-	modificationDate, err := time.ParseInLocation(time.RFC3339, modificationDateString, parisTz)
-	if err != nil {
-		return ""
-	}
-
-	diffCreation := now.Sub(creationDate)
-	diffModification := now.Sub(modificationDate)
-
-	fmt.Println(creationDate)
-	fmt.Println(modificationDate)
-	fmt.Println(now)
-	fmt.Println(diffCreation.Seconds())
-	fmt.Println(diffModification.Seconds())
-
-	if (int(diffCreation.Seconds()) < 600 || int(diffModification.Seconds()) < 600) {
-		return "starting"
-	}
-
     stateCluster := string(parsedResponse.Server.State)
+	fmt.Println("stateCluster: ", stateCluster)
 	if stateCluster != "running" {
 		return stateCluster
 	}
 	
 	stateNode, err := getNodeAvailability()
+	fmt.Println("stateNode: ", stateNode)
+	fmt.Println(err)
 	if err != nil {
 		return ""
 	}
 
+	if stateNode == "ready" {
+		return "running"
+	}
 	return stateNode
 }
