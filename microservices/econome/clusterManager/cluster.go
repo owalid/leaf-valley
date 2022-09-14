@@ -177,6 +177,8 @@ func StartCluster() string {
 func GetStateCluster() string {
 	var parsedResponse, err = getServerDetail()
 	if err != nil {
+		fmt.Println("first error")
+		fmt.Println(err)
 		return ""
 	}
 
