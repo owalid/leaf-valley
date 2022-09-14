@@ -178,6 +178,9 @@ func GetStateCluster() string {
 		return ""
 	}
 
+	stateCluster := string(parsedResponse.Server.State)
+	fmt.Println("stateCluster: ", stateCluster)
+
 	if stateCluster != "running" {
 		return stateCluster
 	}
@@ -192,9 +195,6 @@ func GetStateCluster() string {
 
 	fmt.Println("lastRestartDate", lastRestartDate)
 	fmt.Println("lastRestartDate", diffRestartDate)
-
-    stateCluster := string(parsedResponse.Server.State)
-	fmt.Println("stateCluster: ", stateCluster)
 
 	if diffRestartDate < 300 {
 		return ""
