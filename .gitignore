@@ -232,3 +232,6 @@ package-lock.json
 
 # sandbox
 sandbox
+
+# virtuel environment
+vicenv
