@@ -1,9 +1,11 @@
 package cluster
 
 import (
+	"bufio"
 	"net/http"
 	"bytes"
-	"fmt"
+	"time"
+	"os"
 	"encoding/json"
 	"econome/utils"
 	"econome/structs"
@@ -15,6 +17,77 @@ type StartClusterResponse struct {
 
 type ClusterStatusResponse struct {
 	State       string `json: "state"`
+}
+
+
+func insertNowInFileLastStarting() {
+	now := time.Now()
+	file, err := os.Create("last_starting_cluster.txt")
+	file.Truncate(0)
+
+    if err != nil {
+    }
+
+    defer file.Close()
+    _, err = file.WriteString(now.Format(time.RFC3339))
+
+    if err != nil {
+    }
+}
+
+
+func getLastRestart() (string, error) {
+	file, err := os.Open("last_starting_cluster.txt")
+
+    if err != nil {
+        return "", err
+    }
+
+    defer file.Close()
+
+    scanner := bufio.NewScanner(file)
+	var result = ""
+    for scanner.Scan() {
+		result = scanner.Text()
+    }
+
+	if result == "" {
+		insertNowInFileLastStarting()
+	}
+	return result, nil
+}
+
+func getNodeAvailability() (string, error) {
+	clusterZone := utils.GoDotEnvVariable("SCW_CLUSTER_ZONE")
+	authToken := utils.GoDotEnvVariable("SCW_AUTH_TOKEN")
+	clusterId := utils.GoDotEnvVariable("SCW_CLUSTER_ID")
+	
+
+	url := "https://api.scaleway.com/k8s/v1/regions/" + clusterZone + "/clusters/" + clusterId + "/nodes"
+
+	client := &http.Client{}
+	reqServerAlive, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+		return "", err
+	}
+
+	reqServerAlive.Header.Set("X-Auth-Token", authToken)
+	resServerAlive, err := client.Do(reqServerAlive)
+
+	if err != nil {
+		return "", err
+	}
+
+	var parsedResponse = scwResponses.ScwNodesResponse{}
+	json.NewDecoder(resServerAlive.Body).Decode(&parsedResponse)
+
+	if len(parsedResponse.Nodes) == 0 {
+		return "", nil
+	}
+	var finalResult = parsedResponse.Nodes[0]
+	
+	return finalResult.Status, nil
 }
 
 func getServerDetail() (scwResponses.ScwServerResponse, error) {
@@ -29,7 +102,6 @@ func getServerDetail() (scwResponses.ScwServerResponse, error) {
 	reqServerAlive, err := http.NewRequest("GET", url, nil)
 
 	if err != nil {
-		fmt.Println("first err")
 		return defaultParsedResult, err
 	}
 
@@ -43,11 +115,12 @@ func getServerDetail() (scwResponses.ScwServerResponse, error) {
 	var parsedResponse = scwResponses.ScwListServerResponse{}
 	json.NewDecoder(resServerAlive.Body).Decode(&parsedResponse)
 
-	fmt.Println("parsedResponse: %v\n", parsedResponse)
 	if len(parsedResponse.Servers) == 0 {
 		return defaultParsedResult, nil
 	}
+
 	finalResult := scwResponses.ScwServerResponse{Server: parsedResponse.Servers[0]}
+
 	return finalResult, nil
 }
 
@@ -82,6 +155,8 @@ func StartCluster() string {
         return ""
     }
 
+	insertNowInFileLastStarting()
+
     return "OK"
 }
 
@@ -91,6 +166,38 @@ func GetStateCluster() string {
 		return ""
 	}
 
-    state := string(parsedResponse.Server.State)
-    return state
+	stateCluster := string(parsedResponse.Server.State)
+
+	if stateCluster != "running" {
+		return stateCluster
+	}
+
+	lastRestartStr, err := getLastRestart()
+	if err != nil {
+		return ""
+	}
+
+	now := time.Now()
+	lastRestartDate, err := time.Parse(time.RFC3339, lastRestartStr)
+	var diffRestartDate = now.Sub(lastRestartDate).Seconds()
+
+	if err != nil {
+		return ""
+	}
+
+	if diffRestartDate < 300 {
+		return "node_not_ready"
+	}
+
+	stateNode, err := getNodeAvailability()
+
+	if err != nil {
+		return ""
+	}
+
+	if stateNode == "ready" {
+		return "running"
+	}
+
+	return stateNode
 }

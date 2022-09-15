@@ -1,1 +1,1 @@
-* * * * * /home/app/run.sh >&- 2>&1
+* * * * * /home/app/config/run.bash >/home/app/logs_crontab/logs 2>&1

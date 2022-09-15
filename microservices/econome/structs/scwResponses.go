@@ -8,6 +8,41 @@ type ScwListServerResponse struct {
 	Servers []Server `json:"servers"`
 }
 
+
+
+type ScwNodesResponse struct {
+	TotalCount int64  `json:"total_count"`
+	Nodes      []K8sNode `json:"nodes"`      
+}
+
+type K8sNode struct {
+	Region       string      `json:"region"`       
+	ID           string      `json:"id"`           
+	ClusterID    string      `json:"cluster_id"`   
+	CreatedAt    string      `json:"created_at"`   
+	UpdatedAt    string      `json:"updated_at"`   
+	PoolID       string      `json:"pool_id"`      
+	Status       string      `json:"status"`       
+	Conditions   Conditions  `json:"conditions"`   
+	Name         string      `json:"name"`         
+	PublicIPV4   string      `json:"public_ip_v4"` 
+	PublicIPV6   interface{} `json:"public_ip_v6"` 
+	ProviderID   string      `json:"provider_id"`  
+	ErrorMessage interface{} `json:"error_message"`
+}
+
+type Conditions struct {
+	DiskPressure       string `json:"DiskPressure"`      
+	KernelDeadlock     string `json:"KernelDeadlock"`    
+	MemoryPressure     string `json:"MemoryPressure"`    
+	NetworkUnavailable string `json:"NetworkUnavailable"`
+	PIDPressure        string `json:"PIDPressure"`       
+	ReadonlyFilesystem string `json:"ReadonlyFilesystem"`
+	Ready              string `json:"Ready"`             
+}
+
+
+
 type Server struct {
 	ID                string         	`json:"id"`                 
 	Name              string         	`json:"name"`               
