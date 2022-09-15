@@ -10,6 +10,7 @@ RUN go mod download
 
 COPY . ./
 
+RUN touch last_starting_cluster.txt
 RUN go build -o /econome
 
 EXPOSE 80

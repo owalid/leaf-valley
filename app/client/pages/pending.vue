@@ -21,41 +21,42 @@
 </template>
 <script>
 export default {
-  name: 'TestWs',
+  name: 'PendingPage',
   layout: 'pending',
   middleware: 'cluster-status',
   data() {
     return {
       resultWs: '',
+      nodeEnv: '',
       interval: null,
       recaptchaResponse: null,
       shouldValidateRecaptcha: false,
     }
   },
-  async fetch() {
-    if (process.env.NODE_ENV === 'production') {
+  async mounted() {
+    this.nodeEnv =
+      process.env.NODE_ENV || this.$config.NODE_ENV || 'developpement'
+    if (this.nodeEnv === 'production') {
       await this.$recaptcha.init()
-    } else {
-      this.$router.push('/')
-    }
-    if (process.client) {
       this.socket = new WebSocket(
         process.env.NUXT_ECONOME_MS_WS ||
           this.$config.NUXT_ECONOME_MS_WS ||
           'ws://127.0.0.1:8080/econome/ws'
       )
       this.runListenerWs()
+    } else {
+      this.$router.push('/')
     }
   },
   beforeDestroy() {
     this.interval = null
-    if (process.env.NODE_ENV === 'production') {
+    if (this.nodeEnv === 'production') {
       this.$recaptcha.destroy()
     }
   },
   methods: {
     runListenerWs() {
-      if (!this.interval && process.env.NODE_ENV === 'production') {
+      if (!this.interval && this.nodeEnv === 'production') {
         this.interval = setInterval(() => {
           this.socket.send('getStatus')
           this.socket.onmessage = ({ data }) => {
@@ -72,6 +73,7 @@ export default {
             }
             if (data === 'running') {
               this.$router.push('/')
+              this.interval = null
             }
             this.resultWs = data
           }
