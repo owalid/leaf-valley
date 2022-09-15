@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"net/http"
 	"bytes"
-	"fmt"
 	"time"
 	"os"
 	"encoding/json"
@@ -27,14 +26,12 @@ func insertNowInFileLastStarting() {
 	file.Truncate(0)
 
     if err != nil {
-        fmt.Println(err)
     }
 
     defer file.Close()
     _, err = file.WriteString(now.Format(time.RFC3339))
 
     if err != nil {
-        fmt.Println(err)
     }
 }
 
@@ -72,8 +69,6 @@ func getNodeAvailability() (string, error) {
 	reqServerAlive, err := http.NewRequest("GET", url, nil)
 
 	if err != nil {
-		fmt.Println("err 2")
-		fmt.Println("first err")
 		return "", err
 	}
 
@@ -81,22 +76,17 @@ func getNodeAvailability() (string, error) {
 	resServerAlive, err := client.Do(reqServerAlive)
 
 	if err != nil {
-		fmt.Println("err 1")
 		return "", err
 	}
 
 	var parsedResponse = scwResponses.ScwNodesResponse{}
 	json.NewDecoder(resServerAlive.Body).Decode(&parsedResponse)
 
-	fmt.Println("%v\n", parsedResponse)
-
 	if len(parsedResponse.Nodes) == 0 {
-		fmt.Println("no Nodes")
 		return "", nil
 	}
 	var finalResult = parsedResponse.Nodes[0]
 	
-	fmt.Println("Node availability: ", finalResult.Status)
 	return finalResult.Status, nil
 }
 
@@ -112,7 +102,6 @@ func getServerDetail() (scwResponses.ScwServerResponse, error) {
 	reqServerAlive, err := http.NewRequest("GET", url, nil)
 
 	if err != nil {
-		fmt.Println("first err")
 		return defaultParsedResult, err
 	}
 
@@ -120,7 +109,6 @@ func getServerDetail() (scwResponses.ScwServerResponse, error) {
 	resServerAlive, err := client.Do(reqServerAlive)
 
 	if err != nil {
-		fmt.Println("second err")
 		return defaultParsedResult, err
 	}
 
@@ -128,12 +116,10 @@ func getServerDetail() (scwResponses.ScwServerResponse, error) {
 	json.NewDecoder(resServerAlive.Body).Decode(&parsedResponse)
 
 	if len(parsedResponse.Servers) == 0 {
-		fmt.Println("second err")
 		return defaultParsedResult, nil
 	}
 
 	finalResult := scwResponses.ScwServerResponse{Server: parsedResponse.Servers[0]}
-	fmt.Println("Instance availability: ", finalResult.Server.State)
 
 	return finalResult, nil
 }
@@ -177,13 +163,10 @@ func StartCluster() string {
 func GetStateCluster() string {
 	var parsedResponse, err = getServerDetail()
 	if err != nil {
-		fmt.Println("first error")
-		fmt.Println(err)
 		return ""
 	}
 
 	stateCluster := string(parsedResponse.Server.State)
-	fmt.Println("stateCluster: ", stateCluster)
 
 	if stateCluster != "running" {
 		return stateCluster
@@ -191,7 +174,6 @@ func GetStateCluster() string {
 
 	lastRestartStr, err := getLastRestart()
 	if err != nil {
-		fmt.Println(err)
 		return ""
 	}
 
@@ -200,22 +182,16 @@ func GetStateCluster() string {
 	var diffRestartDate = now.Sub(lastRestartDate).Seconds()
 
 	if err != nil {
-		fmt.Println(err)
 		return ""
 	}
-
-	fmt.Println("lastRestartDate", lastRestartDate)
-	fmt.Println("lastRestartDate", diffRestartDate)
 
 	if diffRestartDate < 300 {
 		return "node_not_ready"
 	}
 
 	stateNode, err := getNodeAvailability()
-	fmt.Println("stateNode: ", stateNode)
 
 	if err != nil {
-		fmt.Println(err)
 		return ""
 	}
 
