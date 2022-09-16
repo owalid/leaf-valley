@@ -1,6 +1,102 @@
-# Background removal
+## Index
+- [I - Background removal](#i-background-removal)
+- [II - Data augmentation](#ii-data-augmentation)
+- [III - Machine learning](#iii-machine-learning)
+- [IV - Deep learning](#iv-deep-learning)
+- [V - Web part and deployment](#v-web-part-and-deployment)
 
-# Deep learning
+# I - Background removal
+
+### First approach
+
+```py
+lab = cv2.cvtColor(rgb_img, cv2.COLOR_BGR2LAB)  # convert from BGR to LAB color space
+lab[:,:,0] = lab[:,:,0]/10 # L
+lab[:,:,1] += np.where(lab[:,:,1] > 125, 140, lab[:,:,1]) # A
+lab[:,:,2] = lab[:,:,2]/10 # B
+
+# We apply filter on 'A' and downscale 'L' and 'B'
+new_rgb_img = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+
+# We apply a np.where with alpha mask to remove background
+a_mask = pcv.rgb2gray_lab(rgb_img=new_rgb_img, channel='a')
+a_mask = np.where(a_mask <= int(a_mask.mean()), 0, a_mask)
+a_mask = np.where(a_mask > 0, 1, a_mask)
+
+# At this point we have a great mask but there are some noise around the plant
+
+# We find all the contours in the mask and we fill the holes
+cnts = cv2.findContours(a_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+cnts = cnts[0] if len(cnts) == 2 else cnts[1]
+cv2.fillPoly(a_mask, cnts, (255,255,255))
+result = cv2.bitwise_and(rgb_img,rgb_img,mask=a_mask)
+
+masked_image = pcv.apply_mask(img=gray_img, mask=a_mask, mask_color='black')
+```
+
+Results:
+....
+
+At this point we have a great mask and the background removal work fine but only with healthy plants. If we have a plant with a disease we have a problem because the mask is not good enough.
+
+### Second approach
+
+Our second approach is to use k-means clustering to find the background and the plant. We use the same image as before.
+And a lot of logical operations to remove the background.
+The k-means work fine but it took a lot of time to process the image.
+
+Results:
+...
+
+
+### Last program
+
+At the end we have refocus on the first approach with something more simple. With colors mask on hsv channels.
+
+```py
+color_dict_HSV = {
+    'black': [[180, 255, 26], [0, 0, 0]],
+    'white': [[180, 38, 255], [0, 0, 166]],
+    'gray': [[180, 38, 166], [0, 0, 25]],
+    'red1': [[180, 255, 255], [155, 50, 40]],
+    'red2': [[9, 255, 255], [0, 50, 70]],
+    'pink1': [[6, 178, 255], [0, 0, 26]],
+    'pink2': [[180, 178, 255], [175, 0, 26]],
+    'pink3': [[176, 255, 255], [155, 38, 25]],
+    'orange': [[25, 255, 255], [5, 38, 191]],
+    'brown': [[25, 255, 191], [5, 50, 25]],
+    'yellow': [[40, 255, 255], [15, 15, 10]],
+    'yellowgreen': [[60, 255, 250], [30, 100, 200]],
+    'green': [[85, 255, 255], [41, 15, 10]],
+    'bluegreen': [[90, 255, 255], [76, 38, 25]],
+    'blue': [[127, 255, 255], [91, 38, 25]],
+    'purple': [[155, 255, 255], [128, 38, 25]],
+    'lightpurple': [[155, 128, 255], [128, 38, 25]],
+}
+```
+
+Results:
+....
+
+
+### Conclusion
+
+We have a lot of different approach to remove the background. The first one is the best but it's not perfect. We have to find a way to improve it.
+An improvement proposal would have been to build a dataset using the correct masked images. And to train a U-net neural network to segment the leaves. We would have had better results on the whole dataset.
+
+# II - Data augmentation
+
+....
+
+# III - Machine learning
+
+### Models
+
+### Data preprocessing
+
+### Results
+
+# IV - Deep learning
 
 
 ### Models
@@ -211,3 +307,14 @@ We have try different data preprocessing techniques.
     <td>20</td>
   </tr>
 </table>
+
+### CONVNEXT
+
+### RESNET50
+
+### INCEPTIONV3
+
+### Conclusion
+
+
+# V - Web part and deployment
