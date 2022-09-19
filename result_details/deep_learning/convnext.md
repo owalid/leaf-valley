@@ -58,9 +58,10 @@
 
 # For the best model
 
-... cr
+<img src="https://user-images.githubusercontent.com/28403617/191049605-521431eb-c8c5-4f57-9e66-40098db75a85.png" height="700" width="700" />
 
 
-... acc curves
+<img src="https://user-images.githubusercontent.com/28403617/191049696-e7e84f0b-36d1-4ac1-9514-abe275d0aea0.png" width="900" />
 
-... loss curves
+
+<img src="https://user-images.githubusercontent.com/28403617/191049846-594fe8d6-5de5-4280-8004-d1a722467089.png" width="900" />
