@@ -67,8 +67,7 @@
 
 # For the best model
 
-<img src="https://user-images.githubusercontent.com/28403617/191049605-521431eb-c8c5-4f57-9e66-40098db75a85.png" height="700" width="700" />
-
+<img src="https://user-images.githubusercontent.com/28403617/191069857-fb745914-1c8c-48fb-9a43-0fdb2c9981cd.png" height="700" width="700" />
 
 <img src="https://user-images.githubusercontent.com/28403617/191049696-e7e84f0b-36d1-4ac1-9514-abe275d0aea0.png" width="900" />
 
