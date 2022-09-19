@@ -37,6 +37,7 @@ if FLASK_ENV != 'prod':
     sys.path.insert(0, current_dir[:current_dir.rfind(os.path.sep)])
 
 from process.deep_learning.metrics import recall_m, precision_m, f1_m, LayerScale
+from process.deep_learning.models import CopyChannels
 from utilities.remove_background_functions import remove_bg
 from utilities.prepare_features import prepare_features
 from utilities.utils import set_plants_dict, get_df, CV_NORMALIZE_TYPE, safe_get_item, safe_open_w
@@ -48,7 +49,7 @@ class PredictionController:
     s3_module = S3Module()
     FLASK_ENV = os.environ.get("FLASK_ENV", "dev")
     comment_filename = 'data/plants_comments.json' if FLASK_ENV == 'prod' else '../data/plants_comments.json'
-    custom_objects = { 'recall_m': recall_m, 'precision_m': precision_m, 'f1_m': f1_m, "LayerScale": LayerScale }
+    custom_objects = { 'recall_m': recall_m, 'precision_m': precision_m, 'f1_m': f1_m, "LayerScale": LayerScale, "CopyChannels": CopyChannels }
     
     def preprocess_pipeline_prediction(rgb_img, options, is_deep_learning_model=False):
         '''
