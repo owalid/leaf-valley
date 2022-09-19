@@ -143,7 +143,7 @@ We have try different data preprocessing techniques.
     <th>Time (in minutes)</th>
   </tr>
 
-   <tr>
+  <tr>
     <td>1 🥇</td>
     <td>CONVNEXT</td>
     <td></td>
@@ -152,35 +152,17 @@ We have try different data preprocessing techniques.
     <td>224x224</td>
     <td>150</td>
   </tr>
-   <tr>
-    <td>0</td>
-    <td>CONVNEXT</td>
-    <td></td>
-    <td>1100</td>
-    <td>0.9849</td>
-    <td>128x128</td>
-    <td>50</td>
-  </tr>
-  <tr>
-    <td>0</td>
-    <td>CONVNEXT</td>
-    <td></td>
-    <td>4500</td>
-    <td>0.9879</td>
-    <td>64x64</td>
-    <td>120</td>
-  </tr>
-  <tr>
-    <td>0</td>
-    <td>CONVNEXT</td>
-    <td></td>
-    <td>750</td>
-    <td>0.9815</td>
-    <td>224x224</td>
-    <td>80</td>
-  </tr>
   <tr>
     <td>2 🥈</td>
+    <td>INCEPTIONV3</td>
+    <td></td>
+    <td>3000</td>
+    <td>0.9801</td>
+    <td>128x128</td>
+    <td>60</td>
+  </tr>
+  <tr>
+    <td>3 🥉</td>
     <td>RESNET50</td>
     <td></td>
     <td>1100</td>
@@ -189,7 +171,7 @@ We have try different data preprocessing techniques.
     <td>20</td>
   </tr>
   <tr>
-    <td>3 🥉</td>
+    <td>4</td>
     <td>EFFICIENTNETB7</td>
     <td></td>
     <td>1100</td>
