@@ -145,7 +145,7 @@ We have try different data preprocessing techniques.
 
   <tr>
     <td>1 🥇</td>
-    <td>CONVNEXT</td>
+      <td><a href="result_details/deep_learning/convnext.md" target="_blank">CONVNEXT</a></td>
     <td></td>
     <td>1100</td>
     <td>0.9882</td>
@@ -154,7 +154,7 @@ We have try different data preprocessing techniques.
   </tr>
   <tr>
     <td>2 🥈</td>
-    <td>INCEPTIONV3</td>
+    <td><a href="result_details/deep_learning/inceptionv3.md" target="_blank">INCEPTIONV3</a></td>
     <td></td>
     <td>3000</td>
     <td>0.9801</td>
@@ -163,7 +163,7 @@ We have try different data preprocessing techniques.
   </tr>
   <tr>
     <td>3 🥉</td>
-    <td>RESNET50</td>
+    <td><a href="result_details/deep_learning/resnet.md" target="_blank">RESNET50</a></td>
     <td></td>
     <td>1100</td>
     <td>0.9717</td>
@@ -172,7 +172,7 @@ We have try different data preprocessing techniques.
   </tr>
   <tr>
     <td>4</td>
-    <td>EFFICIENTNETB7</td>
+    <td><a href="result_details/deep_learning/efficient.md" target="_blank">EFFICIENTNETB7</a></td>
     <td></td>
     <td>1100</td>
     <td>0.9729</td>
