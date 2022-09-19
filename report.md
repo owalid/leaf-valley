@@ -35,7 +35,10 @@ masked_image = pcv.apply_mask(img=gray_img, mask=a_mask, mask_color='black')
 ```
 
 Results:
-....
+
+<img src="https://user-images.githubusercontent.com/28403617/191056409-b636076e-d0b3-46c1-a410-3b9bf65f95c5.png" width="700" />
+<img src="https://user-images.githubusercontent.com/28403617/191056524-99a3437a-8478-4a01-af14-ef8c8da6960a.png" width="700" />
+
 
 At this point we have a great mask and the background removal work fine but only with healthy plants. If we have a plant with a disease we have a problem because the mask is not good enough.
 
