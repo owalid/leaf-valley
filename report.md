@@ -36,8 +36,8 @@ masked_image = pcv.apply_mask(img=gray_img, mask=a_mask, mask_color='black')
 
 Results:
 
-<img src="https://user-images.githubusercontent.com/28403617/191056409-b636076e-d0b3-46c1-a410-3b9bf65f95c5.png" width="700" />
-<img src="https://user-images.githubusercontent.com/28403617/191056524-99a3437a-8478-4a01-af14-ef8c8da6960a.png" width="700" />
+<img src="https://user-images.githubusercontent.com/28403617/191056409-b636076e-d0b3-46c1-a410-3b9bf65f95c5.png" width="1000" />
+<img src="https://user-images.githubusercontent.com/28403617/191056524-99a3437a-8478-4a01-af14-ef8c8da6960a.png" width="1000" />
 
 
 At this point we have a great mask and the background removal work fine but only with healthy plants. If we have a plant with a disease we have a problem because the mask is not good enough.
@@ -48,8 +48,10 @@ Our second approach is to use k-means clustering to find the background and the 
 And a lot of logical operations to remove the background.
 The k-means work fine but it took a lot of time to process the image.
 
-Results:
-...
+>The function kmeans implements a k-means algorithm that finds the centers of cluster_count clusters and groups the input samples around the clusters. As an output, 𝚋𝚎𝚜𝚝𝙻𝚊𝚋𝚎𝚕𝚜i contains a 0-based cluster index for the sample stored in the ith row of the samples matrix. [Source](https://docs.opencv.org/3.4/d1/d5c/tutorial_py_kmeans_opencv.html)
+
+<img src="https://user-images.githubusercontent.com/28403617/191060181-7e179f97-d401-47ad-9561-7cf935d268dc.png" width="1000" />
+<img src="https://user-images.githubusercontent.com/28403617/191060187-8a19de50-7fbc-467b-b61f-7f2dc617c696.png" width="1000" />
 
 
 ### Last program
@@ -78,8 +80,12 @@ color_dict_HSV = {
 }
 ```
 
-Results:
-....
+
+<img src="https://user-images.githubusercontent.com/28403617/191058642-a253c114-1a56-4a8b-988a-fe42fdfaac20.png" width="1000" />
+<img src="https://user-images.githubusercontent.com/28403617/191058648-fcad46d3-fa34-4b86-8531-e1edc8c0ad39.png" width="1000" />
+
+
+
 
 
 ### Conclusion
