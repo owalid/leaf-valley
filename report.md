@@ -300,13 +300,5 @@ We have try different data preprocessing techniques.
   </tr>
 </table>
 
-### CONVNEXT
-
-### RESNET50
-
-### INCEPTIONV3
-
-### Conclusion
-
 
 # V - Web part and deployment
