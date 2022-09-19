@@ -9,8 +9,17 @@
     <th>Time (in minutes)</th>
   </tr>
 
-   <tr>
+  <tr>
     <td>1 🥇</td>
+    <td>CONVNEXT</td>
+    <td></td>
+    <td>3000</td>
+    <td>0.9934</td>
+    <td>128x128</td>
+    <td>180</td>
+  </tr>
+  <tr>
+    <td>2 🥈</td>
     <td>CONVNEXT</td>
     <td></td>
     <td>1100</td>
@@ -19,7 +28,7 @@
     <td>150</td>
   </tr>
    <tr>
-    <td>2 🥈</td>
+    <td>3 🥉</td>
     <td>CONVNEXT</td>
     <td></td>
     <td>1100</td>
@@ -28,7 +37,7 @@
     <td>50</td>
   </tr>
   <tr>
-    <td>3 🥉</td>
+    <td>4</td>
     <td>CONVNEXT</td>
     <td></td>
     <td>4500</td>
@@ -37,7 +46,7 @@
     <td>120</td>
   </tr>
   <tr>
-    <td>4</td>
+    <td>5</td>
     <td>CONVNEXT</td>
     <td></td>
     <td>750</td>
@@ -46,7 +55,7 @@
     <td>80</td>
   </tr>
   <tr>
-    <td>5</td>
+    <td>6</td>
     <td>CONVNEXT</td>
     <td>Image normalization</td>
     <td>1100</td>

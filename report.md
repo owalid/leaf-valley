@@ -157,10 +157,10 @@ We have try different data preprocessing techniques.
     <td>1 🥇</td>
       <td><a href="result_details/deep_learning/convnext.md" target="_blank">CONVNEXT</a></td>
     <td></td>
-    <td>1100</td>
-    <td>0.9882</td>
-    <td>224x224</td>
-    <td>150</td>
+    <td>3000</td>
+    <td>0.9934</td>
+    <td>128x128</td>
+    <td>180</td>
   </tr>
   <tr>
     <td>2 🥈</td>
