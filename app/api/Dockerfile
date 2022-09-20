@@ -4,6 +4,8 @@ ENV PORT '5000'
 
 RUN mkdir -p /home/api
 COPY app/api /home/api
+COPY utilities /home/api/utilities
+COPY process /home/api/process
 COPY utilities /utilities
 COPY process /process
 
@@ -13,7 +15,7 @@ RUN ls -la /utilities
 
 WORKDIR /home/api
 
-ENV FLASK_ENV = 'dev'
+ENV FLASK_ENV=dev
 RUN apt-get update -y
 RUN apt-get install python3-opencv -y
 RUN apt-get install curl -y
@@ -23,3 +25,5 @@ RUN pip install --upgrade setuptools pip
 RUN pip install -r /home/api/requirements.txt
 
 EXPOSE 5000
+
+RUN ["FLASK_ENV=dev", "python3", "run.py"]
