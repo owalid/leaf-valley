@@ -1,17 +1,10 @@
 FROM python:3.8.12-slim
 
-ENV PORT '5000'
 
 RUN mkdir -p /home/api
-COPY app/api /home/api
+COPY . /home/api/
 COPY utilities /home/api/utilities
 COPY process /home/api/process
-
-COPY utilities /home/utilities
-COPY process /home/process
-
-COPY utilities /utilities
-COPY process /process
 
 RUN ls -la /
 RUN ls -la /home
@@ -20,7 +13,9 @@ RUN ls -la /utilities
 
 WORKDIR /home/api
 
+ENV PORT '5000'
 ENV FLASK_ENV docker
+
 RUN apt-get update -y
 RUN apt-get install python3-opencv -y
 RUN apt-get install curl -y
