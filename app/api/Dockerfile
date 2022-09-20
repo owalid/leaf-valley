@@ -9,7 +9,7 @@ COPY process /home/api/process
 RUN ls -la /
 RUN ls -la /home
 RUN ls -la /home/api
-RUN ls -la /utilities
+RUN ls -la /home/api/utilities
 
 WORKDIR /home/api
 
