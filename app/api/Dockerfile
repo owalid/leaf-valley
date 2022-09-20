@@ -6,6 +6,10 @@ RUN mkdir -p /home/api
 COPY app/api /home/api
 COPY utilities /home/api/utilities
 COPY process /home/api/process
+
+COPY utilities /home/utilities
+COPY process /home/process
+
 COPY utilities /utilities
 COPY process /process
 
