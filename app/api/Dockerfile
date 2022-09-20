@@ -25,6 +25,6 @@ RUN pip install --upgrade setuptools pip
 RUN pip install -r /home/api/requirements.txt
 
 
-CMD ["python3", "run.py"]
+CMD ["python3", "main.py"]
 
 EXPOSE 5000
