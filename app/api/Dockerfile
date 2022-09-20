@@ -15,7 +15,7 @@ RUN ls -la /utilities
 
 WORKDIR /home/api
 
-ENV FLASK_ENV=dev
+ENV FLASK_ENV dev
 RUN apt-get update -y
 RUN apt-get install python3-opencv -y
 RUN apt-get install curl -y
@@ -24,6 +24,7 @@ RUN pip install -U --upgrade pip
 RUN pip install --upgrade setuptools pip
 RUN pip install -r /home/api/requirements.txt
 
-EXPOSE 5000
 
-RUN ["run.py"]
+CMD ["python3", "run.py"]
+
+EXPOSE 5000

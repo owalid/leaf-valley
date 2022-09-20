@@ -9,13 +9,13 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 ENTRYPOINT ["docker-entrypoint.sh"]
 
 ENV NODE_OPTIONS --openssl-legacy-provider
-ENV NODE_ENV=dev
-ENV BASE_API_URL="http://vic2api:5000/api"
-ENV NUXT_BASE_API_URL="http://vic2api:5000/api"
-ENV NUXT_HOST=0.0.0.0
-ENV HOST=0.0.0.0
-ENV NUXT_PORT=3000
-ENV PORT=3000
+ENV NODE_ENV dev
+ENV BASE_API_URL "http://vic2api:5000/api"
+ENV NUXT_BASE_API_URL "http://vic2api:5000/api"
+ENV NUXT_HOST 0.0.0.0
+ENV HOST 0.0.0.0
+ENV NUXT_PORT 3000
+ENV PORT 3000
 
 CMD ["yarn", "dev"]
 
