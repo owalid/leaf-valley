@@ -5,7 +5,8 @@ services:
     container_name: vic2api
     restart: always
     build:
-      context: ./api
+      context: ../
+      dockerfile: app/api/Dockerfile
     volumes:
       - ./api:/home/api
     expose:
