@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-  api:
+  leaf-api:
     container_name: vic2api
     restart: always
     build:
@@ -15,7 +15,7 @@ services:
       - 5000:5000
     command: python3 main.py
 
-  frontend:
+  leaf-client:
     container_name: vic2app
     build:
       context: ./client
