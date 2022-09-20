@@ -4,8 +4,8 @@ ENV PORT '5000'
 
 RUN mkdir -p /home/api
 COPY . /home/api/
-COPY utilities /home/api/utilities
-COPY process /home/api/process
+COPY ../utilities /home/api/utilities
+COPY ../process /home/api/process
 
 WORKDIR /home/api
 
