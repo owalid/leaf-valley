@@ -19,7 +19,7 @@ ENV FLASK_ENV docker
 RUN apt-get update -y
 RUN apt-get install gcc python3-dev musl-dev libpq-dev -y
 RUN apt-get install python3-opencv -y
-RUN apt-get install matplotlib
+RUN apt-get install git libopencv-dev python-opencv python-numpy python-matplotlib sqlite3
 RUN apt-get install curl -y
 RUN apt-get install libgl1-mesa-glx -y
 RUN pip install -U --upgrade pip
