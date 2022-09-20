@@ -7,6 +7,10 @@ COPY app/api /home/api
 COPY utilities /utilities
 COPY process /process
 
+RUN ls -la /home/api
+RUN ls -la /
+RUN ls -la /utilities
+
 WORKDIR /home/api
 
 ENV FLASK_ENV = 'dev'
