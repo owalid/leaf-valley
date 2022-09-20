@@ -8,9 +8,9 @@ services:
       context: ../
       dockerfile: app/api/Dockerfile
     volumes:
-      - app/api:/home/api
-      - utilities:/home/api/utilities
-      - process:/home/api/process
+      - ../app/api:/home/api
+      - ../utilities:/home/api/utilities
+      - ../process:/home/api/process
     expose:
       - 5000
     ports:
