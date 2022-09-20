@@ -3,7 +3,7 @@ FROM python:3.8.12-slim
 ENV PORT '5000'
 
 RUN mkdir -p /home/api
-COPY . /home/api/
+COPY app/api /home/api
 COPY utilities /home/api/utilities
 COPY process /home/api/process
 
