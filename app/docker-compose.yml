@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-  leaf-api:
+  vic2api:
     container_name: vic2api
     restart: always
     build:
@@ -15,15 +15,20 @@ services:
       - 5000:5000
     command: python3 main.py
 
-  leaf-client:
+  vic2app:
     container_name: vic2app
     build:
       context: ./client
     volumes:
       - ./client:/home/app
+      - vic2app_node_modules:/app/node_modules:cached
     env_file:
       - ./client/.env
     expose:
       - 3000
     ports:
       - 3000:3000
+
+volumes:
+  vic2app_node_modules:
+    driver: local
