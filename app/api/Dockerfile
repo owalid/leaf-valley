@@ -13,8 +13,9 @@ COPY process /home/process
 COPY utilities /utilities
 COPY process /process
 
-RUN ls -la /home/api
 RUN ls -la /
+RUN ls -la /home
+RUN ls -la /home/api
 RUN ls -la /utilities
 
 WORKDIR /home/api

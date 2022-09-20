@@ -3,8 +3,6 @@ import io
 from PIL import Image
 import pandas as pd
 import numpy as np
-import boto3
-
 
 class S3Module():
     
@@ -32,6 +30,8 @@ class S3Module():
             print("S3module => dev mode or missing environment variables")
             return
         
+
+        import boto3
         self.session = boto3.Session(aws_access_key_id=self.S3_ACCESS_KEY_ID, aws_secret_access_key=self.S3_SECRET_ACCESS_KEY, region_name='fr-par')
         self.s3_client = self.get_s3_client()
         self.s3_resource = self.get_s3_resource()
