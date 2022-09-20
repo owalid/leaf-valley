@@ -450,7 +450,7 @@ We have try different data preprocessing techniques.
 - Microservice: Golang
 
 
-Small schema of production architecture:
+### Small schema of production architecture:
 
 <img src="https://user-images.githubusercontent.com/28403617/191289625-38a7aa42-6e37-4ec8-b4f4-721c8ec03aa8.png" width="700" />
 
