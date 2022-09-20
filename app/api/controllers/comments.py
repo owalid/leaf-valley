@@ -16,8 +16,9 @@ if FLASK_ENV != 'prod':
     current_dir = current_dir[:current_dir.rfind(os.path.sep)]
     print("current_dir", current_dir)
     sys.path.insert(0, current_dir[:current_dir.rfind(os.path.sep)])
-
-from utilities.utils import safe_open_w
+    from utilities.utils import safe_open_w
+else:
+    from utilities.utils import safe_open_w
 
 class CommentsController:
     FLASK_ENV = os.environ.get("FLASK_ENV", "dev")
