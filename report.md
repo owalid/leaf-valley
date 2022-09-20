@@ -1,0 +1,463 @@
+# Index
+- [I - Background removal](#i-background-removal)
+- [II - Data augmentation](#ii-data-augmentation)
+- [III - Machine learning](#iii-machine-learning)
+- [IV - Deep learning](#iv-deep-learning)
+- [V - Bonus Web part and deployment](#v-bonus-web-part-and-deployment)
+
+# I - Background removal
+
+### First approach
+
+```py
+lab = cv2.cvtColor(rgb_img, cv2.COLOR_BGR2LAB)  # convert from BGR to LAB color space
+lab[:,:,0] = lab[:,:,0]/10 # L
+lab[:,:,1] += np.where(lab[:,:,1] > 125, 140, lab[:,:,1]) # A
+lab[:,:,2] = lab[:,:,2]/10 # B
+
+# We apply filter on 'A' and downscale 'L' and 'B'
+new_rgb_img = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+
+# We apply a np.where with alpha mask to remove background
+a_mask = pcv.rgb2gray_lab(rgb_img=new_rgb_img, channel='a')
+a_mask = np.where(a_mask <= int(a_mask.mean()), 0, a_mask)
+a_mask = np.where(a_mask > 0, 1, a_mask)
+
+# At this point we have a great mask but there are some noise around the plant
+
+# We find all the contours in the mask and we fill the holes
+cnts = cv2.findContours(a_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+cnts = cnts[0] if len(cnts) == 2 else cnts[1]
+cv2.fillPoly(a_mask, cnts, (255,255,255))
+result = cv2.bitwise_and(rgb_img,rgb_img,mask=a_mask)
+
+masked_image = pcv.apply_mask(img=gray_img, mask=a_mask, mask_color='black')
+```
+
+Results:
+
+<img src="https://user-images.githubusercontent.com/28403617/191056409-b636076e-d0b3-46c1-a410-3b9bf65f95c5.png" width="1000" />
+<img src="https://user-images.githubusercontent.com/28403617/191056524-99a3437a-8478-4a01-af14-ef8c8da6960a.png" width="1000" />
+
+
+At this point we have a great mask and the background removal work fine but only with healthy plants. If we have a plant with a disease we have a problem because the mask is not good enough.
+
+### Second approach
+
+Our second approach is to use k-means clustering to find the background and the plant. We use the same image as before.
+And a lot of logical operations to remove the background.
+The k-means work fine but it took a lot of time to process the image.
+
+>The function kmeans implements a k-means algorithm that finds the centers of cluster_count clusters and groups the input samples around the clusters. As an output, 𝚋𝚎𝚜𝚝𝙻𝚊𝚋𝚎𝚕𝚜i contains a 0-based cluster index for the sample stored in the ith row of the samples matrix. [Source](https://docs.opencv.org/3.4/d1/d5c/tutorial_py_kmeans_opencv.html)
+
+
+Results:
+
+<img src="https://user-images.githubusercontent.com/28403617/191060181-7e179f97-d401-47ad-9561-7cf935d268dc.png" width="1000" />
+<img src="https://user-images.githubusercontent.com/28403617/191060187-8a19de50-7fbc-467b-b61f-7f2dc617c696.png" width="1000" />
+
+
+### Last program
+
+At the end we have refocus on the first approach with something more simple. With colors mask on hsv channels.
+
+```py
+color_dict_HSV = {
+    'black': [[180, 255, 26], [0, 0, 0]],
+    'white': [[180, 38, 255], [0, 0, 166]],
+    'gray': [[180, 38, 166], [0, 0, 25]],
+    'red1': [[180, 255, 255], [155, 50, 40]],
+    'red2': [[9, 255, 255], [0, 50, 70]],
+    'pink1': [[6, 178, 255], [0, 0, 26]],
+    'pink2': [[180, 178, 255], [175, 0, 26]],
+    'pink3': [[176, 255, 255], [155, 38, 25]],
+    'orange': [[25, 255, 255], [5, 38, 191]],
+    'brown': [[25, 255, 191], [5, 50, 25]],
+    'yellow': [[40, 255, 255], [15, 15, 10]],
+    'yellowgreen': [[60, 255, 250], [30, 100, 200]],
+    'green': [[85, 255, 255], [41, 15, 10]],
+    'bluegreen': [[90, 255, 255], [76, 38, 25]],
+    'blue': [[127, 255, 255], [91, 38, 25]],
+    'purple': [[155, 255, 255], [128, 38, 25]],
+    'lightpurple': [[155, 128, 255], [128, 38, 25]],
+}
+```
+
+Results:
+
+<img src="https://user-images.githubusercontent.com/28403617/191058642-a253c114-1a56-4a8b-988a-fe42fdfaac20.png" width="1000" />
+<img src="https://user-images.githubusercontent.com/28403617/191058648-fcad46d3-fa34-4b86-8531-e1edc8c0ad39.png" width="1000" />
+
+
+### Conclusion
+
+We have a lot of different approach to remove the background. The first one is the best but it's not perfect. We have to find a way to improve it.
+An improvement proposal would have been to build a dataset using the correct masked images. And to train a U-net neural network to segment the leaves. We would have had better results on the whole dataset.
+
+# II - Data augmentation
+
+The data are not balanced. According to species or diseases (see notebooks).
+We then augmented the data in different ways thanks to the [Augmentor](https://augmentor.readthedocs.io/en/master/) library.
+
+Augmentation types:
+
+- flip_random
+- rotate_random_90
+- skew
+- random_distortion
+- shear
+- crop_random
+
+
+With [difPy](https://github.com/elisemercury/Duplicate-Image-Finder) we remove duplicate images, which comes from the data augmentation.
+
+
+
+
+# III - Machine learning
+
+### Models
+
+- Xg boost
+- Random forest
+- Extra trees
+- Support vector classification (SVM) (poly: 5 -> 12)
+
+
+### Features
+
+- graycoprops
+- lpb_histogram
+- hue_moment
+- haralick
+- histogram_hsv
+- histogram_lab
+- pyfeats
+
+
+On the all features (1600), those that do not change are reduced (constant).
+The ones that vary with less than 10% of the data are also removed.
+in the end we get about 600 features.
+
+Numbers of images are constant and sizes too.
+
+For each training, we use: 5000 images of 256x256 pixels.
+
+
+### Results
+
+<table>
+  <tr>
+    <th>Ranking</th>
+    <th>Model</th>
+    <th>Accuracy</th>
+    <th>Spearmean correlation</th>
+    <th>F1 score</th>
+    <th>Time (in minutes)</th>
+  </tr>
+   <tr>
+    <td>1 🥇</td>
+    <td>XGC</td>
+    <td>98.964861</td>
+    <td>99.364406</td>
+    <td>98.963004</td>
+    <td>40</td>
+  </tr>
+  <tr>
+    <td>2 🥈</td>
+    <td>RFC</td>
+    <td>97.840697</td>
+    <td>98.461464</td>
+    <td>97.833602</td>
+    <td>7</td>
+  </tr>
+  <tr>
+    <td>3 🥉</td>
+    <td>ETC</td>
+    <td>96.962662</td>
+    <td>97.779412</td>
+    <td>96.945723</td>
+    <td>10</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>SVCP POLY:5</td>
+    <td>91.196956</td>
+    <td>93.492802</td>
+    <td>91.127393</td>
+    <td>30</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>SVCP POLY:6</td>
+    <td>91.853300</td>
+    <td>93.985756</td>
+    <td>91.794288</td>
+    <td>28</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td>SVCP POLY:7</td>
+    <td>92.434584</td>
+    <td>94.489250</td>
+    <td>92.380977</td>
+    <td>28</td>
+  </tr>
+  <tr>
+    <td>7</td>
+    <td>SVCP POLY:8</td>
+    <td>92.790685</td>
+    <td>94.775385</td>
+    <td>92.740233</td>
+    <td>27</td>
+  </tr>
+  <tr>
+    <td>8</td>
+    <td>SVCP POLY:9</td>
+    <td>93.062999</td>
+    <td>94.977874</td>
+    <td>93.013979</td>
+    <td>26</td>
+  </tr>
+  <tr>
+    <td>9</td>
+    <td>SVCP POLY:10</td>
+    <td>93.239304</td>
+    <td>95.184046</td>
+    <td>93.193439</td>
+    <td>24</td>
+  </tr>
+  <tr>
+    <td>10</td>
+    <td>SVCP POLY:11</td>
+    <td>93.289926</td>
+    <td>95.197591</td>
+    <td>93.246312</td>
+    <td>24</td>
+  </tr>
+  <tr>
+    <td>11</td>
+    <td>SVCP POLY:12</td>
+    <td>93.342294</td>
+    <td>95.140724</td>
+    <td>93.302177</td>
+    <td>24</td>
+  </tr>
+</table>
+
+
+
+# IV - Deep learning
+
+
+### Models
+
+
+We have try different models to classify the images.
+
+- RESNET50
+- RESNET50V2
+- INCEPTIONRESNETV2
+- INCEPTIONV3
+- EFFICIENTNETB0
+- CLASSIC CNN
+- CONVNEXT
+- LAB AND HSV PROCESS [see this link](https://github.com/joaopauloschuler/two-path-noise-lab-plant-disease)
+- VGG16 / VGG19
+
+
+
+### Data preprocessing
+
+
+We have try different data preprocessing techniques.
+
+- Image augmentation
+- Image normalization
+- Image resizing
+- Image cropping
+- Image without background
+
+
+
+### Results
+
+
+<table>
+  <tr>
+    <th>Ranking</th>
+    <th>Model</th>
+    <th>Preprocessing</th>
+    <th>Number of images per classes</th>
+    <th>Accuracy (validation)</th>
+    <th>Size image</th>
+    <th>Time (in minutes)</th>
+  </tr>
+
+  <tr>
+    <td>1 🥇</td>
+      <td><a href="result_details/deep_learning/convnext.md" target="_blank">CONVNEXT</a></td>
+    <td></td>
+    <td>3000</td>
+    <td>0.9934</td>
+    <td>128x128</td>
+    <td>180</td>
+  </tr>
+  <tr>
+    <td>2 🥈</td>
+    <td><a href="result_details/deep_learning/inceptionv3.md" target="_blank">INCEPTIONV3</a></td>
+    <td></td>
+    <td>3000</td>
+    <td>0.9801</td>
+    <td>128x128</td>
+    <td>60</td>
+  </tr>
+  <tr>
+    <td>3 🥉</td>
+    <td><a href="result_details/deep_learning/resnet.md" target="_blank">RESNET50</a></td>
+    <td></td>
+    <td>1100</td>
+    <td>0.9717</td>
+    <td>128x128</td>
+    <td>20</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td><a href="result_details/deep_learning/efficient.md" target="_blank">EFFICIENTNETB7</a></td>
+    <td></td>
+    <td>1100</td>
+    <td>0.9729</td>
+    <td>128x128</td>
+    <td>108</td>
+  </tr>
+  <tr>
+    <td>0</td>
+    <td>VGG16</td>
+    <td></td>
+    <td>1100</td>
+    <td>0.9707</td>
+    <td>128x128</td>
+    <td>20</td>
+  </tr>
+  <tr>
+    <td>0</td>
+    <td>XCEPTION</td>
+    <td></td>
+    <td>1100</td>
+    <td>0.9686</td>
+    <td>128x128</td>
+    <td>53</td>
+  </tr>
+  <tr>
+    <td>0</td>
+    <td>EFFICIENTNETB0</td>
+    <td></td>
+    <td>1100</td>
+    <td>0.9641</td>
+    <td>128x128</td>
+    <td>25</td>
+  </tr>
+
+  <tr>
+    <td>0</td>
+    <td>LAB_PROCESS</td>
+    <td>Image normalization + lab images</td>
+    <td>1000</td>
+    <td>0.9651</td>
+    <td>128x128</td>
+    <td>50</td>
+  </tr>
+
+  <tr>
+    <td>0</td>
+    <td>INCEPTIONV3</td>
+    <td>min_max image normalization</td>
+    <td>1300</td>
+    <td>0.9583</td>
+    <td>128x128</td>
+    <td>110</td>
+  </tr>
+
+  <tr>
+    <td>0</td>
+    <td>CONVNEXT</td>
+    <td>Image normalization</td>
+    <td>1100</td>
+    <td>0.9594</td>
+    <td>128x128</td>
+    <td>65</td>
+  </tr>
+
+  <tr>
+    <td>0</td>
+    <td>INCEPTIONRESNETV2</td>
+    <td></td>
+    <td>1100</td>
+    <td>0.9548</td>
+    <td>128x128</td>
+    <td>86</td>
+  </tr>
+
+   <tr>
+    <td>0</td>
+    <td>RESNET50V2</td>
+    <td></td>
+    <td>1100</td>
+    <td>0.9419</td>
+    <td>128x128</td>
+    <td>33</td>
+  </tr>
+
+
+  <tr>
+    <td>0</td>
+    <td>INCEPTIONV3</td>
+    <td></td>
+    <td>1100</td>
+    <td>0.939</td>
+    <td>128x128</td>
+    <td>34</td>
+  </tr>
+
+
+  <tr>
+    <td>0</td>
+    <td>CLASSIC_CNN</td>
+    <td></td>
+    <td>1100</td>
+    <td>0.8087</td>
+    <td>128x128</td>
+    <td>45</td>
+  </tr>
+
+  <tr>
+    <td>0</td>
+    <td>ALEXNET</td>
+    <td></td>
+    <td>1100</td>
+    <td>0.7979</td>
+    <td>128x128</td>
+    <td>20</td>
+  </tr>
+</table>
+
+
+# V - Bonus Web part and deployment
+
+
+- Client: Nuxt
+- Api: Python,flask
+- Microservice: Golang
+
+
+### Small schema of production architecture:
+
+<img src="https://user-images.githubusercontent.com/28403617/191289625-38a7aa42-6e37-4ec8-b4f4-721c8ec03aa8.png" width="700" />
+
+
+
+
+
+
+
+
