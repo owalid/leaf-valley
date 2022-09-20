@@ -3,7 +3,7 @@
 - [II - Data augmentation](#ii-data-augmentation)
 - [III - Machine learning](#iii-machine-learning)
 - [IV - Deep learning](#iv-deep-learning)
-- [V - Web part and deployment](#v-web-part-and-deployment)
+- [V - Bonus Web part and deployment](#v-bonus-web-part-and-deployment)
 
 # I - Background removal
 
@@ -442,4 +442,19 @@ We have try different data preprocessing techniques.
 </table>
 
 
-# V - Web part and deployment
+# V - Bonus Web part and deployment
+
+
+- Client: Nuxt
+- Api: Python,flask
+- Microservice: Golang
+
+
+Small schema of production architecture:
+
+
+....
+
+
+
+
