@@ -9,10 +9,12 @@ from utils.mixins import create_response
 
 FLASK_ENV = os.environ.get("FLASK_ENV", "dev")
 
-if FLASK_ENV == 'dev':
+print("FLASK_ENV", FLASK_ENV)
+if FLASK_ENV != 'prod':
     current_dir = os.path.dirname(os.path.abspath(getsourcefile(lambda:0)))
     current_dir = current_dir[:current_dir.rfind(os.path.sep)]
     current_dir = current_dir[:current_dir.rfind(os.path.sep)]
+    print("current_dir", current_dir)
     sys.path.insert(0, current_dir[:current_dir.rfind(os.path.sep)])
 
 from utilities.utils import safe_open_w
