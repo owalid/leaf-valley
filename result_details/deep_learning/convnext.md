@@ -57,6 +57,15 @@
   <tr>
     <td>6</td>
     <td>CONVNEXT</td>
+    <td>Background removal</td>
+    <td>3000</td>
+    <td>0.977</td>
+    <td>128x128</td>
+    <td>144</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td>CONVNEXT</td>
     <td>Image normalization</td>
     <td>1100</td>
     <td>0.9594</td>

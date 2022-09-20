@@ -96,15 +96,156 @@ An improvement proposal would have been to build a dataset using the correct mas
 
 # II - Data augmentation
 
-....
+The data are not balanced. According to species or diseases (see notebooks).
+We then augmented the data in different ways thanks to the [Augmentor](https://augmentor.readthedocs.io/en/master/) library.
+
+Augmentation types:
+
+- flip_random
+- rotate_random_90
+- skew
+- random_distortion
+- shear
+- crop_random
+
+
+With [difPy](https://github.com/elisemercury/Duplicate-Image-Finder) we remove duplicate images, which comes from the data augmentation.
+
+
+
 
 # III - Machine learning
 
 ### Models
 
-### Data preprocessing
+- Xg boost
+- Random forest
+- Extra trees
+- Support vector classification (SVM) (poly: 5 -> 12)
+
+
+### Features
+
+- graycoprops
+- lpb_histogram
+- hue_moment
+- haralick
+- histogram_hsv
+- histogram_lab
+- pyfeats
+
+
+On the all features (1600), those that do not change are reduced (constant).
+The ones that vary with less than 10% of the data are also removed.
+in the end we get about 600 features.
+
+Numbers of images are constant and sizes too.
+
+For each training, we use: 5000 images of 256x256 pixels.
+
 
 ### Results
+
+<table>
+  <tr>
+    <th>Ranking</th>
+    <th>Model</th>
+    <th>Accuracy</th>
+    <th>Spearmean correlation</th>
+    <th>F1 score</th>
+    <th>Time (in minutes)</th>
+  </tr>
+   <tr>
+    <td>1 🥇</td>
+    <td>XGC</td>
+    <td>98.964861</td>
+    <td>99.364406</td>
+    <td>98.963004</td>
+    <td>40</td>
+  </tr>
+  <tr>
+    <td>2 🥈</td>
+    <td>RFC</td>
+    <td>97.840697</td>
+    <td>98.461464</td>
+    <td>97.833602</td>
+    <td>7</td>
+  </tr>
+  <tr>
+    <td>3 🥉</td>
+    <td>ETC</td>
+    <td>96.962662</td>
+    <td>97.779412</td>
+    <td>96.945723</td>
+    <td>10</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>SVCP POLY:5</td>
+    <td>91.196956</td>
+    <td>93.492802</td>
+    <td>91.127393</td>
+    <td>30</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>SVCP POLY:6</td>
+    <td>91.853300</td>
+    <td>93.985756</td>
+    <td>91.794288</td>
+    <td>28</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td>SVCP POLY:7</td>
+    <td>92.434584</td>
+    <td>94.489250</td>
+    <td>92.380977</td>
+    <td>28</td>
+  </tr>
+  <tr>
+    <td>7</td>
+    <td>SVCP POLY:8</td>
+    <td>92.790685</td>
+    <td>94.775385</td>
+    <td>92.740233</td>
+    <td>27</td>
+  </tr>
+  <tr>
+    <td>8</td>
+    <td>SVCP POLY:9</td>
+    <td>93.062999</td>
+    <td>94.977874</td>
+    <td>93.013979</td>
+    <td>26</td>
+  </tr>
+  <tr>
+    <td>9</td>
+    <td>SVCP POLY:10</td>
+    <td>93.239304</td>
+    <td>95.184046</td>
+    <td>93.193439</td>
+    <td>24</td>
+  </tr>
+  <tr>
+    <td>10</td>
+    <td>SVCP POLY:11</td>
+    <td>93.289926</td>
+    <td>95.197591</td>
+    <td>93.246312</td>
+    <td>24</td>
+  </tr>
+  <tr>
+    <td>11</td>
+    <td>SVCP POLY:12</td>
+    <td>93.342294</td>
+    <td>95.140724</td>
+    <td>93.302177</td>
+    <td>24</td>
+  </tr>
+</table>
+
+
 
 # IV - Deep learning
 
