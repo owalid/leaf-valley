@@ -8,6 +8,8 @@ ENV BASE_API_URL="http://api:5000/api"
 ENV NUXT_HOST=0.0.0.0
 ENV NUXT_PORT=3000
 
+RUN 'yarn'
+
 CMD ["yarn", "dev"]
 
 EXPOSE 3000

@@ -14,3 +14,8 @@ rm data/*.zip
 # Install dependencies
 echo "Install python dependencies"
 pip install -r requirements.txt
+
+
+# Create .env
+touch .env app/client
+touch .env app/api
