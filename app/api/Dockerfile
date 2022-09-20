@@ -26,4 +26,4 @@ RUN pip install -r /home/api/requirements.txt
 
 EXPOSE 5000
 
-RUN ["FLASK_ENV=dev", "python3", "run.py"]
+RUN ["run.py"]
