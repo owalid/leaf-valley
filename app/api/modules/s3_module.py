@@ -28,7 +28,7 @@ class S3Module():
         self.S3_MODELS_FOLDER = os.environ.get("S3_MODELS_FOLDER", None)
         self.S3_DATASET_FOLDER = os.environ.get("S3_DATASET_FOLDER", None)
         
-        if FLASK_ENV == "dev" or self.S3_ACCESS_KEY_ID is None or self.S3_SECRET_ACCESS_KEY is None or self.S3_BASE_ENDPOINT_URL is None or self.S3_BUCKET_NAME is None:
+        if FLASK_ENV != "prod" or self.S3_ACCESS_KEY_ID is None or self.S3_SECRET_ACCESS_KEY is None or self.S3_BASE_ENDPOINT_URL is None or self.S3_BUCKET_NAME is None:
             print("S3module => dev mode or missing environment variables")
             return
         

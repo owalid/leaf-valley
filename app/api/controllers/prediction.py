@@ -30,7 +30,7 @@ from modules.s3_module import S3Module
 
 FLASK_ENV = os.environ.get("FLASK_ENV", "dev")
 
-if FLASK_ENV != 'prod':
+if FLASK_ENV == 'dev':
     current_dir = os.path.dirname(os.path.abspath(getsourcefile(lambda:0)))
     current_dir = current_dir[:current_dir.rfind(os.path.sep)]
     current_dir = current_dir[:current_dir.rfind(os.path.sep)]
@@ -147,14 +147,14 @@ class PredictionController:
                 - model_name: name of model (str)
         '''
         
-        if PredictionController.FLASK_ENV == 'dev':
-            return joblib.load(model_path)
-        else:
+        if PredictionController.is_production():
            with io.BytesIO() as data:
                 PredictionController.s3_module.s3_client.download_fileobj(PredictionController.s3_module.S3_BUCKET_NAME, os.path.join(PredictionController.s3_module.S3_MODELS_FOLDER, model_name + '.pkl.z'), data)
                 data.seek(0)    # move back to the beginning after writing
                 model = joblib.load(data)
-                
+        else:
+            model = joblib.load(model_path)
+
         return model
             
     def load_models(model_name, md_grp):

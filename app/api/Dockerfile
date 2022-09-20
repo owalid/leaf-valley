@@ -15,7 +15,7 @@ RUN ls -la /utilities
 
 WORKDIR /home/api
 
-ENV FLASK_ENV dev
+ENV FLASK_ENV docker
 RUN apt-get update -y
 RUN apt-get install python3-opencv -y
 RUN apt-get install curl -y
