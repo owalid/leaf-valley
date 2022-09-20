@@ -8,7 +8,9 @@ ENV NODE_ENV=dev
 ENV BASE_API_URL="http://leaf-api:5000/api"
 ENV NUXT_BASE_API_URL="http://leaf-api:5000/api"
 ENV NUXT_HOST=0.0.0.0
+ENV HOST=0.0.0.0
 ENV NUXT_PORT=3000
+ENV PORT=3000
 
 RUN yarn
 
