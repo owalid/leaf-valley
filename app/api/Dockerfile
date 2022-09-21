@@ -17,8 +17,7 @@ ENV PORT '5000'
 ENV FLASK_ENV docker
 
 RUN apt-get update -y
-RUN apt-get install gcc python3-dev musl-dev libpq-dev -y
-RUN apt-get install g++ jpeg-dev zlib-dev libjpeg make
+RUN apt-get install -y build-essential make
 RUN apt-get install python3-opencv -y
 RUN apt-get install curl -y
 RUN apt-get install libgl1-mesa-glx -y
