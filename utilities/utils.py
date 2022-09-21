@@ -5,7 +5,6 @@ import cv2 as cv
 import numpy as np
 from multiprocessing.pool import ThreadPool
 
-from plantcv import plantcv as pcv
 import h5py
 import json
 
