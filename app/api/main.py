@@ -38,9 +38,10 @@ app = create_app()
 
 if __name__ == '__main__':
     try:
+        FLASK_ENV = os.environ.get("FLASK_ENV", "dev")
         print("FLASK_ENV:", FLASK_ENV)
         port = 5000 if FLASK_ENV != "prod" else 80
-        debug = FLASK_ENV == "dev"
+        debug = FLASK_ENV != "prod"
         
         # import s3module
         from modules.s3_module import S3Module

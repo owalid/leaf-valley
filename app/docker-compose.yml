@@ -1,28 +1,36 @@
 version: '3'
 
 services:
-  api:
+  vic2api:
     container_name: vic2api
     restart: always
     build:
-      context: ./api
+      context: ../
+      dockerfile: app/api/Dockerfile
     volumes:
-      - ./api:/home/api
+      - ../app/api:/home/api
+      - ../utilities:/home/api/utilities
+      - ../process:/home/api/process
     expose:
       - 5000
     ports:
       - 5000:5000
-    command: python3 run.py
+    command: python main.py
 
-  frontend:
+  vic2app:
     container_name: vic2app
     build:
       context: ./client
     volumes:
       - ./client:/home/app
+      - vic2app_node_modules:/app/node_modules:cached
     env_file:
       - ./client/.env
     expose:
       - 3000
     ports:
       - 3000:3000
+
+volumes:
+  vic2app_node_modules:
+    driver: local
