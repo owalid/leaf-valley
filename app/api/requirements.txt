@@ -4,7 +4,7 @@ flask
 flask_cors
 jsonify
 opencv-python
-plantcv
+cv2
 tqdm
 pyfeats
 joblib==1.1.0
@@ -12,27 +12,15 @@ python-dotenv
 scikit-learn==1.1.1
 scikit-image==0.19.2
 tf-nightly==2.10.0.dev20220711 # for convnext models
-matplotlib # for plantcv
-
-
-pandas
-numpy
+cv2
+dask
+dask-jobqueue
 matplotlib
-seaborn
-tqdm
+numpy
+pandas
+plotnine
+python-dateutil
+scikit-image
 scikit-learn
-xgboost
 scipy
-scikit-image>=0.19.2
-opencv-python
-Pillow
-pyfeats
-mahotas
 plantcv
-augmentor
-difpy
-transformers
-tf-nightly==2.10.0.dev20220711 # for convnext models
-h5py
-mlflow
-sklearn-evaluation
