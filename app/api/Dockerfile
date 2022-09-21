@@ -1,4 +1,4 @@
-FROM python:3.8.12-slim
+FROM python:3.8.12-alpine
 
 
 RUN mkdir -p /home/api
