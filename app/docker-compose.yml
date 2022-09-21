@@ -15,6 +15,7 @@ services:
       - 5000
     ports:
       - 5000:5000
+    command: python main.py
 
   vic2app:
     container_name: vic2app
