@@ -19,14 +19,14 @@ ENV FLASK_ENV docker
 RUN apt-get update -y
 RUN apt-get install gcc python3-dev musl-dev libpq-dev -y
 RUN apt-get install python3-opencv -y
-RUN apt-get install git libopencv-dev python-opencv python-numpy python-matplotlib sqlite3 -y
 RUN apt-get install curl -y
 RUN apt-get install libgl1-mesa-glx -y
 RUN pip install -U --upgrade pip
 RUN pip install --upgrade setuptools pip
 RUN pip install 'protobuf<=3.20.1' --force-reinstall
-RUN pip install numpy --upgrade
 RUN pip install -r /home/api/requirements.txt
+RUN pip install numpy --upgrade
+RUN pip install matplotlib
 
 
 CMD ["python3", "main.py"]
