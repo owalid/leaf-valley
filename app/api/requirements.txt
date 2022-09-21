@@ -14,7 +14,7 @@ tf-nightly==2.10.0.dev20220711 # for convnext models
 opencv-python
 dask
 dask-jobqueue
-matplotlib
+matplotlib=3.5.2
 numpy
 pandas
 plotnine
