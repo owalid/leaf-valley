@@ -29,6 +29,6 @@ RUN pip install numpy --upgrade
 RUN pip install matplotlib
 
 
-CMD ["python3", "main.py"]
+CMD ["python", "main.py"]
 
 EXPOSE 5000
