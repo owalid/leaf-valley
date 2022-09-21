@@ -19,7 +19,5 @@ numpy
 pandas
 plotnine
 python-dateutil
-scikit-image
-scikit-learn
 scipy
 plantcv
