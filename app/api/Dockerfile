@@ -23,6 +23,5 @@ RUN pip install -U --upgrade pip
 RUN pip install --upgrade setuptools pip
 RUN pip install -r /home/api/requirements.txt
 RUN pip install numpy --upgrade
-RUN pip install matplotlib --upgrade
 
 EXPOSE 5000
