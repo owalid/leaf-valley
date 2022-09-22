@@ -11,6 +11,7 @@ services:
       - ../app/api:/home/api
       - ../utilities:/home/api/utilities
       - ../process:/home/api/process
+      - ../data/models_saved:/data/models_saved:cached
     expose:
       - 5000
     ports:
