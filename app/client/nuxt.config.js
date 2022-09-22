@@ -3,8 +3,8 @@ import colors from 'vuetify/es5/util/colors'
 export default {
   // Global page headers: https://go.nuxtjs.dev/config-head
   head: {
-    titleTemplate: '%s - vic2i',
-    title: 'vic2i',
+    titleTemplate: '%s - Leaf valley',
+    title: 'Leaf valley',
     meta: [
       { charset: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
@@ -22,8 +22,8 @@ export default {
   plugins: [
     '~/plugins/vuetify',
     '~/plugins/axios',
-    '~/plugins/axios-instances/api.js',
-    '~/plugins/axios-instances/econome.js',
+    '~/plugins/axios-instances/api',
+    '~/plugins/axios-instances/econome',
   ],
 
   // Auto import components: https://go.nuxtjs.dev/config-components
@@ -55,6 +55,7 @@ export default {
       pathRewrite: {
         '^/api': '/api',
       },
+      changeOrigin: true,
     },
     '/econome': {
       target:
@@ -62,10 +63,12 @@ export default {
       pathRewrite: {
         '^/econome': '/econome',
       },
+      changeOrigin: true,
     },
   },
 
   publicRuntimeConfig: {
+    IS_DOCKER: process.env.IS_DOCKER,
     NODE_ENV: process.env.NODE_ENV,
     NUXT_BASE_API_URL: process.env.NUXT_BASE_API_URL,
     NUXT_ECONOME_MS_URL: process.env.NUXT_ECONOME_MS_URL,
@@ -89,7 +92,7 @@ export default {
   axios: {
     // Workaround to avoid enforcing hard-coded localhost:3000: https://github.com/nuxt-community/axios-module/issues/308
     baseURL: process.env.NUXT_BASE_API_URL || 'http://127.0.0.1:5000/api',
-    // proxy: true
+    proxy: true,
   },
 
   // PWA module configuration: https://go.nuxtjs.dev/pwa

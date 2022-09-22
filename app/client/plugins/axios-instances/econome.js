@@ -7,14 +7,12 @@ export default function ({ $axios, $config }, inject) {
         Accept: 'text/plain, */*',
       },
     },
-  })
-
-  // Set baseURL
-  econome.setBaseURL(
-    process.env.NUXT_ECONOME_MS_URL ||
+    proxy: true,
+    baseURL:
+      process.env.NUXT_ECONOME_MS_URL ||
       $config.NUXT_ECONOME_MS_URL ||
-      'http://127.0.0.1:8080/econome'
-  )
+      'http://127.0.0.1:8080/econome',
+  })
 
   if (process.env.NODE_ENV !== 'production') {
     econome.onResponse((response) => {
