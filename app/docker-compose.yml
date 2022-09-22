@@ -12,6 +12,8 @@ services:
       - ../utilities:/home/api/utilities
       - ../process:/home/api/process
       - ../data/models_saved:/data/models_saved:cached
+      - ../data/augmentation:/data/augmentation:cached
+      - ../data/no_augmentation:/data/no_augmentation:cached
     expose:
       - 5000
     ports:
