@@ -9,6 +9,7 @@ export default function ({ $axios, $config }, inject) {
     },
   })
 
+  api.proxy = true
   // Set baseURL
   api.setBaseURL(
     process.env.NUXT_BASE_API_URL ||

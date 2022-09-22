@@ -9,6 +9,7 @@ export default function ({ $axios, $config }, inject) {
     },
   })
 
+  econome.proxy = true
   // Set baseURL
   econome.setBaseURL(
     process.env.NUXT_ECONOME_MS_URL ||
