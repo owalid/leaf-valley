@@ -22,8 +22,8 @@ export default {
     plugins: [
         '~/plugins/vuetify',
         '~/plugins/axios',
-        '~/plugins/axios-instances/api.js',
-        '~/plugins/axios-instances/econome.js',
+        '~/plugins/axios-instances/api',
+        '~/plugins/axios-instances/econome',
     ],
 
     // Auto import components: https://go.nuxtjs.dev/config-components
@@ -67,6 +67,7 @@ export default {
     },
 
     publicRuntimeConfig: {
+        IS_DOCKER: process.env.IS_DOCKER,
         NODE_ENV: process.env.NODE_ENV,
         NUXT_BASE_API_URL: process.env.NUXT_BASE_API_URL,
         NUXT_ECONOME_MS_URL: process.env.NUXT_ECONOME_MS_URL,
