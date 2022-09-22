@@ -9,6 +9,21 @@ type ScwListServerResponse struct {
 }
 
 
+type ModelsApiResponse struct {
+	Message string `json:"message"`
+	Result  Result `json:"result"` 
+	Success bool   `json:"success"`
+}
+
+type Result struct {
+	Models Models `json:"models"`
+}
+
+type Models struct {
+	DL []string `json:"DL"`
+	Ml []string `json:"ML"`
+}
+
 
 type ScwNodesResponse struct {
 	TotalCount int64  `json:"total_count"`
