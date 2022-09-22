@@ -232,6 +232,15 @@ options:
 
 # Web part
 
+<img width="1579" alt="Screenshot 2022-09-22 at 15 52 28" src="https://user-images.githubusercontent.com/28403617/191765866-0fee2602-297a-4820-aceb-4749ff8cc9f6.png">
+
+<img width="1576" alt="Screenshot 2022-09-22 at 16 06 04" src="https://user-images.githubusercontent.com/28403617/191768872-8ed075da-b133-419d-816f-386adc5b427c.png">
+
+<img width="1576" alt="Screenshot 2022-09-22 at 15 54 16" src="https://user-images.githubusercontent.com/28403617/191766050-bc3dc10b-4d89-4562-8386-ed71ac820b89.png">
+
+
+
+
 ## With docker
 
 ```
