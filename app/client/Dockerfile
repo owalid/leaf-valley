@@ -10,8 +10,8 @@ ENTRYPOINT ["docker-entrypoint.sh"]
 
 ENV NODE_OPTIONS --openssl-legacy-provider
 ENV NODE_ENV dev
-ENV BASE_API_URL "http://0.0.0.0:5000/api"
-ENV NUXT_BASE_API_URL "http://0.0.0.0:5000/api"
+ENV BASE_API_URL http://vic2api:5000/api
+ENV NUXT_BASE_API_URL http://vic2api:5000/api
 ENV NUXT_HOST 0.0.0.0
 ENV HOST 0.0.0.0
 ENV NUXT_PORT 3000
