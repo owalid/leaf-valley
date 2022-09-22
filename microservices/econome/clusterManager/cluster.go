@@ -1,11 +1,9 @@
 package cluster
 
 import (
-	"bufio"
 	"net/http"
 	"bytes"
 	"time"
-	"os"
 	"encoding/json"
 	"econome/utils"
 	"econome/structs"
@@ -17,44 +15,6 @@ type StartClusterResponse struct {
 
 type ClusterStatusResponse struct {
 	State       string `json: "state"`
-}
-
-
-func insertNowInFileLastStarting() {
-	now := time.Now()
-	file, err := os.Create("last_starting_cluster.txt")
-	file.Truncate(0)
-
-    if err != nil {
-    }
-
-    defer file.Close()
-    _, err = file.WriteString(now.Format(time.RFC3339))
-
-    if err != nil {
-    }
-}
-
-
-func getLastRestart() (string, error) {
-	file, err := os.Open("last_starting_cluster.txt")
-
-    if err != nil {
-        return "", err
-    }
-
-    defer file.Close()
-
-    scanner := bufio.NewScanner(file)
-	var result = ""
-    for scanner.Scan() {
-		result = scanner.Text()
-    }
-
-	if result == "" {
-		insertNowInFileLastStarting()
-	}
-	return result, nil
 }
 
 func getNodeAvailability() (string, error) {
@@ -155,8 +115,6 @@ func StartCluster() string {
         return ""
     }
 
-	insertNowInFileLastStarting()
-
     return "OK"
 }
 
@@ -172,32 +130,33 @@ func GetStateCluster() string {
 		return stateCluster
 	}
 
-	lastRestartStr, err := getLastRestart()
+	stateNode, err := getNodeAvailability()
 	if err != nil {
-		return ""
-	}
-
-	now := time.Now()
-	lastRestartDate, err := time.Parse(time.RFC3339, lastRestartStr)
-	var diffRestartDate = now.Sub(lastRestartDate).Seconds()
-
-	if err != nil {
-		return ""
-	}
-
-	if diffRestartDate < 120 {
 		return "node_not_ready"
 	}
 
-	stateNode, err := getNodeAvailability()
+	if stateNode == "ready" {		
+		// Check if api is responding
+		client := http.Client{Timeout: 5 * time.Second}
 
-	if err != nil {
-		return ""
-	}
+		reqServerAlive, err := http.NewRequest("GET", "https://api.leaf-valley.com/api/models", nil)
+		if err != nil {
+			return "not_ready"
+		}
 
-	if stateNode == "ready" {
+		resServerAlive, err := client.Do(reqServerAlive)
+		if err != nil {
+			return "not_ready"
+		}
+
+		var modelsApiResponse = scwResponses.ModelsApiResponse{}
+		json.NewDecoder(resServerAlive.Body).Decode(&modelsApiResponse)
+
+		if modelsApiResponse.Success {
+			return "not_ready"
+		}
+
 		return "running"
 	}
-
 	return stateNode
 }
