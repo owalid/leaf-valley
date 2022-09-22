@@ -185,7 +185,7 @@ func GetStateCluster() string {
 		return ""
 	}
 
-	if diffRestartDate < 300 {
+	if diffRestartDate < 120 {
 		return "node_not_ready"
 	}
 

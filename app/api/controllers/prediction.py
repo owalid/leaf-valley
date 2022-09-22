@@ -255,7 +255,7 @@ class PredictionController:
         classes.sort()
         return create_response(data={'classes': classes})
 
-    def get_ml_features(f='', path='', options_dataset={}, rgb_img=None):
+    def get_ml_features(f='', path='', options_dataset={}, bgr_img=None):
         '''
             Description: Utility function to get the features of a given image for machine learning models
             
@@ -263,16 +263,16 @@ class PredictionController:
                 f: name of the image (str)
                 path: path of the image (str)
                 options_dataset: options dataset of the model (dict)
-                rgb_img: image in RGB format (np.array)
+                bgr_img: image in BGR format (np.array)
         '''
         # Image processing
-        if rgb_img is None:
+        if bgr_img is None:
             if PredictionController.is_production():
-                rgb_img = PredictionController.s3_module.get_image_from_path(os.path.join(path, f))
+                bgr_img = PredictionController.s3_module.get_image_from_path(os.path.join(path, f))
             else:
-                rgb_img, _, _ = pcv.readimage(os.path.join(path, f), mode='rgb')
+                bgr_img, _, _ = pcv.readimage(os.path.join(path, f), mode='rgb')
 
-        data = PredictionController.preprocess_pipeline_prediction(rgb_img, options_dataset)
+        data = PredictionController.preprocess_pipeline_prediction(bgr_img, options_dataset)
  
         df = pd.DataFrame.from_dict(data)
         df.index = [f]

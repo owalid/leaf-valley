@@ -15,7 +15,9 @@ rm data/*.zip
 echo "Install python dependencies"
 pip install -r requirements.txt
 
+mkdir -p data/models_saved
 
 # Create .env
-touch .env app/client
-touch .env app/api
+echo "NODE_ENV=dev" .env app/client/.env
+echo "FLASK_ENV=dev" app/api/.env
+

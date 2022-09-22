@@ -16,8 +16,9 @@ app/ -> web part
 data/ -> Data sources
   augmentation/ -> Data augmented
   no_augmentation/ -> Data not augmented
+  models_saved/ -> Models and weights saved
 microservices/
-  econome/ -> Micro service which manage api instance
+  econome/ -> Micro service which manage api instance (only for production)
 preprocess/ -> scripts for preprocessing
 process/ -> scripts for training (machine learning and deep learning)
 utilities/ -> global utilities functions
@@ -37,6 +38,8 @@ This script installs the dependencies for the project and the [dataset](https://
 This program allows you to preprocess the images, extract data and make a dataset in h5 format.
 
 ```
+python preprocess/main.py -h
+
 usage: python preprocess/main.py [-h] [-a] [-rmbg] [-src SRC_DIRECTORY] [-wi] [-crop] [-nor] [-nortype NORMALIZE_TYPE] [-c CLASSIFICATION] [-n NUMBER_IMG] [-rt RESULT_TYPE] [-dst DESTINATION] [-f FEATURES] [-s SIZE] [-v]
 
 optional arguments:
@@ -77,6 +80,8 @@ This program allows you to augment the images, and output this augmented images 
 
 
 ```
+python preprocess/image_augmentation.py -h
+
 usage: python preprocess/image_augmentation.py [-h] [-src SRC_DIRECTORY] [-dst DST_DIRECTORY] [-ncls NUMBER_IMG_BY_CLASS] [-naug NUMBER_IMG_AUGMENTATION] [-dup] [-v]
 
 optional arguments:
@@ -188,7 +193,8 @@ optional arguments:
 This program allows you to train a ML classification models with the data preprocessed
 
 ```
-python process/ml_classification/main.py -h                                                                                                           
+python process/ml_classification/main.py -h
+
 usage: main.py [-h] [-cs CLASSIFICATION_STEP] -f FILENAME [-dst PROCESS_OUTPUT] [-sd] [-th THRESHOLD] [-nortype NORMALIZE_TYPE] [-cm CLASSIFICATION_MODELS] [-ct CLASSIFICATION_TYPES] [-sm]
                [-dms DEST_MODELS_SAVED] [-v]
 
@@ -226,6 +232,13 @@ options:
 
 # Web part
 
+<img width="1579" alt="Screenshot 2022-09-22 at 15 52 28" src="https://user-images.githubusercontent.com/28403617/191765866-0fee2602-297a-4820-aceb-4749ff8cc9f6.png">
+
+<img width="1576" alt="Screenshot 2022-09-22 at 16 06 04" src="https://user-images.githubusercontent.com/28403617/191768872-8ed075da-b133-419d-816f-386adc5b427c.png">
+
+<img width="1576" alt="Screenshot 2022-09-22 at 15 54 16" src="https://user-images.githubusercontent.com/28403617/191766050-bc3dc10b-4d89-4562-8386-ed71ac820b89.png">
+
+
 ## With docker
 
 ```
@@ -239,7 +252,7 @@ docker compose up
 ```
 cd app/api
 pip install -r requirements.txt
-python run.py
+python main.py
 ```
 
 ### Start client
