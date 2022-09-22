@@ -8,11 +8,11 @@ export default function ({ $axios, $config }, inject) {
       },
     },
     proxy: true,
-    baseURL: process.env.NUXT_ECONOME_MS_URL ||
-              $config.NUXT_ECONOME_MS_URL ||
-              'http://127.0.0.1:8080/econome'
+    baseURL:
+      process.env.NUXT_ECONOME_MS_URL ||
+      $config.NUXT_ECONOME_MS_URL ||
+      'http://127.0.0.1:8080/econome',
   })
-
 
   if (process.env.NODE_ENV !== 'production') {
     econome.onResponse((response) => {

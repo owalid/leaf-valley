@@ -33,13 +33,13 @@ export default function ({ $axios, $config }, inject) {
       },
     })
   }
-  
+
   // Set baseURL
   api.setBaseURL(
     process.env.NUXT_BASE_API_URL ||
-    $config.NUXT_BASE_API_URL ||
-    'http://127.0.0.1:5000/api'
+      $config.NUXT_BASE_API_URL ||
+      'http://127.0.0.1:5000/api'
   )
-  
+
   inject('api', api)
 }
