@@ -1,11 +1,11 @@
 # Index
-- [I - Background removal](#i-background-removal)
-- [II - Data augmentation](#ii-data-augmentation)
-- [III - Machine learning](#iii-machine-learning)
-- [IV - Deep learning](#iv-deep-learning)
-- [V - Bonus Web part and deployment](#v-bonus-web-part-and-deployment)
+- [I - Background removal](#I)
+- [II - Data augmentation](#II)
+- [III - Machine learning](#III)
+- [IV - Deep learning](#IV)
+- [V - Bonus Web part and deployment](#V)
 
-# I - Background removal
+<h1 id="I">I - Background removal</h1>
 
 ### First approach
 
@@ -94,7 +94,7 @@ Results:
 We have a lot of different approach to remove the background. The first one is the best but it's not perfect. We have to find a way to improve it.
 An improvement proposal would have been to build a dataset using the correct masked images. And to train a U-net neural network to segment the leaves. We would have had better results on the whole dataset.
 
-# II - Data augmentation
+<h1 id="II">II - Data augmentation</h1>
 
 The data are not balanced. According to species or diseases (see notebooks).
 We then augmented the data in different ways thanks to the [Augmentor](https://augmentor.readthedocs.io/en/master/) library.
@@ -113,8 +113,7 @@ With [difPy](https://github.com/elisemercury/Duplicate-Image-Finder) we remove d
 
 
 
-
-# III - Machine learning
+<h1 id="III">III - Machine learning</h1>
 
 ### Models
 
@@ -246,9 +245,7 @@ For each training, we use: 5000 images of 256x256 pixels.
 </table>
 
 
-
-# IV - Deep learning
-
+<h1 id="IV">IV - Deep learning</h1>
 
 ### Models
 
@@ -442,8 +439,7 @@ We have try different data preprocessing techniques.
 </table>
 
 
-# V - Bonus Web part and deployment
-
+<h1 id="V">Web part and deployment</h1>
 
 - Client: Nuxt
 - Api: Python,flask
