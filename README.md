@@ -3,6 +3,7 @@
   <img height="550px" src="https://user-images.githubusercontent.com/28403617/191722810-a8be931b-9194-4b62-8c95-cba972566d64.svg#gh-dark-mode-only">
 </div>
 
+[![wakatime](https://wakatime.com/badge/user/57a746b4-0744-4dc9-a0f3-61d9ea529bde/project/67735737-0382-471e-9fe6-ee5fa60f7536.svg)](https://wakatime.com/badge/user/57a746b4-0744-4dc9-a0f3-61d9ea529bde/project/67735737-0382-471e-9fe6-ee5fa60f7536)
 
 ## [Report of our project](report.md)
 
